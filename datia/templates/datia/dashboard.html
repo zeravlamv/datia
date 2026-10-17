@@ -1,0 +1,1154 @@
+{% load static %}
+{% load i18n %}
+{% get_current_language as LANGUAGE_CODE %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE|default:'es' }}">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Datia Analytics V2</title>
+    <style>
+        html, body { background: #09090b; }
+        .sticky-header { background: #09090b; }
+        .header-tabs { display: flex; flex-wrap: nowrap; align-items: center; visibility: hidden; }
+        .tab-btn, button { background: transparent; color: #a1a1aa; border: 0; }
+    </style>
+    <!-- External Libs -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+    <!-- Bootstrap 5 CSS (Layout Safe) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+    <!-- Custom Styles (Loaded LAST to override Bootstrap) -->
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v={{ cache_bust|add:'40' }}">
+    <link rel="stylesheet" href="{% static 'css/ai_effects.css' %}?v={{ cache_bust|add:'1' }}">
+    <link rel="stylesheet" href="{% static 'css/ai_report_pro.css' %}?v={{ cache_bust|add:'1' }}">
+    <!-- Favicon -->
+    <link rel="icon" id="dynamic-favicon" type="image/png" href="{% static 'logo_analytics.png' %}">
+    <!-- Global State (Moved to Head) -->
+    <script src="{% url 'javascript-catalog' %}"></script>
+    <script src="{% static 'js/voa.js' %}?v={{ cache_bust|add:'1' }}"></script>
+    <script>
+        const API = "/api/datia";
+        const params = new URLSearchParams(window.location.search);
+        let currEmpresa = params.get('empresa') || "{{ empresa }}";
+        let currEjercicio = params.get('ejercicio') || "{{ ejercicio }}";
+        const CSRF_TOKEN = "{{ csrf_token }}"; // [NEW] For POST requests
+        const APP_LANG = "{{ LANGUAGE_CODE|default:'es' }}"; // [FIX] Global Lang
+        const HIDDEN_TABS = {{ hidden_tabs| safe }}; // [NEW] Backend Visibility Source of Truth
+        const SETTINGS_MODES = {{ settings_modes_json| safe }};
+    </script>
+    <style>
+        /* HOTFIX: Ensure tab visibility overrides any cached CSS issues */
+        .tab-panel.active {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body class="dark-theme">
+
+    <!-- Sticky Header: Logo + Tabs + Filters -->
+    <header class="sticky-header">
+
+        <!-- Branding Text (Moves to Left for Balance) -->
+        <div class="header-branding-text" style="display: flex; align-items: center; gap: 10px;">
+            <img id="header-datia-logo" src="{% static 'logo_analytics.png' %}" data-default-src="{% static 'logo_analytics.png' %}" style="height: 40px; width: auto; max-width: 180px; object-fit: contain;">
+            <div>
+                <span id="app-name-label" class="brand-datia">Datia</span>
+            </div>
+            <!-- [NEW] ERP Integration Label -->
+            <!-- [REMOVED] ERP Integration Label -->
+        </div>
+
+        <!-- Tab Navigation (Center) -->
+        <nav class="header-tabs">
+            {% if 'tab-ia' not in hidden_tabs %}
+            <button class="tab-btn" data-tab-id="tab-ia" onclick="switchTab('tab-ia')">{% trans "IA" %}</button>
+            {% endif %}
+            {% if 'tab-auto' not in hidden_tabs %}
+            <button class="tab-btn tab-auto" data-tab-id="tab-auto" onclick="switchTab('tab-auto')">{% trans "Auto entreno" %}</button>
+            {% endif %}
+            {% if 'tab-actualidad' not in hidden_tabs %}
+            <button class="tab-btn" data-tab-id="tab-actualidad" onclick="switchTab('tab-actualidad')">{% trans "Actualidad" %}</button>
+            {% endif %}
+            {% if 'tab-personal' not in hidden_tabs %}
+            <button class="tab-btn" id="nav-tab-personal" data-tab-id="tab-personal" onclick="switchTab('tab-personal')">{% trans "Pestaña Personal" %}</button>
+            {% endif %}
+
+            {% if 'tab-historico' not in hidden_tabs %}
+            <button class="tab-btn" data-tab-id="tab-historico" onclick="switchTab('tab-historico')">{% trans "Histórico" %}</button>
+            {% endif %}
+            {% if 'tab-datia' not in hidden_tabs %}
+            <button class="tab-btn" id="nav-tab-datia" data-tab-id="tab-datia" onclick="switchTab('tab-datia')">Datia</button>
+            {% endif %}
+            {% if 'tab-datia-wow' not in hidden_tabs %}
+            <button class="tab-btn" id="nav-tab-datia-wow" data-tab-id="tab-datia-wow" onclick="switchTab('tab-datia-wow')">Datia 1</button>
+            {% endif %}
+            {% if 'tab-datia-2' not in hidden_tabs %}
+            <button class="tab-btn" id="nav-tab-datia-2" data-tab-id="tab-datia-2" onclick="switchTab('tab-datia-2')">Datia 2</button>
+            {% endif %}
+            {% if 'tab-datia-3' not in hidden_tabs %}
+            <button class="tab-btn" id="nav-tab-datia-3" data-tab-id="tab-datia-3" onclick="switchTab('tab-datia-3')">{% trans "Arquitectura" %}</button>
+            {% endif %}
+        </nav>
+        <script>
+            (function () {
+                var nav = document.querySelector('.header-tabs');
+                try {
+                    var hidden = {};
+                    if (typeof HIDDEN_TABS !== 'undefined' && Array.isArray(HIDDEN_TABS)) {
+                        HIDDEN_TABS.forEach(function (id) { hidden[id] = true; });
+                    }
+                    var rawCfg = localStorage.getItem('datia-visibility-config');
+                    var cfg = rawCfg ? JSON.parse(rawCfg) : {};
+                    Object.keys(cfg).forEach(function (id) {
+                        if (cfg[id] === false) hidden[id] = true;
+                    });
+                    var buttons = document.querySelectorAll('.header-tabs .tab-btn');
+                    buttons.forEach(function (btn) {
+                        var id = btn.getAttribute('data-tab-id');
+                        if (id && hidden[id]) btn.style.display = 'none';
+                    });
+                    var personal = document.getElementById('nav-tab-personal');
+                    if (personal && personal.style.display !== 'none') {
+                        var layout = JSON.parse(localStorage.getItem('datia-personal-tab-layout') || '{}');
+                        if (layout && layout.name) personal.textContent = layout.name;
+                    }
+                    var fav = localStorage.getItem('datia-fav-main-tab') || localStorage.getItem('datia-fav-tab') || '';
+                    if (fav.indexOf('subtab-') === 0 || fav.indexOf('sub-') === 0) fav = '';
+                    var favBtn = fav ? document.querySelector('.header-tabs .tab-btn[data-tab-id="' + fav + '"]') : null;
+                    if (favBtn && favBtn.style.display !== 'none') favBtn.classList.add('is-favorite');
+                    var activeId = (favBtn && favBtn.style.display !== 'none') ? fav : '';
+                    if (!activeId) {
+                        var autoLoad = localStorage.getItem('datia-auto-load') !== 'false';
+                        var actualidad = document.querySelector('.header-tabs .tab-btn[data-tab-id="tab-actualidad"]');
+                        if (autoLoad && actualidad && actualidad.style.display !== 'none') activeId = 'tab-actualidad';
+                        else activeId = 'tab-ia';
+                    }
+                    var activeBtn = document.querySelector('.header-tabs .tab-btn[data-tab-id="' + activeId + '"]');
+                    if (activeBtn && activeBtn.style.display !== 'none') activeBtn.classList.add('active');
+                } catch (e) {}
+                if (nav) nav.style.visibility = 'visible';
+            })();
+        </script>
+
+        <!-- Right Section: Controls -->
+        <div class="header-right">
+
+            <!-- [REMOVED] Date -->
+
+            <!-- Separator -->
+            <div class="header-separator"></div>
+
+            <!-- Filters Moved to Footer -->
+
+
+            <!-- User Info & Logout -->
+            <div class="header-separator"></div>
+
+            <div style="display: flex; align-items: center; gap: 10px; position: relative;">
+                <!-- Settings Button (Moved here) -->
+                <button class="icon-btn only-desktop" id="btn-settings" type="button" onclick="openSettings()" title="{% trans 'Configuración' %}" style="background:none; border:none; color:#a1a1aa; cursor:pointer;">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                        </path>
+                        <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                </button>
+
+                <!-- User Dropdown Trigger -->
+                <!-- [VERSION 4] Explicit OnClick -->
+                <div class="user-dropdown-container" style="position: relative;">
+                    <button id="user-menu-btn" onclick="window.toggleUserMenu()" class="user-btn" style="background:none; border:none; color:#a1a1aa; cursor:pointer; display:flex; align-items:center; gap:6px; font-size:0.9rem;">
+                        <i class="bi bi-person-circle"></i>
+                        <span>{{ user.username }}</span>
+                        <i class="bi bi-chevron-down" style="font-size:0.7rem;"></i>
+                    </button>
+
+                    <!-- Dropdown Content -->
+                    <div id="user-dropdown-menu" class="dropdown-content" style="display:none; position:absolute; top:100%; right:0; background:#18181b; border:1px solid #3f3f46; border-radius:8px; min-width:200px; z-index:20000; box-shadow:0 10px 15px rgba(0,0,0,0.5); margin-top:8px;">
+                        <a href="#" onclick="window.openChangePasswordModal()" style="display:block; padding:10px 15px; color:#e4e4e7; text-decoration:none; font-size:0.85rem; border-bottom:1px solid #27272a;">
+                            <i class="bi bi-key" style="margin-right:8px;"></i> Cambiar Contraseña
+                        </a>
+                        {% if user.is_staff or user.is_superuser %}
+                        <a href="/admin/" target="_blank" style="display:block; padding:10px 15px; color:#e4e4e7; text-decoration:none; font-size:0.85rem; border-bottom:1px solid #27272a;">
+                            <i class="bi bi-shield-lock" style="margin-right:8px;"></i> Administración
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Direct Logout Link (Restored) -->
+                <a href="{% url 'logout' %}" style="color: #ef4444; text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; margin-left: 10px;" title="{% trans 'Cerrar sesión' %}">
+                    <i class="bi bi-power"></i> {% trans "Salir" %}
+                </a>
+            </div>
+        </div>
+        </div>
+    </header>
+
+    <!-- Change Password Modal -->
+    <div class="modal-overlay" id="change-password-modal" style="display:none; z-index: 10001;">
+        <div class="modal-card" style="max-width: 400px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="margin:0; font-size:1.1rem;">🔐 Cambiar Contraseña</h3>
+                <button onclick="closeChangePasswordModal()" style="background:none; border:none; color:#71717a; font-size:1.2rem; cursor:pointer;">&times;</button>
+            </div>
+
+            <form id="change-password-form" onsubmit="submitChangePassword(event)">
+                <div style="margin-bottom:15px;">
+                    <label style="display:block; color:#a1a1aa; font-size:0.8rem; margin-bottom:5px;">Contraseña Actual</label>
+                    <input type="password" name="old_password" required style="width:100%; background:#27272a; border:1px solid #3f3f46; padding:8px; border-radius:6px; color:white;">
+                </div>
+
+                <div style="margin-bottom:15px;">
+                    <label style="display:block; color:#a1a1aa; font-size:0.8rem; margin-bottom:5px;">Nueva Contraseña</label>
+                    <input type="password" name="new_password" required minlength="8" style="width:100%; background:#27272a; border:1px solid #3f3f46; padding:8px; border-radius:6px; color:white;">
+                </div>
+
+                <div style="margin-bottom:20px;">
+                    <label style="display:block; color:#a1a1aa; font-size:0.8rem; margin-bottom:5px;">Confirmar Nueva Contraseña</label>
+                    <input type="password" name="confirm_password" required minlength="8" style="width:100%; background:#27272a; border:1px solid #3f3f46; padding:8px; border-radius:6px; color:white;">
+                </div>
+
+                <div style="display:flex; gap:10px;">
+                    <button type="button" class="btn-secondary" onclick="closeChangePasswordModal()" style="flex:1;">Cancelar</button>
+                    <button type="submit" class="btn-primary-glow" style="flex:1;">Actualizar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <main>
+        <!-- [NEW] Info Bar (Integration | Date | Update) -->
+        <!-- [NEW] Info Bar (Integration | Date | Filters | Update) -->
+        <div class="info-bar" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 20px; font-size: 0.75rem; color: #71717a; gap: 20px;">
+
+            <!-- Integration (Left) -->
+            <div id="erp-label-container" style="display:none; gap: 6px; align-items: center; justify-self: start;">
+                {% trans "Integrado con" %} <span id="header-erp-name" style="color: #a1a1aa; font-weight: 500;"></span>
+            </div>
+
+            <!-- Date (Center) -->
+            <div id="sys-date" class="system-date" style="color: #a1a1aa; justify-self: center;"></div>
+
+            <!-- Filters (Moved from Header) -->
+            <div id="status-filters" style="display:flex; gap:10px; align-items:center;">
+                <select id="sel-empresa" onchange="applyFilters()" class="status-select" style="max-width: 200px;">
+                    <option value="" disabled selected>Cargando...</option>
+                </select>
+                <select id="sel-ejercicio" onchange="applyFilters()" class="status-select" style="width: 80px;">
+                    <option value="" disabled selected>...</option>
+                </select>
+            </div>
+
+            <!-- Last Update (Right) -->
+            <div class="last-updated-text" style="font-size: 0.75rem; margin:0; padding:0; text-align:right;">
+                {% if last_update %}
+                {% trans "Datos actualizados" %}: {{ last_update|date:"d/m/Y H:i" }}
+                {% else %}
+                {% trans "Sincronización pendiente" %}
+                {% endif %}
+            </div>
+        </div>
+        <!-- Components -->
+        {% include 'datia/components/tab_ia.html' %}
+        {% include 'datia/components/tab_auto.html' %}
+        {% include 'datia/components/tab_actualidad.html' %}
+        {% include 'datia/components/tab_personal.html' %}
+
+        {% include 'datia/components/tab_historico.html' %}
+        {% include 'datia/components/tab_datia.html' %}
+        {% include 'datia/components/tab_datia_wow.html' %}
+        {% include 'datia/components/tab_datia_2.html' %}
+        {% include 'datia/components/tab_datia_3.html' %}
+    </main>
+
+    <!-- Sync Modal -->
+    <div class="modal-overlay" id="sync-modal">
+        <div class="modal-card" style="text-align: center;">
+            <img id="sync-logo" src="{% static 'logo_analytics.png' %}" style="width: 60px; height: 60px; margin-bottom: 1rem; border-radius: 50%; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);">
+            <h3>{% trans "Sincronizando..." %}</h3>
+            <p id="sync-status-text" style="color: var(--text-muted); margin-top: 0.5rem;">{% trans "Iniciando proceso..." %}</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="sync-progress"></div>
+            </div>
+            <button class="btn-glow" style="margin-top: 1.5rem; width: 100%; justify-content: center;" onclick="closeModal()">Cerrar (Segundo plano)</button>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal-overlay" class="settings-modal-overlay only-desktop">
+        <div class="settings-modal">
+            <!-- HEADER -->
+            <div class="settings-header">
+                <div class="settings-title-row">
+                    <h2 class="settings-title-text">⚙️ Configuración</h2>
+                    <button class="close-settings" onclick="closeSettings()">×</button>
+                </div>
+                <div class="settings-tabs">
+                    <button id="btn-tab-user" class="settings-tab-btn active" onclick="switchSettingsTab('user')">
+                        Modo Usuario
+                    </button>
+                </div>
+            </div>
+
+            <!-- BODY -->
+            <div class="settings-body">
+
+                <!-- TAB 1: USER MODE -->
+                <div id="settings-tab-user" class="settings-tab-content active">
+                    <!-- Datia Logos -->
+                    <div class="settings-section">
+                        <h3 class="settings-title">Estilo Datia</h3>
+                        <div class="logo-grid" id="settings-logo-grid">
+                            <!-- Original -->
+                            <div class="logo-option-btn" onclick="selectDatiaLogo(this, '{% static 'logo_analytics.png' %}')">
+                                <img src="{% static 'logo_analytics.png' %}">
+                            </div>
+                            <!-- Generated -->
+                            <div class="logo-option-btn" onclick="selectDatiaLogo(this, '/static/media/generated/logo_proton_minimal_1766061415273.png')">
+                                <img src="/static/media/generated/logo_proton_minimal_1766061415273.png">
+                            </div>
+                            <div class="logo-option-btn" onclick="selectDatiaLogo(this, '/static/media/generated/logo_nebula_node_1766061431818.png')">
+                                <img src="/static/media/generated/logo_nebula_node_1766061431818.png">
+                            </div>
+                            <div class="logo-option-btn" onclick="selectDatiaLogo(this, '/static/media/generated/logo_cyber_synapse_1766063640633.png')">
+                                <img src="/static/media/generated/logo_cyber_synapse_1766063640633.png">
+                            </div>
+                            <div class="logo-option-btn" onclick="selectDatiaLogo(this, '/static/media/generated/logo_quantum_core_1766063759416.png')">
+                                <img src="/static/media/generated/logo_quantum_core_1766063759416.png">
+                            </div>
+                            <div class="logo-option-btn" onclick="selectDatiaLogo(this, '/static/media/generated/logo_digital_cortex_1766063785605.png')">
+                                <img src="/static/media/generated/logo_digital_cortex_1766063785605.png">
+                            </div>
+                            <div class="logo-option-btn" onclick="selectDatiaLogo(this, '/static/media/generated/logo_aether_prism_1766064056499.png')">
+                                <img src="/static/media/generated/logo_aether_prism_1766064056499.png">
+                            </div>
+                            <div class="logo-option-btn" onclick="selectDatiaLogo(this, '/static/media/generated/logo_ionic_pulse_1766064075433.png')">
+                                <img src="/static/media/generated/logo_ionic_pulse_1766064075433.png">
+                            </div>
+                            <div class="logo-option-btn" onclick="selectDatiaLogo(this, '/static/media/generated/logo_void_singularity_1766064161885.png')">
+                                <img src="/static/media/generated/logo_void_singularity_1766064161885.png">
+                            </div>
+
+                            <!-- NEW GENERATED LOGOS (Apple/Sage/WOW) -->
+                            <div class="logo-option-btn" onclick="selectDatiaLogo(this, '{% static 'logo_apple_style.png' %}')"><img src="{% static 'logo_apple_style.png' %}" title="Apple Style"></div>
+                            <div class="logo-option-btn" onclick="selectDatiaLogo(this, '{% static 'logo_sage_style.png' %}')"><img src="{% static 'logo_sage_style.png' %}" title="Sage Style"></div>
+                            <div class="logo-option-btn" onclick="selectDatiaLogo(this, '{% static 'logo_liquid_wow.png' %}')"><img src="{% static 'logo_liquid_wow.png' %}" title="Liquid WOW"></div>
+                            <!-- NEW STAR LOGO -->
+                            <div class="logo-option-btn" onclick="selectDatiaLogo(this, '{% static 'logo_datia_star.png' %}')"><img src="{% static 'logo_datia_star.png' %}" title="Datia Star"></div>
+                        </div>
+                    </div>
+
+                    <!-- Client Logo -->
+                    <div class="settings-section">
+                        <h3 class="settings-title">Logo Empresa</h3>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span style="color: #e4e4e7; font-size: 0.9rem;">Mostrar Logo Empresa</span>
+                            <label class="theme-switch" title="Activar Logo Empresa">
+                                <input type="checkbox" id="settings-show-client-logo" onchange="toggleClientLogo(this)">
+                                <span class="slider slider-semaphore round"></span>
+                            </label>
+                        </div>
+                        <label class="file-upload-label" for="client-logo-upload">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📁</div>
+                            <div>Haz clic para subir tu logo</div>
+                            <div style="font-size: 0.8rem; opacity: 0.7; margin-top: 0.5rem;">(PNG, SVG, JPG - Max 2MB)
+                            </div>
+                        </label>
+                        <input type="file" id="client-logo-upload" accept="image/*" style="display: none;" onchange="uploadClientLogo(this)">
+                        <div id="client-logo-preview-container" style="display: none; margin-top: 1rem; text-align: center;">
+                            <img id="client-logo-preview" src="" style="max-width: 150px; border-radius: 8px; border: 1px solid #3f3f46;">
+                            <button onclick="removeClientLogo()" style="display: block; margin: 0.5rem auto; color: #ef4444; background: none; border: none; font-size: 0.8rem; cursor: pointer;">Eliminar
+                                Logo</button>
+                        </div>
+                    </div>
+
+                    <!-- Appearance -->
+                    <div class="settings-section">
+                        <h3 class="settings-title">Apariencia</h3>
+                        <div style="margin-bottom: 15px;">
+                            <span style="color: #e4e4e7; font-size: 0.9rem; display: block; margin-bottom: 8px;">
+                                Efecto de Giro (Cartas)
+                                <div style="font-size: 0.7rem; color: #71717a;">Selecciona la animación de volteo</div>
+                            </span>
+                            <select id="settings-flip-effect" onchange="changeFlipEffect(this.value)" style="width: 100%; background: #27272a; border: 1px solid #3f3f46; color: #e4e4e7; padding: 8px; border-radius: 8px;">
+                                <option value="standard">Estándar (Horizontal)</option>
+                                <option value="vertical">Persiana (Vertical)</option>
+                                <option value="book">Libro (Página)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Personalization -->
+                    <div class="settings-section">
+                        <h3 class="settings-title">Personalización Visual</h3>
+                        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                            <div onclick="setAccentColor('#5e5ce6')" class="color-dot" title="Apple Indigo" style="background:#5e5ce6; width:28px; height:28px; border-radius:50%; cursor:pointer; border:2px solid #3f3f46; transition:all 0.2s;">
+                            </div>
+                            <div onclick="setAccentColor('#64d2ff')" class="color-dot" title="Apple Cyan" style="background:#64d2ff; width:28px; height:28px; border-radius:50%; cursor:pointer; border:2px solid #3f3f46; transition:all 0.2s;">
+                            </div>
+                            <div onclick="setAccentColor('#0a84ff')" class="color-dot" title="Apple Blue" style="background:#0a84ff; width:28px; height:28px; border-radius:50%; cursor:pointer; border:2px solid #3f3f46; transition:all 0.2s;">
+                            </div>
+                            <div onclick="setAccentColor('#ff9f0a')" class="color-dot" title="Apple Orange" style="background:#ff9f0a; width:28px; height:28px; border-radius:50%; cursor:pointer; border:2px solid #3f3f46; transition:all 0.2s;">
+                            </div>
+                            <div onclick="setAccentColor('#ff375f')" class="color-dot" title="Apple Pink" style="background:#ff375f; width:28px; height:28px; border-radius:50%; cursor:pointer; border:2px solid #3f3f46; transition:all 0.2s;">
+                            </div>
+                            <div onclick="setAccentColor('#ff453a')" class="color-dot" title="Apple Red" style="background:#ff453a; width:28px; height:28px; border-radius:50%; cursor:pointer; border:2px solid #3f3f46; transition:all 0.2s;">
+                            </div>
+                            <div style="border-left: 1px solid #3f3f46; padding-left:15px; display:flex; align-items:center; gap:10px;">
+                                <span style="font-size:0.8rem; color:#71717a; margin-right:8px;">Otro:</span>
+                                <input type="color" id="custom-color-picker" onchange="setAccentColor(this.value)" value="#a855f7" style="background:none; border:none; width:32px; height:32px; cursor:pointer;" title="Personalizado">
+                                <button id="eyedropper-btn" class="btn-glow" onclick="pickAccentFromScreen()" style="padding: 0 0.6rem;">🎯 Cuenta gotas</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Carrusel de estado -->
+                    <div class="settings-section">
+                        <h3 class="settings-title">Carrusel de estado</h3>
+                        <label class="theme-switch-label" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; margin-bottom: 12px;">
+                            <span style="color: #e4e4e7; font-size: 0.9rem;">
+                                Activar carrusel dinámico
+                                <div style="font-size: 0.7rem; color: #71717a;">Mensajes automáticos durante la espera</div>
+                            </span>
+                            <label class="theme-switch" title="Activar Carrusel">
+                                <input type="checkbox" id="settings-status-carousel-enabled" onchange="toggleStatusCarouselEnabled(this)">
+                                <span class="slider slider-semaphore round"></span>
+                            </label>
+                        </label>
+                        <div style="display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center;">
+                            <label for="settings-status-carousel-interval" style="color:#e4e4e7; font-size:0.9rem;">Intervalo (segundos)</label>
+                            <input type="number" id="settings-status-carousel-interval" min="3" max="15" step="1" onchange="changeStatusCarouselInterval(this)" style="width: 120px; background: #27272a; border: 1px solid #3f3f46; color: #e4e4e7; padding: 8px; border-radius: 8px;">
+                        </div>
+                        <div style="color:#71717a; font-size:0.8rem; margin-top:8px;">Por defecto 7 s. Máximo 15 mensajes.</div>
+                    </div>
+                    <div class="settings-section">
+                        <h3 class="settings-title">Sincronización incremental</h3>
+                        <p style="color:#a1a1aa; font-size:0.8rem; margin-bottom:10px;">
+                            Controla la frecuencia del incremental automático de datos desde MSSQL (ajuste global).
+                        </p>
+                        <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:center;">
+                            <label class="theme-switch-label" style="display:flex; align-items:center; justify-content:space-between; cursor:pointer; gap:10px;">
+                                <span style="color:#e4e4e7; font-size:0.9rem;">Incremental automático</span>
+                                <label class="theme-switch" title="Activar incremental automático">
+                                    <input type="checkbox" id="settings-etl-auto-enabled" onchange="toggleEtlAutoEnabled(this)">
+                                    <span class="slider slider-semaphore round"></span>
+                                </label>
+                            </label>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span style="color:#e4e4e7; font-size:0.85rem;">Cada</span>
+                                <input type="number" id="settings-etl-interval-hours" min="1" max="24" step="1" onchange="changeEtlIntervalHours(this)" style="width:70px; background:#27272a; border:1px solid #3f3f46; color:#e4e4e7; padding:6px; border-radius:8px; text-align:center;">
+                                <span style="color:#e4e4e7; font-size:0.85rem;">horas</span>
+                            </div>
+                        </div>
+                        <p style="color:#71717a; font-size:0.75rem; margin-top:8px;">
+                            Este valor se guarda en la configuración global y es usado por
+                            <code>datia_sync_incremental_auto</code>.
+                        </p>
+                    </div>
+                    <div class="settings-section">
+                        <h3 class="settings-title">Notificaciones</h3>
+                        <label class="theme-switch-label" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; margin-bottom: 15px;">
+                            <span style="color: #e4e4e7; font-size: 0.9rem;">Notificación por voz al completar análisis IA</span>
+                            <label class="theme-switch" title="Activar voz">
+                                <input type="checkbox" id="settings-voice-notify" onchange="toggleVoiceNotify(this)">
+                                <span class="slider round"></span>
+                            </label>
+                        </label>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3 class="settings-title">{% trans "Nombre de la Pestaña Personal" %}</h3>
+                        <div style="display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center;">
+                            <input id="settings-personal-tab-name" type="text" placeholder="{% trans 'Nombre de la Pestaña Personal' %}" style="width: 100%; background: #27272a; border: 1px solid #3f3f46; color: #e4e4e7; padding: 8px; border-radius: 8px;">
+                            <button class="btn-primary-glow" onclick="savePersonalTabName()" style="padding: 8px 12px;">{% trans "Guardar" %}</button>
+                        </div>
+                        <div style="color:#71717a; font-size:0.8rem; margin-top:8px;">{% trans "Se reflejará en la navegación y la cabecera de la pestaña." %}</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="delete-confirm-modal" style="display: none; z-index: 10000;">
+        <div class="modal-card" style="text-align: center; max-width: 400px; border: 1px solid #ef4444;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🗑️</div>
+            <h3 style="color: #ef4444; margin-bottom: 10px;">{% trans "Confirmar Eliminación" %}</h3>
+            <p id="delete-confirm-text" style="color: #e4e4e7; font-size: 0.9rem; margin-bottom: 20px;">
+                {% trans "¿Estás seguro de que quieres eliminar este elemento?" %}
+            </p>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-secondary" onclick="closeDeleteConfirmation()" style="flex: 1;">{% trans "Cancelar" %}</button>
+                <button id="btn-confirm-delete" class="btn-primary-glow" style="flex: 1; background: #ef4444; border-color: #ef4444; color: white;">
+                    {% trans "Eliminar" %}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Factory Reset Auth Modal -->
+    <div class="modal-overlay" id="reset-auth-modal" style="display: none; z-index: 10000;">
+        <div class="modal-card" style="text-align: left; max-width: 550px; border: 1px solid #ef4444; padding: 24px; background: #18181b;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div style="font-size: 2.5rem; background: rgba(239, 68, 68, 0.1); padding: 8px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">🔥</div>
+                    <div>
+                        <h3 style="color: #ef4444; margin:0 0 6px 0; font-size: 1.3rem;">Zona de Peligro</h3>
+                        <p style="color: #a1a1aa; font-size: 0.85rem; margin:0; line-height: 1.4;">
+                            Configuración de carga inicial. La limpieza de datos físicos y memoria es <strong>irreversible</strong>, pero conservará los mapeos de la IA.
+                        </p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeAuthModal()" style="background:none; border:none; color:#71717a; font-size:1.5rem; cursor:pointer; line-height:1; transition: color 0.2s;" onmouseover="this.style.color='#e4e4e7'" onmouseout="this.style.color='#71717a'">&times;</button>
+            </div>
+
+            <!-- Sección: Seguridad y Conexión -->
+            <div style="background: #27272a; border-radius: 8px; padding: 16px; margin-bottom: 16px; border: 1px solid #3f3f46;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom: 12px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    <h4 style="color: #e4e4e7; margin:0; font-size: 0.95rem;">1. Seguridad y Origen</h4>
+                </div>
+                
+                <div style="margin-bottom: 12px;">
+                    <label style="color: #a1a1aa; font-size: 0.8rem; display: block; margin-bottom: 5px;">Contraseña de Administrador <span style="color:#ef4444">*</span></label>
+                    <input type="password" id="reset-auth-password" class="search-input" style="width: 100%; border: 1px solid #3f3f46; background: #18181b; color: white; padding: 8px 12px;" placeholder="Requerida para operaciones de limpieza...">
+                </div>
+                
+                <div>
+                    <label style="color:#a1a1aa; font-size:0.8rem; display:block; margin-bottom:5px;">Base de datos MSSQL de origen <span style="color:#10b981">*</span></label>
+                    <div style="display:flex; gap:8px;">
+                        <input list="mssql-db-list" id="reset-mssql-db" class="search-input" style="flex:1; border:1px solid #3f3f46; background:#18181b; color:white; padding: 8px 12px;" placeholder="Nombre BD (ej. ERP_PROD)">
+                        <datalist id="mssql-db-list"></datalist>
+                        <button class="btn-secondary" onclick="detectMSSQLDatabases()" type="button" style="padding: 8px 12px; display:flex; align-items:center; gap:6px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21l-5.36 5.36"></path></svg> Detectar
+                        </button>
+                    </div>
+                    <div style="margin-top:8px;">
+                        <select id="reset-mssql-db-select" class="search-input" style="display:none; width:100%; border:1px solid #3f3f46; background:#18181b; color:white; padding: 8px 12px;">
+                            <option value="">Selecciona una base detectada…</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección: Alcance -->
+            <div id="reset-empresa-block" style="background: #27272a; border-radius: 8px; padding: 16px; margin-bottom: 20px; border: 1px solid #3f3f46; display:none;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom: 12px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    <h4 style="color: #e4e4e7; margin:0; font-size: 0.95rem;">2. Alcance de Migración</h4>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="color:#a1a1aa; font-size:0.8rem; display:block; margin-bottom:5px;">Empresas a sincronizar (Selección múltiple)</label>
+                    <select id="reset-empresa-select" multiple size="6" class="search-input" style="width:100%; border:1px solid #3f3f46; background:#18181b; color:white; padding: 8px; font-family: monospace;">
+                        <option value="">Selecciona una empresa…</option>
+                    </select>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+                        <div style="color:#71717a; font-size:0.75rem;"><kbd style="background:#3f3f46; padding:2px 4px; border-radius:3px;">Ctrl</kbd> o <kbd style="background:#3f3f46; padding:2px 4px; border-radius:3px;">Cmd</kbd> para selección múltiple</div>
+                        <div id="reset-empresa-count" style="color:#10b981; font-size:0.8rem; font-weight:600;"></div>
+                    </div>
+                </div>
+                
+                <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; background: #18181b; padding: 10px; border-radius: 6px; border: 1px solid #3f3f46;">
+                    <input type="checkbox" id="reset-reload-companies" checked style="accent-color:#10b981; width:18px; height:18px; margin-top: 2px;">
+                    <div style="text-align:left;">
+                        <div style="color:#e4e4e7; font-size:0.9rem; font-weight:500;">Recargar empresas maestras desde MSSQL</div>
+                        <div style="color:#a1a1aa; font-size:0.75rem; margin-top: 2px;">Sincroniza el catálogo global de empresas antes de iniciar la extracción.</div>
+                    </div>
+                </label>
+            </div>
+
+            <!-- Panel de Acciones -->
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <!-- Acciones Principales -->
+                <button id="btn-start-migration" onclick="confirmWorkflowAction()" class="btn-primary-glow" style="width: 100%; padding: 12px; font-size: 1rem; display:flex; justify-content:center; align-items:center; gap:8px; border-radius: 8px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Iniciar Migración Seleccionada
+                </button>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-secondary" onclick="openPgTablesPreview()" style="flex: 1; padding: 10px; display:flex; justify-content:center; align-items:center; gap:6px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg> Tablas Postgres
+                    </button>
+                    <button class="btn-secondary" onclick="openUsersPreview()" style="flex: 1; padding: 10px; display:flex; justify-content:center; align-items:center; gap:6px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg> Usuarios
+                    </button>
+                </div>
+
+                <div style="border-top:1px solid #3f3f46; margin: 8px 0;"></div>
+
+                <!-- Zona Peligrosa Real -->
+                <div style="display: flex; gap: 10px; align-items:center;">
+                    <button class="btn-secondary" onclick="dropNonTplAuthTables()" style="flex: 1; border-color:rgba(239, 68, 68, 0.5); color:#ef4444; background: rgba(239, 68, 68, 0.05); padding: 10px;">
+                        ⚠️ Borrar TODAS las tablas (Excepto configs)
+                    </button>
+                    <button class="btn-secondary" type="button" onclick="closeAuthModal()" style="padding: 10px 24px;">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Initial Setup Overlay (Primera instalación sin empresas) -->
+    <div class="modal-overlay" id="initial-setup-overlay" style="display:none; z-index:11000;">
+        <div class="modal-card" style="max-width: 520px; text-align:left;">
+            <h3 style="margin-top:0; margin-bottom:8px; color:#e4e4e7;">Bienvenido a Datia</h3>
+            <p style="color:#a1a1aa; font-size:0.9rem; margin-bottom:16px;">
+                No se han encontrado empresas registradas en la base de datos de análisis.
+                Antes de empezar a trabajar, necesitamos importar los datos desde tu sistema de origen.
+            </p>
+            <div style="margin-bottom:14px;">
+                <h4 style="font-size:0.9rem; margin:0 0 6px 0; color:#e4e4e7;">1. Selecciona la base de datos MSSQL</h4>
+                <p style="color:#a1a1aa; font-size:0.8rem; margin-bottom:6px;">
+                    Selecciona una base de datos detectada en tu servidor MSSQL. Solo se usará en modo lectura.
+                </p>
+                <select id="initial-setup-mssql-db" class="search-input" style="width:100%; border:1px solid #3f3f46; background:#18181b; color:white;">
+                    <option value="">Cargando bases de datos...</option>
+                </select>
+                <div id="initial-setup-mssql-db-hint" style="margin-top:6px; font-size:0.75rem; color:#a1a1aa; display:none;"></div>
+            </div>
+            <div id="initial-setup-empresa-section" style="margin-bottom:14px; display:none;">
+                <h4 style="font-size:0.9rem; margin:0 0 6px 0; color:#e4e4e7;">2. Selecciona empresas a migrar</h4>
+                <p style="color:#a1a1aa; font-size:0.8rem; margin-bottom:6px;">
+                    Marca las empresas de la base de datos MSSQL que quieres importar en esta instalación.
+                </p>
+                <div id="initial-setup-empresa-list" style="max-height:160px; overflow-y:auto; border:1px solid #27272a; border-radius:6px; padding:6px; font-size:0.8rem; color:#e4e4e7;">
+                    <div style="color:#a1a1aa;">Selecciona una base de datos para ver las empresas disponibles.</div>
+                </div>
+            </div>
+            <div style="margin-bottom:14px;">
+                <h4 style="font-size:0.9rem; margin:0 0 6px 0; color:#e4e4e7;">3. Importar datos de empresa</h4>
+                <p style="color:#a1a1aa; font-size:0.8rem; margin-bottom:6px;">
+                    Se ejecutará una importación inicial desde la base MSSQL seleccionada. Este proceso puede tardar varios minutos.
+                </p>
+                <div style="width:100%; height:8px; background:#27272a; border-radius:4px; overflow:hidden; margin-bottom:6px;">
+                    <div id="initial-setup-progress-bar" style="width:0%; height:100%; background:linear-gradient(90deg,#3b82f6,#60a5fa); transition:width 0.3s;"></div>
+                </div>
+                <div id="initial-setup-progress-text" style="font-size:0.8rem; color:#a1a1aa;">Pendiente de iniciar importación…</div>
+            </div>
+            <div style="margin-bottom:10px;">
+                <h4 style="font-size:0.9rem; margin:0 0 6px 0; color:#e4e4e7;">4. Verificación de integridad</h4>
+                <p id="initial-setup-verify-text" style="color:#a1a1aa; font-size:0.8rem; margin-bottom:6px;">
+                    Tras la importación, se verificará que exista al menos una empresa válida y sin duplicados.
+                </p>
+                <div id="initial-setup-errors" style="display:none; background:#3f3f46; border-radius:6px; padding:8px; color:#fca5a5; font-size:0.8rem;"></div>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:6px;">
+                <button class="btn-secondary" type="button" onclick="closeInitialSetupOverlay()">
+                    Cerrar
+                </button>
+                <button id="initial-setup-start-btn" class="btn-primary-glow" type="button" onclick="startInitialImport()" style="background:#22c55e; border-color:#22c55e; color:white;">
+                    Iniciar importación
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div class="modal-overlay" id="reset-preview-modal" style="display:none; z-index:10010;">
+        <div class="modal-card" style="max-width: 900px; text-align:left;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div>
+                    <h3 style="margin:0; font-size:1.05rem; color:#e4e4e7;">Previsualización</h3>
+                    <div id="reset-preview-subtitle" style="font-size:0.8rem; color:#a1a1aa; margin-top:4px;">Tablas y usuarios a afectar</div>
+                </div>
+                <button onclick="closeResetPreviewModal()" style="background:none; border:none; color:#71717a; font-size:1.2rem; cursor:pointer;">&times;</button>
+            </div>
+            <div id="reset-preview-tabs" style="display:flex; gap:8px; margin-bottom:10px;">
+                <button id="btn-preview-tables" onclick="openPgTablesPreview()" class="btn-secondary">Tablas</button>
+                <button id="btn-preview-users" onclick="openUsersPreview()" class="btn-secondary">Usuarios</button>
+            </div>
+            <div id="preview-tables" style="display:none;">
+                <div style="display:flex; gap:8px; margin-bottom:8px;">
+                    <select id="preview-filter-prefix" class="search-input" style="border:1px solid #3f3f46; background:#18181b; color:white;">
+                        <option value="">Todos</option>
+                        <option value="datia_">datia_*</option>
+                        <option value="metrics_">metrics_*</option>
+                        <option value="datiadb_">datiadb_*</option>
+                    </select>
+                    <select id="preview-sort" class="search-input" style="border:1px solid #3f3f46; background:#18181b; color:white;">
+                        <option value="size">Tamaño</option>
+                        <option value="rows">Filas</option>
+                        <option value="name">Nombre</option>
+                    </select>
+                    <select id="preview-order" class="search-input" style="border:1px solid #3f3f46; background:#18181b; color:white;">
+                        <option value="desc">Desc</option>
+                        <option value="asc">Asc</option>
+                    </select>
+                    <button class="btn-secondary" onclick="reloadPgTables()">Actualizar</button>
+                </div>
+                <div style="max-height:400px; overflow:auto; border:1px solid #27272a; border-radius:6px; padding:8px;">
+                    <table style="width:100%; border-collapse:collapse; font-size:0.8rem;">
+                        <thead>
+                            <tr style="color:#a1a1aa; text-align:left;">
+                                <th style="padding:4px 6px;">Tabla</th>
+                                <th style="padding:4px 6px;">Categoría</th>
+                                <th style="padding:4px 6px; text-align:right;">Filas (aprox)</th>
+                                <th style="padding:4px 6px; text-align:right;">Tamaño</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reset-preview-tables-body"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="preview-users" style="display:none;">
+                <div style="max-height:400px; overflow:auto; border:1px solid #27272a; border-radius:6px; padding:8px;">
+                    <table style="width:100%; border-collapse:collapse; font-size:0.8rem;">
+                        <thead>
+                            <tr style="color:#a1a1aa; text-align:left;">
+                                <th style="padding:4px 6px;">Usuario</th>
+                                <th style="padding:4px 6px;">Email</th>
+                                <th style="padding:4px 6px;">Superuser</th>
+                                <th style="padding:4px 6px;">Staff</th>
+                                <th style="padding:4px 6px;">Alta</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reset-preview-users-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Factory Reset / Migración Report Modal -->
+    <div class="modal-overlay" id="reset-report-modal" style="display:none; z-index:10000;">
+        <div class="modal-card" style="max-width: 900px; width: 90vw; max-height: 90vh; text-align:left; display:flex; flex-direction:column; background: #18181b; border: 1px solid #3f3f46;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div>
+                    <h3 style="margin:0; font-size:1.15rem; color:#e4e4e7; display:flex; align-items:center; gap:8px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                        Progreso de Migración
+                    </h3>
+                    <div id="reset-report-subtitle" style="font-size:0.85rem; color:#a1a1aa; margin-top:4px;"></div>
+                </div>
+                <button onclick="closeResetReportModal()" style="background:none; border:none; color:#71717a; font-size:1.5rem; cursor:pointer; transition: color 0.2s;" onmouseover="this.style.color='#e4e4e7'" onmouseout="this.style.color='#71717a'">&times;</button>
+            </div>
+
+            <!-- Pestañas de Navegación del Modal -->
+            <div style="display: flex; gap: 10px; margin-bottom: 12px; border-bottom: 1px solid #27272a; padding-bottom: 8px;">
+                <button id="btn-tab-reporte-log" onclick="switchReportTab('log')" class="btn-secondary" style="background: #27272a; border-color: #3f3f46; color: white;">Log de Ejecución</button>
+                <button id="btn-tab-reporte-resumen" onclick="switchReportTab('resumen')" class="btn-secondary" style="display:none;">Resumen de Tablas (Final)</button>
+            </div>
+
+            <!-- Contenido: Log de Ejecución -->
+            <div id="reporte-tab-log" style="flex:1 1 auto; display:flex; flex-direction:column; overflow:hidden;">
+                <div id="reset-report-empresa" style="margin-bottom:10px; font-size:0.9rem;"></div>
+                <div id="reset-sync-source" style="margin-bottom:6px; font-size:0.85rem; color:#a1a1aa;"></div>
+                
+                <div style="flex:1 1 auto; max-height:55vh; overflow:auto; border:1px solid #27272a; border-radius:6px; background: #09090b;">
+                    <table style="width:100%; border-collapse:collapse; font-size:0.8rem;">
+                        <thead style="position: sticky; top: 0; background: #18181b; border-bottom: 1px solid #27272a;">
+                            <tr style="color:#a1a1aa; text-align:left;">
+                                <th style="padding:8px 10px;">Tabla / Tarea</th>
+                                <th style="padding:8px 10px; text-align:right;">Filas</th>
+                                <th style="padding:8px 10px; text-align:right;">Tiempo</th>
+                                <th style="padding:8px 10px;">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reset-report-body"></tbody>
+                    </table>
+                </div>
+                <div id="reset-report-ri" style="margin-top:10px; font-size:0.8rem; color:#a1a1aa;"></div>
+                
+                <div id="reset-sync-visual" style="margin-top:12px; display:none; background: #27272a; padding: 12px; border-radius: 8px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+                        <div style="color:#e4e4e7; font-size:0.9rem; font-weight:500;">Sincronización en curso</div>
+                        <div id="reset-sync-message" style="color:#10b981; font-size:0.85rem; font-family: monospace;"></div>
+                    </div>
+                    <div style="height:12px; width:100%; background:#18181b; border-radius:6px; overflow:hidden; border: 1px solid #3f3f46;">
+                        <div id="reset-sync-progress" style="height:100%; width:0%; background:linear-gradient(90deg, #059669, #10b981); transition:width 0.3s ease-in-out;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contenido: Resumen Final Matriz -->
+            <div id="reporte-tab-resumen" style="flex:1 1 auto; display:none; flex-direction:column; overflow:hidden;">
+                <div style="margin-bottom: 10px; font-size: 0.9rem; color: #a1a1aa;">
+                    Validación final de registros insertados en Postgres por cada empresa migrada.
+                </div>
+                <div style="flex:1 1 auto; max-height:60vh; overflow:auto; border:1px solid #27272a; border-radius:6px; background: #09090b;">
+                    <table style="width:100%; border-collapse:collapse; font-size:0.8rem; text-align: right;">
+                        <thead style="position: sticky; top: 0; background: #18181b; border-bottom: 1px solid #27272a; z-index: 2;">
+                            <tr style="color:#a1a1aa;">
+                                <th style="padding:8px 10px; text-align:left; position: sticky; left: 0; background: #18181b; z-index: 3;">Empresa</th>
+                                <th style="padding:8px 10px;" title="datia_cliente, datia_proveedores, datia_articulos...">Maestros</th>
+                                <th style="padding:8px 10px;" title="datiadb_cabecerapedidocliente, datiadb_lineas...">Pedidos (C/L)</th>
+                                <th style="padding:8px 10px;" title="datiadb_cabeceraalbarancliente, datiadb_lineas...">Albaranes (C/L)</th>
+                                <th style="padding:8px 10px;" title="datia_acumulados_stocks">Stocks</th>
+                                <th style="padding:8px 10px;" title="datia_financial_acumulados, datia_financial_plan">Contabilidad</th>
+                                <th style="padding:8px 10px;" title="datia_financial_cartera">Cartera</th>
+                                <th style="padding:8px 10px;" title="metrics_totales_empresa_ejercicio">Métricas base</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reset-resumen-body">
+                            <!-- Filas dinámicas -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
+                <button class="btn-secondary" onclick="closeResetReportModal()" style="padding: 8px 20px;">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div class="modal-overlay" id="share-modal" style="display:none; z-index: 10000;">
+        <div class="modal-card" style="text-align: left; max-width: 480px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="margin:0; font-size:1.1rem;">🔗 Compartir informe</h3>
+                <button onclick="closeShareModal()" style="background:none; border:none; color:#71717a; font-size:1.2rem; cursor:pointer;">&times;</button>
+            </div>
+            <div style="color:#a1a1aa; font-size:0.85rem; margin-bottom:10px;">
+                Objetivo: <span id="share-target-label" style="color:#e4e4e7;"></span>
+            </div>
+            <label class="theme-switch-label" style="display:flex; align-items:center; justify-content:space-between; cursor:pointer; margin-bottom:12px;">
+                <span style="color:#e4e4e7; font-size:0.9rem;">Hacer público</span>
+                <label class="theme-switch" title="Público">
+                    <input type="checkbox" id="share-public-toggle">
+                    <span class="slider round"></span>
+                </label>
+            </label>
+            <div style="margin-bottom:12px;">
+                <label for="share-usernames-input" style="display:block; color:#a1a1aa; font-size:0.8rem; margin-bottom:5px;">Usuarios (separados por coma)</label>
+                <input type="text" id="share-usernames-input" class="search-input" style="width:100%; border:1px solid #3f3f46; background:#18181b; color:white;" placeholder="usuario1, usuario2">
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-secondary" onclick="closeShareModal()" style="flex:1;">Cancelar</button>
+                <button class="btn-primary-glow" onclick="submitShare()" style="flex:1;">Compartir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Report Overlay (Spectacular UX) -->
+    <div id="ai-report-overlay" style="display:none;">
+        <div class="ai-particles-container">
+            <!-- Particles generated by JS or CSS -->
+            <div class="particle" style="top:10%; left:20%; animation-delay:0s;"></div>
+            <div class="particle" style="top:30%; left:80%; animation-delay:1s;"></div>
+            <div class="particle" style="top:70%; left:40%; animation-delay:2s;"></div>
+            <div class="particle" style="top:50%; left:10%; animation-delay:1.5s;"></div>
+            <div class="particle" style="top:80%; left:90%; animation-delay:0.5s;"></div>
+        </div>
+
+        <div class="ai-modal-card">
+            <!-- Border Gradient applied via CSS ::before -->
+
+            <div class="ai-modal-card-inner">
+                <button class="btn-close-ai" onclick="AIReportManager.close()">✕</button>
+
+                <!-- View 1: Thinking -->
+                <div id="ai-thinking-view" class="ai-thinking-view" aria-live="polite">
+                    <img id="ai-thinking-logo" alt="Logo empresa" style="width: 84px; height: 84px; border-radius: 50%; object-fit: contain; filter: drop-shadow(0 0 12px var(--accent-glow));">
+                    <div class="ai-thinking-text typing" id="ai-thinking-text">Preparando análisis</div>
+                    <div class="ai-timer" role="timer" aria-label="Tiempo transcurrido">
+                        <div class="ai-timer-ring" id="ai-timer-ring"></div>
+                        <span id="ai-timer-elapsed">00:00</span>
+                    </div>
+                    <div id="ai-status-carousel" class="ai-status-carousel" aria-roledescription="carousel" aria-label="Mensajes de estado"></div>
+                </div>
+
+                <!-- View 2: Result -->
+                <div id="ai-result-view" class="ai-result-view">
+                    <!-- Content injected by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'js/ai_manager.js' %}?v={{ cache_bust|add:'1' }}"></script>
+    <!-- Immediate Tab Restoration to prevent flash -->
+    <script>
+        // [FIX] Force update version for JS files to prevent caching issues
+        const APP_VERSION = "{{ cache_bust|add:'20' }}";
+        console.log("Dashboard Loaded. Version:", APP_VERSION);
+
+        (function () {
+            try {
+                // [NEW] Unified Persistence for Tab Visibility
+                const VISIBILITY_KEY = 'datia-visibility-config';
+                const IS_STAFF = {{ user.is_staff| yesno: "true,false"
+            }};
+
+        // Helper to get stored config or defaults
+        function getVisibilityConfig() {
+            const raw = localStorage.getItem(VISIBILITY_KEY);
+            return raw ? JSON.parse(raw) : {};
+            // Empty object implies "visible by default" for unlisted keys, 
+            // we will treat undefined as true in application logic.
+        }
+
+        function saveVisibilityConfig(cfg) {
+            localStorage.setItem(VISIBILITY_KEY, JSON.stringify(cfg));
+        }
+
+        // Global function for toggle switches
+        window.toggleAppVisibility = function (id, type, isVisible) {
+            const cfg = getVisibilityConfig();
+            cfg[id] = isVisible;
+            saveVisibilityConfig(cfg);
+            applyVisibility(id, type, isVisible);
+
+            // [NEW] Sync with Backend
+            fetch('/api/config/user', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': CSRF_TOKEN
+                },
+                body: JSON.stringify({ visible_tabs: cfg })
+            }).catch(err => console.error("Failed to sync visibility", err));
+            // [NEW] Sync with Global Config if Staff (Implanter Mode)
+            if (IS_STAFF) {
+                fetch('/api/config/global', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': CSRF_TOKEN
+                    },
+                    body: JSON.stringify({ settings: cfg })
+                }).catch(err => console.error("Failed to sync global config", err));
+            }
+        };
+
+        // Specific Logic to apply visibility
+        function applyVisibility(id, type, isVisible) {
+            let el = null;
+            if (type === 'main') {
+                // Main Tabs: Usually data-tab-id="[id]" or id="nav-[id]"
+                // We will try stricter selection first
+                el = document.querySelector(`button[data-tab-id="${id}"]`);
+            } else if (type === 'sub_act') {
+                // Actualidad Subtabs: button with data-tab="[id]"
+                el = document.querySelector(`.act-sub-btn[data-tab="${id}"]`);
+            } else if (type === 'sub_auto') {
+                // Auto Subtabs: button with data-tab="[id]"
+                el = document.querySelector(`.auto-tab-btn[data-tab="${id}"]`);
+            }
+
+            if (el) {
+                el.style.display = isVisible ? '' : 'none'; // Empty string resets to CSS rule (inline-block/flex)
+            } else {
+                // Fallback by ID if explicit selector fails
+                const byId = document.getElementById(id);
+                if (byId) byId.style.display = isVisible ? '' : 'none';
+            }
+
+            // Sync Checkbox state (if it exists in settings modal)
+            // We need to find the checkbox that calls this function with this ID
+            // This creates a bi-directional binding manually
+            const checkboxes = document.querySelectorAll(`input[type="checkbox"][onchange*="'${id}'"]`);
+            checkboxes.forEach(chk => {
+                chk.checked = isVisible;
+            });
+        }
+
+        // INIT: Load and Apply All
+        let config = getVisibilityConfig();
+
+        // [NEW] Merge with Backend HIDDEN_TABS
+        // If backend says hidden, we enforce it in local config representation for UI consistency
+        if (typeof HIDDEN_TABS !== 'undefined' && Array.isArray(HIDDEN_TABS)) {
+            HIDDEN_TABS.forEach(tabId => {
+                config[tabId] = false;
+            });
+            // Optional: Update localStorage to match backend truth? 
+            // saveVisibilityConfig(config); 
+        }
+
+        // We define a list of known keys to check. 
+        // Any key present in config as 'false' MUST be hidden.
+        // Any key NOT present is assumed true.
+
+        // We iterate known tabs to ensure UI state matches storage
+        const knownTabs = [
+            { id: 'tab-ia', type: 'main' }, { id: 'tab-auto', type: 'main' }, { id: 'tab-actualidad', type: 'main' },
+            { id: 'tab-personal', type: 'main' },
+            { id: 'tab-historico', type: 'main' }, { id: 'tab-datia', type: 'main' }, { id: 'tab-datia-wow', type: 'main' },
+            { id: 'tab-datia-2', type: 'main' }, { id: 'tab-datia-3', type: 'main' },
+
+            { id: 'sub-ventas', type: 'sub_act' }, { id: 'sub-compras', type: 'sub_act' }, { id: 'sub-almacen', type: 'sub_act' },
+            { id: 'sub-financiera', type: 'sub_act' }, { id: 'sub-ratios', type: 'sub_act' }, { id: 'sub-presupuestos', type: 'sub_act' }, { id: 'sub-evolucion', type: 'sub_act' },
+            { id: 'sub-prediccion', type: 'sub_act' }, { id: 'sub-movil', type: 'sub_act' },
+            { id: 'sub-tesoreria', type: 'sub_act' }, { id: 'sub-pool', type: 'sub_act' },
+            { id: 'fin-section-anatomia', type: 'sub_act' },
+
+            { id: 'subtab-dashboard', type: 'sub_auto' }, { id: 'subtab-context', type: 'sub_auto' },
+            { id: 'subtab-standard-fields', type: 'sub_auto' },
+            { id: 'subtab-mapping', type: 'sub_auto' }, { id: 'subtab-sync', type: 'sub_auto' },
+            { id: 'subtab-relationships', type: 'sub_auto' }, { id: 'subtab-training', type: 'sub_auto' }
+            , { id: 'sub-anatomia', type: 'sub_act' }
+        ];
+
+        knownTabs.forEach(item => {
+            // Default to true if undefined
+            const isVis = (config[item.id] !== undefined) ? config[item.id] : true;
+            applyVisibility(item.id, item.type, isVis);
+        });
+
+            } catch (e) { console.error("Tab restore error", e); }
+        }) ();
+
+
+
+    </script>
+
+    <!-- Module Scripts (Order Matters) -->
+    <script src="{% static 'js/echarts.min.js' %}"></script>
+    <script src="{% static 'js/dashboard/core.js' %}?v={{ cache_bust|add:'10' }}"></script>
+    <script src="{% static 'js/dashboard/initial_setup.js' %}?v={{ cache_bust|add:'1' }}"></script>
+    <script src="{% static 'js/dashboard/actualidad_tesoreria.js' %}?v={{ cache_bust|add:'1' }}"></script>
+    <script src="{% static 'js/dashboard/charts.js' %}?v={{ cache_bust|add:'8' }}"></script>
+    <script src="{% static 'js/dashboard/presupuestos.js' %}?v={{ cache_bust|add:'2' }}"></script>
+    <script src="{% static 'js/dashboard/presupuestos_tree.js' %}?v={{ cache_bust|add:'1' }}"></script>
+    <script src="{% static 'js/dashboard/actualidad.js' %}?v={{ cache_bust|add:'8' }}"></script>
+    <script src="{% static 'js/dashboard/compras.js' %}?v={{ cache_bust|add:'10' }}"></script>
+    <script src="{% static 'js/dashboard/almacen.js' %}?v={{ cache_bust|add:'1' }}"></script>
+    <script src="{% static 'js/dashboard/actualidad_financiera.js' %}?v={{ cache_bust|add:'10' }}"></script>
+    <script src="{% static 'js/dashboard/actualidad_ratios.js' %}?v={{ cache_bust|add:'3' }}"></script>
+    <script src="{% static 'js/dashboard/pool_bancario.js' %}?v={{ cache_bust|add:'1' }}"></script>
+    <script src="{% static 'js/dashboard/entity_dashboards.js' %}?v={{ cache_bust|add:'1' }}"></script>
+    <script src="{% static 'js/dashboard/ia.js' %}?v={{ cache_bust|add:'22' }}"></script>
+    <script src="{% static 'js/dashboard/performance.js' %}?v={{ cache_bust|add:'1' }}"></script>
+    <script src="{% static 'js/dashboard/mobile_manager.js' %}?v={{ cache_bust|add:'30' }}"></script>
+    <script src="{% static 'js/dashboard/favorites_v2.js' %}?v={{ cache_bust|add:'1' }}"></script>
+    <script src="{% static 'js/dashboard/personal_tab.js' %}?v={{ cache_bust|add:'1' }}"></script>
+    <!-- Emergency Visibility Enforcer Removed (Conflict with Auto-Update) -->
+    <!-- [ISOLATED] User Menu Logic -->
+    <script>
+        console.log("User Menu Script Loaded - Version 5 [ISOLATED]");
+
+        // Define Global Functions (Window Scope)
+        window.toggleUserMenu = function () {
+            try {
+                const menu = document.getElementById('user-dropdown-menu');
+                if (menu) {
+                    const isVisible = (window.getComputedStyle(menu).display === 'block');
+                    menu.style.display = isVisible ? 'none' : 'block';
+                    console.log("Toggle User Menu Result:", menu.style.display);
+                } else {
+                    console.error("CRITICAL: user-dropdown-menu element not found in DOM");
+                }
+            } catch (e) {
+                console.error("Error in toggleUserMenu:", e);
+            }
+        };
+
+        window.openChangePasswordModal = function () {
+            const modal = document.getElementById('change-password-modal');
+            const menu = document.getElementById('user-dropdown-menu');
+            if (menu) menu.style.display = 'none';
+            if (modal) modal.style.display = 'flex';
+        };
+
+        window.closeChangePasswordModal = function () {
+            const modal = document.getElementById('change-password-modal');
+            const form = document.getElementById('change-password-form');
+            if (modal) modal.style.display = 'none';
+            if (form) form.reset();
+        };
+
+        window.submitChangePassword = function (event) {
+            event.preventDefault();
+            const form = event.target;
+            const oldPass = form.old_password.value;
+            const newPass = form.new_password.value;
+            const confirmPass = form.confirm_password.value;
+
+            if (newPass !== confirmPass) {
+                showToast("Las contraseñas no coinciden", "error");
+                return;
+            }
+
+            fetch('/api/user/change-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': CSRF_TOKEN
+                },
+                body: JSON.stringify({
+                    old_password: oldPass,
+                    new_password: newPass
+                })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        showToast(data.message, "success");
+                        window.closeChangePasswordModal();
+                    } else {
+                        showToast(data.message, "error");
+                    }
+                })
+                .catch(err => {
+                    showToast("Error de conexión", "error");
+                    console.error(err);
+                });
+        };
+
+        // Close menu when clicking outside (Document Listener)
+        document.addEventListener('click', function (event) {
+            const container = document.querySelector('.user-dropdown-container');
+            const menu = document.getElementById('user-dropdown-menu');
+            const btn = document.getElementById('user-menu-btn');
+
+            // Only proceed if menu is open
+            if (menu && menu.style.display === 'block') {
+                // If click is outside the container (which holds both button and menu)
+                if (container && !container.contains(event.target)) {
+                    menu.style.display = 'none';
+                }
+            }
+        });
+        // Fallback: abrir modal de reset si el handler global no está disponible
+        (function () {
+            const btnReset = document.getElementById('btn-factory-reset');
+            if (!btnReset) return;
+            btnReset.addEventListener('click', function (ev) {
+                try {
+                    if (typeof window.requestFactoryReset === 'function') {
+                        return; // handler principal se encargará
+                    }
+                } catch (_) { }
+                const modal = document.getElementById('reset-auth-modal');
+                if (!modal) return;
+                ev.preventDefault();
+                modal.style.display = 'flex';
+                const settingsOverlay = document.getElementById('settings-modal-overlay');
+                if (settingsOverlay) {
+                    try {
+                        settingsOverlay.dataset.prevPointer = settingsOverlay.style.pointerEvents || '';
+                        settingsOverlay.style.pointerEvents = 'none';
+                    } catch (e) { }
+                }
+                document.body.classList.add('modal-open');
+                setTimeout(function () {
+                    const pwd = document.getElementById('reset-auth-password');
+                    if (pwd) { pwd.value = ''; pwd.focus(); }
+                }, 100);
+            });
+        })();
+    </script>
+</body>
+
+</html>

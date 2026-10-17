@@ -1,0 +1,6 @@
+function v(n){var r=String(n==null?"":n).trim();if(r==="")return{ok:true,name:""};var e=r.replace(/\s+/g," ");if(e.length<2||e.length>32)return{ok:false,msg:"Longitud inválida (2–32)"};if(!/^[A-Za-zÁÉÍÓÚÜáéíóúüÑñ0-9 _-]{2,32}$/.test(e))return{ok:false,msg:"Caracteres no permitidos"};return{ok:true,name:e}}
+function a(n){try{var l=document.getElementById("login-logo");if(l&&n)l.src=n}catch(t){}}
+function b(n){try{var l=document.getElementById("login-title");var e="Bienvenido a Datia";if(n){e="Bienvenido a "+n}if(l)l.textContent=e}catch(t){}}
+function d(){var n=localStorage.getItem("datia-app-name")||"";var r=localStorage.getItem("datia-selected-logo")||"";var e=v(n);var o=e.ok?e.name:"";b(o);if(r)a(r)}
+async function f(){var n;try{var r=new AbortController();var e=setTimeout(function(){try{r.abort()}catch(s){}},800);var o=await fetch("/api/config/global",{signal:r.signal});clearTimeout(e);n=await o.json()}catch(t){n=null}var i=(n&&typeof n.app_name!=="undefined")?n.app_name:(localStorage.getItem("datia-app-name")||"");var c=(n&&typeof n.selected_logo==="string")?n.selected_logo:(localStorage.getItem("datia-selected-logo")||"");var u=v(i);var m=u.ok?u.name:"Datia";b(m);if(c)a(c)}
+document.addEventListener("DOMContentLoaded",function(){setTimeout(function(){d();f()},0)});

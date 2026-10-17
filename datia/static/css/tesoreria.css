@@ -1,0 +1,19 @@
+/* Tesorería: filtros, alertas y responsividad */
+.tes-filters{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0 6px 0
+}
+.tes-filter-group label{margin-right:6px;font-weight:600}
+.tes-filter-group select{padding:6px 8px;border:1px solid #ddd;border-radius:6px}
+.tes-export-actions .sub-nav-btn{margin-right:6px}
+.tes-alerts{margin:6px 0 10px 0}
+.alert-chip{
+  display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;
+  font-size:12px;font-weight:600;color:#fff;margin-right:8px
+}
+.alert-critical{background:#ef4444}
+.alert-warning{background:#f59e0b}
+.alert-hidden{display:none}
+@media (max-width: 768px){
+  .tes-filters{gap:6px}
+  .tes-filter-group select{font-size:12px}
+}

@@ -1,0 +1,1008 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DATIA - Investment Deck</title>
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'css/whitepaper.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #1e40af;
+            --accent: #06b6d4;
+            --success: #22c55e;
+            --warning: #eab308;
+            --danger: #ef4444;
+            --bg-dark: #0a0f1e;
+            --bg-card: #141b2d;
+            --text-primary: #ffffff;
+            --text-secondary: #94a3b8;
+            --border: #1e293b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(6, 182, 212, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(124, 58, 237, 0.1) 0%, transparent 50%);
+            z-index: 0;
+            animation: pulse 15s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0.5;
+            }
+
+            50% {
+                opacity: 0.8;
+            }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 4rem 2rem;
+            position: relative;
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .hero-logo {
+            font-size: 6rem;
+            font-weight: 900;
+            color: var(--primary);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            animation: glow 3s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+
+            0%,
+            100% {
+                filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.5));
+            }
+
+            50% {
+                filter: drop-shadow(0 0 40px rgba(59, 130, 246, 0.8));
+            }
+        }
+
+        .hero-tagline {
+            font-size: 2rem;
+            font-weight: 300;
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+            max-width: 800px;
+        }
+
+        .hero-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 3rem;
+            margin-top: 4rem;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .stat-card {
+            background: rgba(20, 27, 45, 0.8);
+            border: 2px solid var(--border);
+            border-radius: 20px;
+            padding: 2.5rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--primary);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--primary);
+            box-shadow: 0 20px 60px rgba(59, 130, 246, 0.3);
+        }
+
+        .stat-number {
+            font-size: 4rem;
+            font-weight: 900;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+            color: #ffffff;
+        }
+
+        .stat-label {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        /* Pitch Section */
+        .pitch-section {
+            padding: 6rem 2rem;
+            background: rgba(30, 64, 175, 0.03);
+        }
+
+        .pitch-timer {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .timer-badge {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background: var(--danger);
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            animation: pulse-timer 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-timer {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .pitch-content {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .pitch-block {
+            background: rgba(20, 27, 45, 0.6);
+            border-left: 6px solid var(--primary);
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .pitch-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            color: var(--primary);
+        }
+
+        .pitch-title.secondary {
+            font-size: 2rem;
+            color: var(--accent);
+        }
+
+        .pitch-text {
+            font-size: 1.3rem;
+            line-height: 1.8;
+            color: var(--text-primary);
+        }
+
+        .pitch-highlight {
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        /* Section Headers */
+        .section {
+            padding: 6rem 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-number {
+            font-size: 1.2rem;
+            color: var(--accent);
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+
+        .section-title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            margin: 1rem 0;
+            color: #ffffff;
+        }
+
+        .section-subtitle {
+            font-size: 1.3rem;
+            color: var(--text-secondary);
+        }
+
+        /* Impact Grid */
+        .impact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .impact-card {
+            background: rgba(59, 130, 246, 0.05);
+            border: 2px solid var(--border);
+            border-radius: 20px;
+            padding: 3rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .impact-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .impact-card:hover::after {
+            opacity: 1;
+        }
+
+        .impact-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--primary);
+            box-shadow: 0 30px 80px rgba(59, 130, 246, 0.4);
+        }
+
+        .impact-icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .impact-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .impact-description {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+
+        /* Investment Ask */
+        .investment-ask {
+            background: rgba(34, 197, 94, 0.05);
+            padding: 6rem 2rem;
+            text-align: center;
+        }
+
+        .ask-amount {
+            font-size: 8rem;
+            font-weight: 900;
+            line-height: 1;
+            color: var(--success);
+            margin: 2rem 0;
+        }
+
+        .ask-details {
+            display: flex;
+            justify-content: center;
+            gap: 6rem;
+            margin: 4rem 0;
+            flex-wrap: wrap;
+        }
+
+        .ask-detail {
+            text-align: center;
+        }
+
+        .ask-detail-value {
+            font-size: 4rem;
+            font-weight: 900;
+            color: var(--accent);
+        }
+
+        .ask-detail-label {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        /* Timeline */
+        .timeline {
+            position: relative;
+            padding: 4rem 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--primary);
+            transform: translateX(-50%);
+        }
+
+        .timeline-item {
+            display: flex;
+            gap: 4rem;
+            margin-bottom: 4rem;
+            position: relative;
+        }
+
+        .timeline-item:nth-child(even) {
+            flex-direction: row-reverse;
+        }
+
+        .timeline-content {
+            flex: 1;
+            background: rgba(20, 27, 45, 0.6);
+            padding: 2.5rem;
+            border-radius: 16px;
+            border: 2px solid var(--border);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+        }
+
+        .timeline-content:hover {
+            border-color: var(--primary);
+            transform: scale(1.02);
+            box-shadow: 0 20px 60px rgba(59, 130, 246, 0.3);
+        }
+
+        .timeline-marker {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 30px;
+            background: var(--primary);
+            border: 6px solid var(--bg-dark);
+            border-radius: 50%;
+            z-index: 2;
+        }
+
+        .timeline-month {
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .timeline-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .timeline-metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .metric {
+            background: rgba(59, 130, 246, 0.1);
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--success);
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* Screenshots / Gallery */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .gallery-item {
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .gallery-item:hover {
+            border-color: var(--primary);
+            transform: scale(1.02);
+        }
+
+        .gallery-img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .gallery-caption {
+            padding: 1rem;
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-align: center;
+            border-top: 1px solid var(--border);
+        }
+
+        /* CTA Section */
+        .cta-section {
+            padding: 8rem 2rem;
+            text-align: center;
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .cta-title {
+            font-size: 4rem;
+            font-weight: 900;
+            margin-bottom: 2rem;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 2rem 4rem;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            border-radius: 60px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            transition: all 0.3s;
+            box-shadow: 0 10px 40px rgba(59, 130, 246, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 60px rgba(59, 130, 246, 0.6);
+        }
+
+        /* Footer */
+        .footer {
+            padding: 3rem 2rem;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 2rem;
+            padding: 1rem 2rem;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .back-link:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-logo {
+                font-size: 3rem;
+            }
+
+            .hero-tagline {
+                font-size: 1.3rem;
+            }
+
+            .hero-stats {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .stat-number {
+                font-size: 3rem;
+            }
+
+            .section-title {
+                font-size: 2.5rem;
+            }
+
+            .ask-amount {
+                font-size: 4rem;
+            }
+
+            .ask-details {
+                gap: 3rem;
+            }
+
+            .timeline::before {
+                left: 20px;
+            }
+
+            .timeline-item {
+                flex-direction: column !important;
+                padding-left: 60px;
+            }
+
+            .timeline-marker {
+                left: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- 1. Hero Section -->
+        <section class="hero">
+            <div class="hero-logo" id="whitepaper-app-name">DATIA</div>
+            <div class="hero-tagline">
+                Democratizando Inteligencia Artificial Conversacional para PYMEs
+            </div>
+            <div class="hero-stats">
+                <div class="stat-card">
+                    <div class="stat-number">100%</div>
+                    <div class="stat-label">Privacidad (SQL Guard)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">DeepSeek</div>
+                    <div class="stat-label">Modelos R1 Integrados</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">&lt;4h</div>
+                    <div class="stat-label">Deploy Inicial</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">Dual</div>
+                    <div class="stat-label">Desktop + Mobile</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. The Problem & Solution (Pitch) -->
+        <section class="pitch-section">
+            <div class="pitch-timer">
+                <span class="timer-badge">⏱️ CONTEXTO Y SOLUCIÓN</span>
+            </div>
+
+            <div class="pitch-content">
+                <div class="pitch-block">
+                    <div class="pitch-title">🎯 El Problema Doble</div>
+                    <div class="pitch-text">
+                        <strong class="pitch-highlight">El 70% de las PYMEs</strong> toman decisiones <strong>sin
+                            datos</strong>.
+                        Tienen ERPs repletos de información valiosa, pero enfrentan <strong>DOS
+                            BARRERAS</strong>:<br><br>
+                        <strong>1) Soluciones tradicionales</strong> (Power BI, Tableau) requieren consultores
+                        especializados,
+                        meses de implementación y costes prohibitivos.<br><br>
+                        <strong>2) IA generativa bloqueada por compliance:</strong> No pueden usar ChatGPT/Claude porque
+                        <strong class="pitch-highlight">sus datos salen a servidores externos</strong>. RGPD, secretos
+                        industriales
+                        y auditorías de seguridad <strong>frenan la adopción de IA internamente</strong>.
+                    </div>
+                </div>
+
+                <div class="pitch-block">
+                    <div class="pitch-title">💡 Nuestra Solución: IA Híbrida y Segura</div>
+                    <div class="pitch-text">
+                        DATIA convierte <strong>lenguaje natural en SQL optimizado</strong> CON DATOS PRIVADOS, protegidos por nuestro protocolo <strong>SQL Guard</strong>.<br><br>
+                        <strong class="pitch-highlight">Motor Dual:</strong><br>
+                        1. <strong>Local Intelligence:</strong> Modelos Open Weight (Llama 3, DeepSeek-R1) corriendo on-premise. Zero salida a internet.<br>
+                        2. <strong>SaaS Mode:</strong> Procesamiento de metadatos anonimizados para análisis estratégico.<br><br>
+                        Acceso multicanal: <strong>Escritorio</strong> para analistas y <strong>Mobile App (Puerto 8001)</strong> para ejecutivos.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Product Modules (Detail) -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">PRODUCTO</div>
+                <div class="section-title">Módulos Operativos (100% Ready)</div>
+                <div class="section-subtitle">Suite completa de gestión financiera y operativa</div>
+            </div>
+
+            <div class="impact-grid">
+                <div class="impact-card">
+                    <div class="impact-icon">📊</div>
+                    <div class="impact-title">Financiera</div>
+                    <div class="impact-description">
+                        P&L Dinámico, Balance de Situación, Ratios y Análisis Vertical/Horizontal.
+                        Reporting automático para dirección financiera.
+                    </div>
+                </div>
+                <div class="impact-card">
+                    <div class="impact-icon">💰</div>
+                    <div class="impact-title">Tesorería</div>
+                    <div class="impact-description">
+                        Forecast a 3 meses, Análisis de Liquidez y Gestión de Cartera de Efectos.
+                        Control proactivo del cash flow.
+                    </div>
+                </div>
+                <div class="impact-card">
+                    <div class="impact-icon">📈</div>
+                    <div class="impact-title">Ventas</div>
+                    <div class="impact-description">
+                        Detección de Anomalías, Tendencias Predictivas y Segmentación Pareto (ABC).
+                        Insights accionables para equipos comerciales.
+                    </div>
+                </div>
+                <div class="impact-card">
+                    <div class="impact-icon">🧠</div>
+                    <div class="impact-title">AI Core</div>
+                    <div class="impact-description">
+                        Deep Dives en PDF, Auto-Training continuo y Auditoría de Alucinaciones.
+                        El cerebro que conecta todos los datos.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Technical Architecture -->
+        <section class="section" style="background: rgba(59, 130, 246, 0.03);">
+            <div class="section-header">
+                <div class="section-number">TECNOLOGÍA</div>
+                <div class="section-title">Arquitectura Blindada</div>
+                <div class="section-subtitle">Diseñada para Seguridad y Escalabilidad</div>
+            </div>
+
+            <div class="pitch-content">
+                <div class="pitch-block">
+                    <div class="pitch-title secondary">Stack Tecnológico</div>
+                    <div class="timeline-metrics" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        <div class="metric">
+                            <div class="metric-label">Backend</div>
+                            <div style="font-size: 1rem;">Django + Python 3.11</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Database</div>
+                            <div style="font-size: 1rem;">PostgreSQL + Vector</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">AI Engine</div>
+                            <div style="font-size: 1rem;">Ollama + DeepSeek</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Frontend</div>
+                            <div style="font-size: 1rem;">Vanilla JS + ECharts</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pitch-block">
+                    <div class="pitch-title secondary">Flujo de Datos Seguro</div>
+                    <div class="pitch-text">
+                        <ol style="margin-left: 1.5rem; margin-top: 1rem;">
+                            <li><strong>Ingesta:</strong> Conexión Read-Only a ERP (MSSQL) -> ETL Local -> PostgreSQL.</li>
+                            <li><strong>Sanitización:</strong> SQL Guard valida cada consulta para impedir acceso no autorizado.</li>
+                            <li><strong>Procesamiento:</strong> Modelos locales generan SQL. Solo metadatos anonimizados viajan a la nube (opcional).</li>
+                            <li><strong>Visualización:</strong> Renderizado en cliente (Browser/Mobile App).</li>
+                        </ol>
+                    </div>
+                </div>
+                <!-- Architecture Diagram Placeholder -->
+                <div style="text-align: center; margin-top: 2rem;">
+                    <img src="{% static 'datia_flow.png' %}" alt="Architecture Diagram" style="max-width: 80%; border-radius: 12px; border: 2px solid var(--border);">
+                    <p style="margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.9rem;">Diagrama de Flujo Seguro de Datos</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. Market & Traction -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">MERCADO</div>
+                <div class="section-title">Tracción y Ventaja</div>
+            </div>
+
+            <div class="impact-grid">
+                <div class="impact-card">
+                    <div class="impact-icon">🚀</div>
+                    <div class="impact-title">Tracción Actual</div>
+                    <div class="impact-description">
+                        Sistema <strong>operacional en producción</strong>.
+                        Procesamiento de <strong>+200K registros/hora</strong> en ETL Incremental.
+                        Arquitectura <strong>No-Code</strong> para implantadores.
+                    </div>
+                </div>
+                <div class="impact-card">
+                    <div class="impact-icon">⚡</div>
+                    <div class="impact-title">Diferenciación</div>
+                    <div class="impact-description">
+                        <strong>Zero-Touch Deploy:</strong> &lt;4 horas vs semanas.
+                        <strong>Coste €0:</strong> OLLAMA Local elimina costes por token.
+                        <strong>Privacidad:</strong> SQL Guard garantiza compliance.
+                    </div>
+                </div>
+                <div class="impact-card">
+                    <div class="impact-icon">📈</div>
+                    <div class="impact-title">Oportunidad</div>
+                    <div class="impact-description">
+                        Mercado BI $34.8B (2028).
+                        PYMEs buscan digitalización urgente post-COVID.
+                        First-mover en BI conversacional seguro para ERP legacy.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. Financials & Roadmap -->
+        <section class="section" style="background: rgba(34, 197, 94, 0.03);">
+            <div class="section-header">
+                <div class="section-number">EJECUCIÓN</div>
+                <div class="section-title">Roadmap 12 Meses</div>
+            </div>
+
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-month">Mes 3</div>
+                        <div class="timeline-title">Q1 · Fundamentos</div>
+                        <div class="timeline-metrics">
+                            <div class="metric">
+                                <div class="metric-value">5</div>
+                                <div class="metric-label">Clientes Piloto</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value">MVP</div>
+                                <div class="metric-label">Plataforma estable</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="flex: 1;"></div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-month">Mes 6</div>
+                        <div class="timeline-title">Q2 · Tracción Inicial</div>
+                        <div class="timeline-metrics">
+                            <div class="metric">
+                                <div class="metric-value">15</div>
+                                <div class="metric-label">Clientes Activos</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value">€4K</div>
+                                <div class="metric-label">MRR Objetivo</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="flex: 1;"></div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-month">Mes 9</div>
+                        <div class="timeline-title">Q3 · Escalado Comercial</div>
+                        <div class="timeline-metrics">
+                            <div class="metric">
+                                <div class="metric-value">40</div>
+                                <div class="metric-label">Clientes Activos</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value">€10K</div>
+                                <div class="metric-label">MRR Objetivo</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="flex: 1;"></div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-month">Mes 12</div>
+                        <div class="timeline-title">Q4 · Consolidación</div>
+                        <div class="timeline-metrics">
+                            <div class="metric">
+                                <div class="metric-value">€200K</div>
+                                <div class="metric-label">ARR Objetivo</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value">Serie A</div>
+                                <div class="metric-label">Preparación</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="flex: 1;"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. Investment Ask -->
+        <section class="investment-ask">
+            <div class="section-header">
+                <div class="section-number">OPORTUNIDAD</div>
+                <div class="section-title">Ronda Seed</div>
+            </div>
+
+            <div class="ask-amount">€350K</div>
+
+            <div class="ask-details">
+                <div class="ask-detail">
+                    <div class="ask-detail-value">20%</div>
+                    <div class="ask-detail-label">Equity</div>
+                </div>
+                <div class="ask-detail">
+                    <div class="ask-detail-value">€1.4M</div>
+                    <div class="ask-detail-label">Pre-Money</div>
+                </div>
+                <div class="ask-detail">
+                    <div class="ask-detail-value">12M</div>
+                    <div class="ask-detail-label">Runway</div>
+                </div>
+            </div>
+
+            <div class="impact-grid">
+                <div class="impact-card">
+                    <div class="impact-icon">👥</div>
+                    <div class="impact-title">Equipo Técnico (50%)</div>
+                    <div class="impact-description">
+                        Ampliación equipo ML Engineers y soporte DeepSeek/Llama local.
+                    </div>
+                </div>
+                <div class="impact-card">
+                    <div class="impact-icon">📣</div>
+                    <div class="impact-title">Go-to-Market (33%)</div>
+                    <div class="impact-description">
+                        Expansión comercial, partnerships con implantadores ERP.
+                    </div>
+                </div>
+                <div class="impact-card">
+                    <div class="impact-icon">🔒</div>
+                    <div class="impact-title">Infraestructura (17%)</div>
+                    <div class="impact-description">
+                        Certificaciones de seguridad y auditorías.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 8. Screenshots Gallery (NEW) -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">VISUALIZACIÓN</div>
+                <div class="section-title">Galería de la Plataforma</div>
+                <div class="section-subtitle">Potencia y Simplicidad</div>
+            </div>
+
+            <div class="gallery-grid">
+                <div class="gallery-item">
+                    <img src="{% static 'dashboard_analytics.png' %}" alt="Dashboard Analytics" class="gallery-img">
+                    <div class="gallery-caption">Dashboard Financiero en Tiempo Real</div>
+                </div>
+                <div class="gallery-item">
+                    <img src="{% static 'ai_feature_v2.png' %}" alt="AI Assistant" class="gallery-img">
+                    <div class="gallery-caption">Asistente IA Generando Reportes</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA & Footer -->
+        <section class="cta-section">
+            <div class="cta-title">Únete a la Revolución de la IA</div>
+            <a href="mailto:invest@datia.ai" class="cta-button">
+                Solicitar Pitch Deck Completo →
+            </a>
+        </section>
+
+        <div class="footer">
+            <p>&copy; 2025 DATIA Platform. Documento confidencial para inversores.</p>
+            <p style="margin-top: 0.5rem; font-size: 0.9rem;">
+                Valoración Pre-Money: €1.4M | Ronda Seed: €350K | 20% Equity
+            </p>
+            <a href="{% url 'catalog' %}" class="back-link">← Volver al Catálogo</a>
+        </div>
+    </div>
+
+    <script>
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+
+        // Intersection Observer for animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -100px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.impact-card, .pitch-block, .timeline-item, .stat-card, .gallery-item').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(30px)';
+            el.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+            observer.observe(el);
+        });
+    </script>
+</body>
+
+</html>

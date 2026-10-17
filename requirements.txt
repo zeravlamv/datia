@@ -1,0 +1,18 @@
+ python-dateutil==2.8.2
+ Django==5.0.14
+ django-ninja==0.22.2
+ django-environ==0.11.2
+ python-json-logger==2.0.7
+ psycopg2-binary==2.9.9
+ pyodbc==5.1.0
+ numpy==1.26.0
+ requests==2.32.3
+ SQLAlchemy==2.0.29
+psutil==5.9.8
+xhtml2pdf==0.2.13
+xhtml2pdf==0.2.11
+xhtml2pdf==0.2.16
+xhtml2pdf==0.2.16
+sentence-transformers==2.6.1
+torch==2.2.2
+pyecharts==2.0.5

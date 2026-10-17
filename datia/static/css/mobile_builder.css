@@ -1,0 +1,248 @@
+.mobile-builder-container {
+    display: flex;
+    height: calc(100vh - 200px);
+    gap: 20px;
+    padding: 20px;
+    background: #18181b;
+}
+
+.mb-panel {
+    background: #27272a;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.mb-source {
+    flex: 1;
+    border: 1px solid #3f3f46;
+}
+
+.mb-target-wrapper {
+    flex: 1;
+    background: transparent;
+    align-items: center;
+    justify-content: center;
+}
+
+.mb-title {
+    color: #fff;
+    font-size: 1.2rem;
+    margin-bottom: 5px;
+}
+
+.mb-subtitle {
+    color: #a1a1aa;
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+}
+
+.mb-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+    flex-grow: 1;
+    padding: 5px;
+}
+
+.mobile-widget-item {
+    background: #3f3f46;
+    border: 1px solid #52525b;
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    cursor: grab;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.mobile-widget-item:hover {
+    background: #52525b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+.mobile-widget-item.is-selected {
+    background: rgba(168, 85, 247, 0.2) !important;
+    border-color: #a855f7 !important;
+    opacity: 1 !important;
+}
+
+.mobile-widget-item.dragging {
+    opacity: 0.5;
+    border: 2px dashed #a855f7;
+}
+
+.mw-handle {
+    color: #a1a1aa;
+    margin-right: 10px;
+    cursor: grab;
+}
+
+.mw-content {
+    flex-grow: 1;
+}
+
+.mw-title {
+    color: #fff;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.mw-group {
+    color: #a1a1aa;
+    font-size: 0.75rem;
+}
+
+.mw-remove {
+    background: none;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 0 5px;
+}
+
+.mb-phone-frame {
+    width: 320px;
+    height: 600px;
+    background: #000;
+    border-radius: 40px;
+    border: 8px solid #3f3f46;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+.mb-notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 25px;
+    background: #3f3f46;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    z-index: 10;
+}
+
+.mb-screen {
+    height: 100%;
+    background: #18181b;
+    display: flex;
+    flex-direction: column;
+}
+
+.mb-status-bar {
+    height: 30px;
+    padding: 5px 20px;
+    display: flex;
+    justify-content: space-between;
+    color: #fff;
+    font-size: 0.7rem;
+    padding-top: 8px;
+}
+
+.mb-app-header {
+    padding: 15px;
+    border-bottom: 1px solid #27272a;
+    color: #fff;
+    font-weight: bold;
+}
+
+.mb-dropzone {
+    padding: 10px;
+    background: #09090b;
+}
+
+.mb-controls {
+    text-align: center;
+    margin-top: 20px;
+    color: #a1a1aa;
+}
+
+/* Builder categories */
+.mb-category-header {
+    background: #27272a;
+    padding: 10px;
+    margin-top: 5px;
+    cursor: pointer;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #3f3f46;
+    color: #fff;
+    font-weight: bold;
+}
+
+.mb-category-content {
+    padding-left: 10px;
+    padding-top: 5px;
+    display: none;
+}
+
+.mb-category-header .mb-chevron {
+    color: #a1a1aa;
+}
+
+/* Runtime view */
+.mobile-runtime-widget {
+    background: #18181b;
+    border: 1px solid #27272a;
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+}
+
+.mrw-header {
+    color: #fff;
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+}
+
+.mrw-value {
+    color: #fff;
+    min-height: 28px;
+}
+
+.mrw-chart-container {
+    position: relative;
+    height: 250px;
+    width: 100%;
+}
+
+.mrw-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Empty state */
+.mobile-empty-state-msg {
+    display: none;
+    text-align: center;
+    padding: 40px 20px;
+    color: #71717a;
+    margin-top: 50px;
+}
+
+.mobile-empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+/* Selection Counter Badge */
+.mb-count {
+    background: #a855f7;
+    color: white;
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 999px;
+    font-weight: normal;
+}

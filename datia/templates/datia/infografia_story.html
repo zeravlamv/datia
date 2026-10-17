@@ -1,0 +1,71 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Infografía Financiera Interactiva</title>
+  <link href="{% static 'css/infografia_story.css' %}" rel="stylesheet">
+</head>
+<body class="story-root">
+  <main class="story-container" role="main" aria-label="Infografía financiera">
+    <section class="story-hero" aria-label="Legado y filosofía">
+      <div class="story-hero-content">
+        <div class="story-hero-brand">
+          <img id="story-logo" class="story-logo" alt="Logo empresa" src="">
+          <div class="story-brand-text">
+            <h1 id="story-title" class="story-title"></h1>
+            <p id="story-subtitle" class="story-subtitle"></p>
+            <p id="story-claim" class="story-claim"></p>
+          </div>
+        </div>
+        <div class="story-timeline" id="story-timeline"></div>
+      </div>
+    </section>
+    <section class="story-banner" aria-label="Resumen ejecutivo">
+      <div class="story-banner-chips" id="story-banner-chips"></div>
+    </section>
+    <section class="story-kpis" aria-label="Indicadores financieros">
+      <div class="story-kpi-cards">
+        <div class="story-kpi" id="kpi-ventas" tabindex="0" aria-label="Ventas Totales"></div>
+        <div class="story-kpi" id="kpi-ebitda" tabindex="0" aria-label="EBITDA"></div>
+        <div class="story-kpi" id="kpi-margen" tabindex="0" aria-label="Margen Operativo"></div>
+      </div>
+      <div class="story-hint" id="story-growth-hint"></div>
+    </section>
+    <section class="story-ops" aria-label="Desglose de gastos y operaciones">
+      <div class="story-ops-band" id="story-ops-band"></div>
+    </section>
+    <section class="story-balance" aria-label="Solidez del balance y ratios">
+      <div class="story-columns">
+        <div class="story-column" id="col-solvencia" aria-label="Solvencia"></div>
+        <div class="story-column" id="col-liquidez" aria-label="Liquidez"></div>
+        <div class="story-column" id="col-patrimonio" aria-label="Patrimonio Neto"></div>
+      </div>
+      <div class="story-chips" id="story-balance-chips"></div>
+    </section>
+    <section class="story-season" aria-label="Estacionalidad y alertas estratégicas">
+      <div class="story-season-grid" id="story-season-grid"></div>
+      <div class="story-alerts" id="story-alerts"></div>
+    </section>
+    <section class="story-sales" aria-label="Ventas y concentración">
+      <div class="story-sales-top" id="story-sales-top"></div>
+      <div class="story-sales-risk" id="story-sales-risk"></div>
+      <div class="story-sales-pareto" id="story-sales-pareto"></div>
+    </section>
+    <section class="story-pl" aria-label="Cuenta de resultados">
+      <div class="story-pl-table" id="story-pl-table"></div>
+    </section>
+    <section class="story-cta" aria-label="Acciones">
+      <button id="story-pdf" class="story-btn">Descargar PDF</button>
+    </section>
+    <footer class="story-footer" aria-label="Firma">
+      <div class="story-footer-brand">
+        <span id="story-footer-name"></span>
+      </div>
+      <div class="story-footer-meta" id="story-footer-meta"></div>
+    </footer>
+  </main>
+  <script src="{% static 'js/infografia_story.js' %}"></script>
+</body>
+</html>

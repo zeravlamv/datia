@@ -1,0 +1,502 @@
+[
+    {
+        "id": "ISS-063",
+        "title": "Corrección de Estructura y Cabecera en Balance de Situación",
+        "description": "El usuario reportó que el listado de cuentas del Balance (Activo/Pasivo) no mostraba la estructura jerárquica esperada (falta de grupos/subgrupos) y que la cabecera fija no funcionaba correctamente (fondo transparente).",
+        "pattern": "datia/services/financial_service.py",
+        "solution": "1) Refactorizado get_balance_table para sintetizar cabeceras de niveles superiores (1 y 2) basadas en las cuentas con saldo, usando DatiaGrupos o PGC estándar como fallback. 2) Actualizado CSS/JS para solicitar estructura desde nivel 1, aplicar indentación y corregir background del sticky header.",
+        "status": "open",
+        "created_at": "2026-01-12T11:00:00+01:00",
+        "resolved_at": null
+    },
+    {
+        "id": "ISS-062",
+        "title": "Error SQL 'column 0 does not exist' en métricas cero",
+        "description": "El sistema generaba SQL inválido (SUM(L.\"0\")) al intentar usar 0 como valor por defecto para métricas inexistentes (ej: Coste en Top Artículos), provocando un error de base de datos que el frontend interpretaba como 'No hay datos'.",
+        "pattern": "datia/services/query_builder.py",
+        "solution": "Implementado método helper '_format_col' en QueryBuilder que detecta el literal \"0\" y lo devuelve sin comillas, generando SQL válido (SUM(0)).",
+        "status": "resolved",
+        "created_at": "2026-01-09T20:15:00+01:00",
+        "resolved_at": "2026-01-09T20:20:00+01:00"
+    },
+    {
+        "id": "ISS-061",
+        "title": "Ranking 'Sin Datos' por uso de FechaNecesaria",
+        "description": "Las consultas de ranking (Top Articulos/Familias) devolvían 0 resultados porque filtraban por 'FechaNecesaria' (campo de línea a menudo nulo o futuro) en lugar de 'FechaPedido' (cabecera).",
+        "pattern": "datia/services/query_builder.py",
+        "solution": "Se actualizó la configuración de las entidades 'articulo' y 'familia' para usar 'date_col': 'FechaPedido'. Esto fuerza al QueryBuilder a realizar un JOIN con la tabla de cabecera si el campo no existe en las líneas, garantizando el uso de la fecha correcta.",
+        "status": "resolved",
+        "created_at": "2026-01-09T20:05:00+01:00",
+        "resolved_at": "2026-01-09T20:10:00+01:00"
+    },
+    {
+        "id": "ISS-060",
+        "title": "Crash en Top Familias (UnboundLocalError)",
+        "description": "El sistema falla con un error 500 al ejecutar 'top familias'. Traceback indica 'UnboundLocalError: cannot access local variable alias' en QueryBuilder._handle_ranking.",
+        "pattern": "datia/services/query_builder.py",
+        "solution": "Movida la definición de la variable 'alias' al inicio del método _handle_ranking para que esté disponible en todos los bloques condicionales (if needs_join / else).",
+        "status": "resolved",
+        "created_at": "2026-01-09T19:55:00+01:00",
+        "resolved_at": "2026-01-09T20:00:00+01:00"
+    },
+    {
+        "id": "ISS-059",
+        "title": "Optimización ETL: Sincronización Incremental (Delta Load)",
+        "description": "El proceso de sincronización actual descarga todos los registros de MSSQL en cada ejecución, lo cual es ineficiente. Se requiere implementar una estrategia de carga incremental (solo nuevos/modificados) basada en un campo cursor.",
+        "pattern": "datia/services/etl_service.py",
+        "solution": "Plan propuesto: 1) Añadir 'cursor_field' a DataSource. 2) Modificar ETLService para leer MAX(cursor) local y filtrar MSSQL (WHERE cursor > max).",
+        "status": "open",
+        "created_at": "2026-01-09T19:40:00+01:00",
+        "resolved_at": null
+    },
+    {
+        "id": "ISS-058",
+        "title": "Foco automático en prompt IA (Feedback UX)",
+        "description": "El usuario solicita que el cursor se posicione automáticamente en el campo de entrada (prompt) al cargar la pestaña IA para agilizar la interacción.",
+        "pattern": "datia/static/js/dashboard/ia.js",
+        "solution": "Implementar lógica de foco (.focus()) en el evento de carga de la pestaña IA (DOM load o activación de tab).",
+        "status": "resolved",
+        "created_at": "2026-01-09T19:25:00+01:00",
+        "resolved_at": "2026-01-09T19:30:00+01:00"
+    },
+    {
+        "id": "ISS-057",
+        "title": "Ranking sin datos por fecha incorrecta (Top Familias)",
+        "description": "El ranking 'Top Familias' devuelve 'No hay datos' porque filtra por 'FechaNecesaria' (campo de líneas) que puede ser nulo o erróneo, en lugar de usar la fecha fiable de la cabecera.",
+        "pattern": "datia/services/builders/base.py",
+        "solution": "Se ha forzado la configuración 'date_col': 'FechaPedido' en BaseBuilder para las entidades de línea (familia, articulo). Esto activa la lógica de JOIN automático en RankingBuilder, asegurando el filtrado correcto por fecha de cabecera.",
+        "status": "resolved",
+        "created_at": "2026-01-09T18:55:00+01:00",
+        "resolved_at": "2026-01-09T19:00:00+01:00"
+    },
+    {
+        "id": "ISS-054",
+        "title": "Mejora visual de gráficos de ranking (Feedback Usuario)",
+        "description": "El usuario reporta que los gráficos de barras (ranking) necesitan mejorar visualmente. Etiquetas solapadas, nombres cortados y diseño plano.",
+        "pattern": "datia/static/js/dashboard/charts.js",
+        "solution": "Refactorizar renderBarChart en charts.js usando ECharts avanzado: degradados ricos, tooltips HTML, mejor manejo de etiquetas y espaciado responsive.",
+        "status": "in_progress",
+        "created_at": "2026-01-09T13:05:00+01:00",
+        "resolved_at": null
+    },
+    {
+        "id": "ISS-053",
+        "title": "Error de sistema: labels.map is not a function en gráficas",
+        "description": "El usuario reporta error 'labels.map is not a function' al visualizar un reporte/resumen. Esto ocurre cuando la configuración del gráfico recibe 'labels' que no es un array (probablemente undefined o null) y el frontend intenta ejecutar .map().",
+        "pattern": "datia/static/js/dashboard/charts.js",
+        "solution": "Añadida salvaguarda en charts.js (Array.isArray check) para asegurar que labels sea siempre un array antes de ejecutar .map().",
+        "status": "resolved",
+        "created_at": "2026-01-09T12:50:00+01:00",
+        "resolved_at": "2026-01-09T12:55:00+01:00"
+    },
+    {
+        "id": "ISS-048",
+        "title": "Fondo blanco persistente en botones de tarjetas (info) y sub-navegación",
+        "description": "Algunos botones como los de información en las tarjetas (.flip-btn) y navegación interna muestran un fondo blanco o grisáceo (User Agent) a pesar de tener estilos transparentes definidos. Se requiere forzar la transparencia con !important para asegurar la visualización correcta en todos los navegadores.",
+        "pattern": "datia/static/css/dashboard.css",
+        "solution": "Añadir background-color: transparent !important a .flip-btn y crear reglas explícitas para .sub-nav-btn.",
+        "status": "resolved",
+        "created_at": "2026-01-08T10:20:00+01:00",
+        "resolved_at": "2026-01-08T10:30:00+01:00"
+    },
+    {
+        "id": "ISS-047",
+        "title": "Regresión Visual: Fondo blanco en selectores de cabecera",
+        "description": "Los selectores de Empresa y Ejercicio en la cabecera muestran un fondo blanco por defecto, rompiendo la estética Dark Mode tras la reconstrucción del CSS.",
+        "pattern": "datia/static/css/dashboard.css",
+        "solution": "Implementar estilos CSS específicos para .filters select usando variables de tema oscuro.",
+        "status": "resolved",
+        "created_at": "2026-01-08T10:05:00+01:00",
+        "resolved_at": "2026-01-08T10:15:00+01:00"
+    },
+    {
+        "id": "ISS-044",
+        "title": "Fallo en consultas híbridas 'Pedidos Compras 2025' (Timeout/Error SQL)",
+        "description": "El sistema fallaba al procesar consultas que mezclaban términos de ventas ('Pedidos') y compras ('Compras'), generando SQL incorrecto sobre tablas de ventas o usando columnas inexistentes ('ImporteLiquido') en tablas de compras. Esto provocaba timeouts y errores de base de datos.",
+        "pattern": "datia/services/query_builder.py",
+        "solution": "Refactorizado QueryBuilder para detectar intención de compra y forzar el uso de la tabla 'DatiaDB_CabeceraPedidoProveedor' y la columna 'ImporteNeto'. Implementada lógica de inyección SQL dinámica para reportes anuales.",
+        "status": "resolved",
+        "created_at": "2026-01-06T20:30:00+01:00",
+        "resolved_at": "2026-01-06T21:00:00+01:00"
+    },
+    {
+        "id": "ISS-043",
+        "title": "Dashboard Compras sin datos (Sin agregación local)",
+        "description": "El dashboard de Compras mostraba 'sin datos' a pesar de haber sincronizado la empresa DEMO. Causa raíz: El script de replicación original copiaba el año 2024 en lugar de 2025 y no ejecutaba la agregación de totales para compras, dejando las tablas metrics vacías.",
+        "pattern": "datia/management/commands/replicate_compras_v2.py",
+        "solution": "Creado comando replicate_compras_v2 que fuerza 2025, maneja nulos en coste y ejecuta TotalsService().aggregate_purchases_from_local().",
+        "status": "resolved",
+        "created_at": "2026-01-05T20:00:00+01:00",
+        "resolved_at": "2026-01-05T20:30:00+01:00"
+    },
+    {
+        "id": "ISS-042",
+        "title": "Error Failed to fetch en Frontend por Timeout",
+        "description": "El cliente JS abortaba la conexión antes de tiempo en consultas muy largas. Aunque el backend ya estaba en 300s, el frontend necesitaba confirmación explícita.",
+        "pattern": "datia/static/js/dashboard/ia.js",
+        "solution": "Verificado timeout de 300s en AbortController del frontend.",
+        "status": "resolved",
+        "created_at": "2026-01-05T18:25:00+01:00",
+        "resolved_at": "2026-01-05T18:30:00+01:00"
+    },
+    {
+        "id": "ISS-041",
+        "title": "Timeout insuficiente (120s) para generación compleja",
+        "description": "El timeout de 120s seguía siendo insuficiente para consultas de tipo 'Resumen' en entornos locales sin GPU dedicada, provocando abortos en la generación de SQL.",
+        "pattern": "datia/services/query_builder.py",
+        "solution": "Igualado el timeout del backend (300s) con el del frontend (5 min).",
+        "status": "resolved",
+        "created_at": "2026-01-05T18:12:00+01:00",
+        "resolved_at": "2026-01-05T18:15:00+01:00"
+    },
+    {
+        "id": "ISS-040",
+        "title": "Timeout agresivo en Generación SQL (15s)",
+        "description": "El generador de SQL (QueryBuilder) tenía un timeout hardcoded de 15 segundos para Ollama. En consultas complejas o máquinas lentas, esto provocaba el error 'Tiempo de espera agotado'.",
+        "pattern": "datia/services/query_builder.py",
+        "solution": "Aumentado el timeout por defecto a 120 segundos.",
+        "status": "resolved",
+        "created_at": "2026-01-05T18:05:00+01:00",
+        "resolved_at": "2026-01-05T18:10:00+01:00"
+    },
+    {
+        "id": "ISS-039",
+        "title": "Deep Dive no muestra opción 'Forzar Generación' si no hay datos",
+        "description": "Al ejecutar una consulta tipo reporte (ej: 'Resumen 2025') que devuelve 0 filas, el sistema intenta generar el reporte visual vacío en lugar de delegar al formateador estándar, ocultando el botón 'Generar con IA (Forzar)'.",
+        "pattern": "datia/services/ai/handlers/dynamic_handler.py",
+        "solution": "Añadir check 'if not rows' en handlers para delegar inmediatamente al formateador estándar.",
+        "status": "resolved",
+        "created_at": "2026-01-05T17:50:00+01:00",
+        "resolved_at": "2026-01-05T17:55:00+01:00"
+    },
+    {
+        "id": "ISS-038",
+        "title": "Error de sistema: signal is aborted without reason",
+        "description": "El usuario reporta 'Error de sistema: signal is aborted without reason'. Esto ocurre cuando la petición fetch al backend supera el tiempo límite configurado en el frontend (timeout de 60s), provocando que el AbortController cancele la petición.",
+        "pattern": "datia/static/js/dashboard/ia.js",
+        "solution": "1) Aumentar el timeout en ia.js a 300 segundos (5 min). 2) Mejorar el manejo de errores para detectar 'AbortError' y mostrar un mensaje amigable 'Tiempo de espera agotado'.",
+        "status": "resolved",
+        "created_at": "2026-01-05T10:00:00+01:00",
+        "resolved_at": "2026-01-05T10:10:00+01:00"
+    },
+    {
+        "id": "ISS-037",
+        "title": "Tags de traducción {% trans %} visibles en tarjetas (Actualidad)",
+        "description": "El frontend muestra código de template literal {% trans 'Variación' ... %} en las tarjetas de la pestaña Actualidad. Causa: El uso de tags de traducción multilínea provoca fallos en el parser de templates en ciertas circunstancias.",
+        "pattern": "datia/templates/datia/components/tab_actualidad.html",
+        "solution": "Se refactorizó todo el archivo tab_actualidad.html para aplanar los tags multilínea a una sola línea usando un script de limpieza regex.",
+        "status": "resolved",
+        "created_at": "2026-01-02T12:50:00+01:00",
+        "resolved_at": "2026-01-02T13:00:00+01:00"
+    },
+    {
+        "id": "ISS-036",
+        "title": "Inferencia fallida por falta de embeddings semánticos (Pedidos de Agosto)",
+        "description": "El sistema no responde a preguntas genéricas como 'Pedidos de agosto' porque el entrenamiento sintético genera preguntas demasiado específicas (ej: 'Total de Precio Coste de agosto') y no incluye el nombre de negocio del objeto (ej: 'Pedidos de Cliente') en la descripción natural, impidiendo la coincidencia semántica.",
+        "pattern": "datia/services/synthetic_generator.py",
+        "solution": "1) Modificar _build_temporal_month_query para incluir datasource.business_name en la descripción generada. 2) Asegurar la generación de una consulta genérica de conteo (COUNT) para cada mes que represente al objeto de negocio en sí.",
+        "status": "resolved",
+        "created_at": "2025-12-31T10:00:00+01:00",
+        "resolved_at": "2025-12-31T10:30:00+01:00"
+    },
+    {
+        "id": "ISS-034",
+        "title": "Error en entrenamiento de tabla Comisionistas (Virtual)",
+        "description": "El usuario reporta error 'No active tables found' al intentar entrenar la tabla 'Comisionistas' (Virtual MSSQL). El log muestra que el stream se conecta pero falla al buscar la tabla.",
+        "pattern": "datia/api/introspection_endpoints.py",
+        "solution": "Se modificó generate_sql_training_batch para eliminar el filtro 'is_active=True' cuando se solicitan tablas específicas por ID (table_ids). Esto permite entrenar tablas virtuales que pueden estar marcadas como inactivas pero tienen metadatos válidos.",
+        "status": "resolved",
+        "created_at": "2025-12-30T17:30:00+01:00",
+        "resolved_at": "2025-12-30T17:40:00+01:00"
+    },
+    {
+        "id": "ISS-033",
+        "title": "Entrenamiento no genera SQL con JOINs (Relaciones)",
+        "description": "El generador de SQL sintético ignora las relaciones definidas en DataRelation. Solo genera consultas sobre tablas individuales, perdiendo la capacidad de entrenar preguntas de negocio complejas que cruzan tablas (ej: Ventas por Familia de Producto).",
+        "pattern": "datia/services/synthetic_generator.py",
+        "solution": "Se implementó la FASE 2: PATRONES RELACIONALES en synthetic_generator.py. Ahora el generador busca relaciones (DataRelation) y crea consultas JOIN entre tablas compatibles (Local-Local o Virtual-Virtual) antes de proceder con las combinaciones locales, priorizando preguntas de negocio cruzadas.",
+        "status": "resolved",
+        "created_at": "2025-12-30T16:20:00+01:00",
+        "resolved_at": "2025-12-30T17:15:00+01:00"
+    },
+    {
+        "id": "ISS-029",
+        "title": "Error al guardar mapeo por campo sync_mode nulo",
+        "description": "El usuario reporta error 'valor nulo en la columna sync_mode' al guardar mapeo. El campo existía en la base de datos (PostgreSQL) con restricción NOT NULL, pero no estaba definido en el modelo Django DataSource, provocando que el INSERT fallara.",
+        "pattern": "datia/models/semantic.py",
+        "solution": "1) Añadido campo sync_mode al modelo DataSource con default='full'. 2) Actualizado endpoint save_mapping_api para manejar el campo. 3) Creada migración 0028 y aplicada con --fake para sincronizar estado.",
+        "status": "resolved",
+        "created_at": "2025-12-30T15:45:00+01:00",
+        "resolved_at": "2025-12-30T15:50:00+01:00"
+    },
+    {
+        "id": "ISS-021",
+        "title": "Discrepancia de campos físico vs metadatos en CabeceraPedidoCliente",
+        "description": "El campo 'FechaPedido' existe en los metadatos (tpl_data_field) y se muestra en la UI de Auto Entreno, pero no se está creando en la tabla física de PostgreSQL 'datiadb_CabeceraPedidoCliente'. El usuario reporta inconsistencia grave.",
+        "pattern": "datia/services/etl_service.py",
+        "solution": "1) Corregida lógica de Schema Evolution en ETLService para usar nombre real de tabla física y evitar fallo por casing. 2) Actualizado endpoint API /sync para aceptar y propagar table_ids, permitiendo forzar la sincronización de tablas individuales desde la UI.",
+        "status": "resolved",
+        "created_at": "2025-12-30T08:50:00+01:00",
+        "resolved_at": "2025-12-30T15:00:00+01:00"
+    },
+    {
+        "id": "ISS-026",
+        "title": "Fallo persistente en Schema Evolution por casing de tabla incorrecto",
+        "description": "A pesar del fix anterior (ISS-023), el ALTER TABLE fallaba al usar el nombre lógico de la tabla en lugar del nombre físico real (casing).",
+        "pattern": "datia/services/etl_service.py",
+        "solution": "Se captura el nombre físico real de la tabla desde information_schema y se usa ese nombre exacto para ejecutar el ALTER TABLE.",
+        "status": "resolved",
+        "created_at": "2025-12-30T14:10:00+01:00",
+        "resolved_at": "2025-12-30T14:15:00+01:00"
+    },
+    {
+        "id": "ISS-025",
+        "title": "Error UnboundLocalError en API de entrenamiento masivo (Regresión)",
+        "description": "Al intentar usar el nuevo parámetro queries_per_table, el sistema lanzaba 'cannot access local variable queries_per_table' debido a un conflicto de ámbito.",
+        "pattern": "datia/api/introspection_endpoints.py",
+        "solution": "Renombrada la variable local a 'total_to_process' para evitar colisión. Implementada lógica de check forzado y botón en UI.",
+        "status": "resolved",
+        "created_at": "2025-12-30T13:55:00+01:00",
+        "resolved_at": "2025-12-30T14:00:00+01:00"
+    },
+    {
+        "id": "ISS-024",
+        "title": "Entrenamiento Masivo generaba queries COUNT y faltaba selector de cantidad",
+        "description": "El usuario reporta que el entrenamiento masivo seguía generando queries de tipo COUNT (poco valor) y no permitía elegir la cantidad de ejemplos (hardcoded 500).",
+        "pattern": "datia/services/synthetic_generator.py",
+        "solution": "Eliminado COUNT de las agregaciones por defecto en synthetic_generator. Añadido selector en UI y lógica para pasar el parámetro al backend.",
+        "status": "resolved",
+        "created_at": "2025-12-30T13:40:00+01:00",
+        "resolved_at": "2025-12-30T13:45:00+01:00"
+    },
+    {
+        "id": "ISS-023",
+        "title": "Fallo en Evolución de Esquema (Schema Evolution) al añadir campos",
+        "description": "El usuario reporta que al mapear un nuevo campo (ej: 'EjercicioPedido') y sincronizar, la estructura base no se actualiza en PostgreSQL. Causa: Comparación estricta de nombre de tabla al chequear columnas existentes en information_schema.",
+        "pattern": "datia/services/etl_service.py",
+        "solution": "Se modificó la consulta a information_schema para usar ILIKE en el nombre de la tabla. Se añadió lógica de commit explícito tras ALTER TABLE.",
+        "status": "resolved",
+        "created_at": "2025-12-30T13:25:00+01:00",
+        "resolved_at": "2025-12-30T13:30:00+01:00"
+    },
+    {
+        "id": "ISS-022",
+        "title": "Error de lista no hashable en generación SQL",
+        "description": "El generador de SQL lanza 'TypeError: unhashable type: list' en save_to_knowledge_base cuando el LLM devuelve una lista en lugar de string para la descripción.",
+        "pattern": "datia/services/sql_generator.py",
+        "solution": "Añadida sanitización en save_to_knowledge_base para convertir listas o dicts a string antes de hashear.",
+        "status": "resolved",
+        "created_at": "2025-12-30T10:42:00+01:00",
+        "resolved_at": "2025-12-30T10:45:00+01:00"
+    },
+    {
+        "id": "ISS-020",
+        "title": "Falta de feedback al re-entrenar tablas ya procesadas",
+        "description": "El usuario reporta que al hacer clic en 'Iniciar entrenamiento', el sistema parece procesar pero no hace nada si las tablas ya están entrenadas. Falta un mensaje de error claro y bloqueo de UI.",
+        "pattern": "datia/templates/datia/components/tab_auto.html",
+        "solution": "Implementado evento 'no_data_alert' en backend y modal bloqueante en frontend con sugerencias y bloqueo temporal del botón.",
+        "status": "resolved",
+        "created_at": "2025-12-29T18:25:00+01:00",
+        "resolved_at": "2025-12-29T18:35:00+01:00"
+    },
+    {
+        "id": "ISS-019",
+        "title": "Fallo persistente en generación de queries para tablas virtuales",
+        "description": "El sistema reporta 'No valid combination queries could be generated' para tablas virtuales a pesar de tener correcciones previas. Posible fallo en validación MSSQL o conexión.",
+        "pattern": "datia/services/synthetic_generator.py",
+        "solution": "Se corrigió datia/services/synthetic_generator.py para usar nombres explícitos de columnas en cláusula GROUP BY en lugar de ordinales (1, 2...) cuando se generan consultas para MSSQL (is_virtual=True). Validado con script de prueba.",
+        "status": "resolved",
+        "created_at": "2025-12-29T18:00:00+01:00",
+        "resolved_at": "2025-12-29T18:15:00+01:00"
+    },
+    {
+        "id": "ISS-017",
+        "title": "Error ETLService.get_connection no existe",
+        "description": "El usuario reporta error 500 en GET /api/semantic/tables: 'ETLService' object has no attribute 'get_connection'. Esto ocurre porque el método estaba definido como privado (_get_connection) pero se llamaba como público desde múltiples puntos.",
+        "pattern": "",
+        "solution": "Renombrado definición _get_connection a get_connection en ETLService (etl_service.py) y actualizadas todas las llamadas internas (self.get_connection()) y externas. El error persiste en el entorno del usuario, indicando posible caché o proceso 'stale'. Se ha verificado integridad del código mediante análisis AST.",
+        "status": "in_progress",
+        "created_at": "2025-12-29T17:00:00+01:00",
+        "resolved_at": "2025-12-29T17:25:00+01:00"
+    },
+    {
+        "id": "ISS-016",
+        "title": "Error de Conexión en Nuevo Entrenamiento en Cascada",
+        "description": "Tras refactorizar el entrenamiento a modo cascada (cliente-servidor), el usuario reporta 'Error de conexión / Servidor' inmediato. Posible error 500 en endpoint `/api/semantic/active-tables` o en configuración de URLs.",
+        "pattern": "",
+        "solution": "Corregido error de importación en urls.py y añadida función faltante en introspection_endpoints.py.",
+        "status": "resolved",
+        "created_at": "2025-12-26T11:40:00+01:00",
+        "resolved_at": "2025-12-26T12:00:00+01:00"
+    },
+    {
+        "id": "ISS-015",
+        "title": "Problema en Entrenamiento Masivo de IA",
+        "description": "El usuario reporta 'PROBLEMA' en la funcionalidad de Entrenamiento Masivo de IA dentro del patrón Auto Entreno. Se requiere investigación para determinar si es un error de UI tras el refactor o un fallo en el backend (endpoint missing/error).",
+        "pattern": "",
+        "solution": "1) Modificado generate_sql_training_batch en introspection_endpoints.py para verificar MetricsEmbeddings existentes y saltar tablas ya entrenadas. 2) Actualizado SyntheticSQLGenerator en synthetic_generator.py para variar agregaciones (SUM, AVG, MAX) y evitar consultas idénticas.",
+        "status": "resolved",
+        "created_at": null,
+        "resolved_at": "2025-12-26T10:10:30.693Z"
+    },
+    {
+        "id": "ISS-014",
+        "title": "Sincronización 'Solo Entrenadas' ejecuta sincronización completa",
+        "description": "El usuario reporta que al seleccionar la opción 'Solo Entrenadas' en Auto Entreno, el sistema sigue realizando una sincronización completa (incluyendo tablas estándar), lo cual es ineficiente. Se sospecha que el frontend está enviando el valor incorrecto.",
+        "pattern": "",
+        "solution": "Scoping del selector CSS a #tab-auto y logging adicional.",
+        "status": "resolved",
+        "created_at": null,
+        "resolved_at": "2025-12-26T10:10:29.325Z"
+    },
+    {
+        "id": "ISS-012",
+        "title": "Contexto de tabla no se guarda en Auto Entreno",
+        "description": "En la sección 'Mapeo de Datos' de Auto Entreno, el campo 'Contexto / Descripción de la Tabla' no está persistiendo los datos. El usuario puede escribir una descripción de la tabla (ej: 'Esta tabla contiene información sobre órdenes de ventas...'), pero al guardar el mapeo o recargar la página, el contexto no se conserva.",
+        "pattern": "",
+        "solution": "1) Añadido campo table_context al modelo (migración 0021), 2) Actualizado introspection_endpoints.py para guardar table_context, 3) Verificado que semantic_endpoints.py ya usa table_context correctamente",
+        "status": "resolved",
+        "created_at": null,
+        "resolved_at": "2025-12-24T11:15:00+01:00"
+    },
+    {
+        "id": "ISS-013",
+        "title": "Auto-generación de semántica extremadamente lenta (2-3 min por campo)",
+        "description": "Al usar el botón 'Auto-Generar Semántica' en Auto Entreno, la generación de descripciones para un solo campo tarda entre 2-3 minutos, lo cual no es normal. El usuario espera que cada campo tarde máximo 5-10 segundos.",
+        "pattern": "",
+        "solution": "1) Reducido timeout de 300s a 60s, 2) Añadido logging detallado de tiempos (total y por campo), 3) Añadido mensaje de error específico sugiriendo modelos más ligeros (gemma2:2b, llama3:8b)",
+        "status": "resolved",
+        "created_at": null,
+        "resolved_at": "2025-12-24T11:15:00+01:00"
+    },
+    {
+        "id": "ISS-011",
+        "title": "Indicador de modelo LLM desaparecido en Auto Entreno",
+        "description": "Al limpiar código de debug en Auto Entreno, se eliminó accidentalmente el span que mostraba el modelo LLM seleccionado (que se configura en Herramientas). Antes del botón 'Auto-Generar Semántica' debería aparecer el nombre del modelo activo (ej: 'Model: gemma2:2b').",
+        "pattern": "",
+        "solution": "Restaurado span con formato user-friendly mostrando 'Modelo: <nombre>' con icono info. Añadida función updateModelDisplay() que lee de localStorage y actualiza al cargar la página",
+        "status": "resolved",
+        "created_at": null,
+        "resolved_at": "2025-12-24T11:00:00+01:00"
+    },
+    {
+        "id": "ISS-010",
+        "title": "Mensajes DEBUG en consola durante sincronización Auto Entreno",
+        "description": "Al hacer clic en 'Finalizar y Sincronizar' en la pestaña Auto Entreno, se muestran múltiples mensajes '[DEBUG]' en la consola del navegador con información técnica sobre columnas, business_name, target, is_mapped, etc. Estos mensajes de debug no deberían estar visibles en producción.",
+        "pattern": "",
+        "solution": "Eliminados todos los print('[DEBUG]...) en líneas 84, 85, 110, 111, 153 y 154 de introspection_endpoints.py",
+        "status": "resolved",
+        "created_at": null,
+        "resolved_at": "2025-12-24T10:14:00+01:00"
+    },
+    {
+        "id": "ISS-009",
+        "title": "Admin Django no guarda empresas autorizadas para usuarios",
+        "description": "En el panel de administración de Django (http://127.0.0.1:8000/admin/auth/user), la interfaz de selección múltiple de empresas autorizadas no está persistiendo los datos. El formulario muestra correctamente las empresas disponibles en dos listas (disponibles y seleccionadas), pero al guardar el usuario, los permisos de UserEmpresaPermission no se crean en la base de datos.",
+        "pattern": "",
+        "solution": "Añadido método save_model() que ejecuta form.save(commit=True) correctamente",
+        "status": "resolved",
+        "created_at": null,
+        "resolved_at": "2025-12-24T10:00:00+01:00"
+    },
+    {
+        "id": "ISS-049",
+        "title": "Configuración de Modo Especializado Móvil no persiste",
+        "description": "El interruptor 'Modo Especializado' en la configuración móvil no guarda su estado. Al recargar la página, vuelve a estar desactivado.",
+        "pattern": "datia/static/js/dashboard/mobile_manager.js",
+        "solution": "Verificar la lógica de saveConfig en MobileManager y asegurar que se está llamando correctamente al cambiar el interruptor. Revisar endpoint /mobile/config.",
+        "status": "in_progress",
+        "created_at": "2026-01-08T10:35:00+01:00",
+        "resolved_at": null
+    },
+    {
+        "id": "ISS-050",
+        "title": "Editor Móvil abre modal vacío (Imagen 2)",
+        "description": "Al hacer clic en 'Abrir Editor Móvil', se abre una vista vacía o incorrecta. Falta la inicialización o renderizado del contenido del editor.",
+        "pattern": "datia/static/js/dashboard/mobile_manager.js",
+        "solution": "Implementar la lógica openEditor() en MobileManager para mostrar el modal con el constructor (drag & drop).",
+        "status": "in_progress",
+        "created_at": "2026-01-08T10:35:00+01:00",
+        "resolved_at": null
+    },
+    {
+        "id": "ISS-052",
+        "title": "Pestañas Histórico y Datia vacías tras fix móvil",
+        "description": "El usuario reporta que las pestañas Histórico y Datia no muestran contenido ('no muestra nada'). Probable conflicto de CSS o estado de filtros ocultos afectando la visualización global.",
+        "pattern": "datia/static/css/dashboard.css",
+        "solution": "Revisar reglas CSS condicionales y asegurar que la ocultación de elementos solo aplique en modo móvil explícito.",
+        "status": "resolved",
+        "created_at": "2026-01-08T11:00:00+01:00",
+        "resolved_at": "2026-01-09T07:16:25.083Z"
+    },
+    {
+        "id": "ISS-051",
+        "title": "Falta pestaña 'Móvil' en navegación de Actualidad",
+        "description": "La sub-pestaña 'Móvil' no aparece en la barra de navegación de la sección Actualidad, impidiendo el acceso al modo runtime.",
+        "pattern": "datia/templates/datia/components/tab_actualidad.html",
+        "solution": "Asegurar que el botón de la pestaña 'Móvil' esté presente en el HTML y que su visibilidad se gestione correctamente según el modo activo.",
+        "status": "in_progress",
+        "created_at": "2026-01-08T10:35:00+01:00",
+        "resolved_at": null
+    },
+    {
+        "id": "ISS-046",
+        "title": "AI uses FechaPedido instead of FechaAlbaran for Purchases",
+        "description": "User reports AI generates SQL using 'FechaPedido' for 'datiadb_cabeceraalbaranproveedor' instead of the correct 'FechaAlbaran'. This leads to empty or incorrect results.",
+        "pattern": "datia/services/sql_generator.py",
+        "solution": "Update the system prompt in SQLGenerator to explicitly prioritize 'FechaAlbaran' for Albaran-related tables (compras/ventas albaranes).",
+        "status": "in_progress",
+        "created_at": "2026-01-07T14:17:00+01:00",
+        "resolved_at": null
+    },
+    {
+        "id": "ISS-045",
+        "title": "ProgrammingError: missing column sync_empresa in dynamic tables",
+        "description": "Crash during sync of dynamic tables: 'no existe la columna sync_empresa'. The Schema Evolution logic only checks mapped DataFields but fails to verify existence of required system columns (sync_empresa, sync_at) if the table already exists.",
+        "pattern": "datia/services/etl_service.py",
+        "solution": "Update sync_dynamic_tables_generator to explicitly check and ADD system columns (sync_empresa, sync_at) if missing during the Schema Evolution phase.",
+        "status": "in_progress",
+        "created_at": "2026-01-07T14:05:00+01:00",
+        "resolved_at": null
+    },
+    {
+        "id": "ISS-035",
+        "title": "Timeout en inferencia sencilla (Pedidos de Agosto)",
+        "description": "El usuario reporta que el sistema devuelve un error de 'tardando demasiado' ante una pregunta simple después del entrenamiento. Posible cuello de botella en Ollama, ChromaDB o timeout muy agresivo.",
+        "pattern": "datia/api/endpoints.py",
+        "solution": "",
+        "status": "resolved",
+        "created_at": "2025-12-30T18:00:00+01:00",
+        "resolved_at": "2026-01-09T07:16:28.940Z"
+    },
+    {
+        "id": "ISS-032",
+        "title": "Falta funcionalidad de edición en Editor de Relaciones",
+        "description": "El usuario reporta que no puede editar relaciones existentes en el editor de Joins. Solo existe opción de borrar y crear de nuevo, lo cual es ineficiente.",
+        "pattern": "datia/static/js/tab_auto_relations.js",
+        "solution": "",
+        "status": "resolved",
+        "created_at": "2025-12-30T16:15:00+01:00",
+        "resolved_at": "2026-01-09T07:16:33.900Z"
+    },
+    {
+        "id": "ISS-028",
+        "title": "Fallo en filtro y selección de tablas MSSQL en Mapeo de Datos",
+        "description": "El usuario reporta que el selector de tablas en la pestaña de Mapeo de Datos no funciona correctamente. Posible problema en el filtrado frontend o en la carga de datos desde el endpoint.",
+        "pattern": "datia/static/js/tab_auto_mapping.js",
+        "solution": "",
+        "status": "resolved",
+        "created_at": "2025-12-30T15:20:00+01:00",
+        "resolved_at": "2026-01-09T07:16:40.971Z"
+    },
+    {
+        "id": "ISS-018",
+        "title": "Fallo generación SQL en tablas virtuales (Target NULL)",
+        "description": "El generador sintético falla en tablas virtuales (Clientes, Articulos) porque intenta usar validación Postgres (EXPLAIN) sobre tablas que no existen localmente, y usa sintaxis LIMIT en lugar de TOP.",
+        "pattern": "WARNING: No valid combination queries could be generated",
+        "solution": "Actualizado SyntheticSQLGenerator para detectar is_virtual. Si es True: 1) Usa source_table (MSSQL) en lugar de local. 2) Usa sintaxis T-SQL (TOP 50). 3) Valida con SET FMTONLY ON contra MSSQL.",
+        "status": "resolved",
+        "created_at": "2025-12-29T17:40:00+01:00",
+        "resolved_at": null
+    }
+]

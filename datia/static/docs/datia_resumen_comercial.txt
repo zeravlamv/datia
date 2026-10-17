@@ -1,0 +1,61 @@
+DATIA · PLATAFORMA ANALÍTICA PARA DECISIONES EMPRESARIALES
+==========================================================
+
+Qué es
+------
+
+Datia es una suite ejecutiva que convierte los datos de tu empresa en decisiones claras y accionables.
+Ofrece una visión 360º de ventas, compras, existencias, tesorería y financiera, con paneles intuitivos y
+métricas diseñadas para dirección general y financiera.
+
+Qué resuelve
+------------
+
+- Visión global del negocio en un único lugar, sin hojas de cálculo dispersas.
+- Identificación temprana de tendencias y riesgos antes de que impacten en caja o margen.
+- Control fino de márgenes, cobros y pagos con foco ejecutivo, no contable.
+- Seguimiento de objetivos y evolución con comparativas sencillas entre periodos y ejercicios.
+- Reducción de dependencia de informes manuales y consultores externos.
+
+Cómo lo ves en la práctica
+--------------------------
+
+- Paneles claros: cifras clave, comparativas YoY y evolución mensual.
+- Indicadores esenciales: ingresos, costes, márgenes, tesorería y deuda.
+- Segmentación útil: clientes, proveedores, artículos, almacenes y zonas.
+- Alertas e insights: puntos de atención, anomalías y oportunidades de mejora.
+- Informes IA: análisis redactados en lenguaje natural listos para compartir.
+
+Módulos principales
+-------------------
+
+- Ventas: visión por cliente y producto, evolución, ranking y análisis ABC.
+- Compras: control de coste y proveedor, comparativas de precios y concentración.
+- Existencias: equilibrio de stock y capital inmovilizado, rotación y riesgo de rotura.
+- Financiera: resultados y balance en lenguaje ejecutivo, con ratios clave.
+- Tesorería: previsión de cobros y pagos para anticipar tensiones de liquidez.
+- Presupuestos: objetivos vs real, desviaciones y análisis por partidas.
+- Evolución: comparativas entre periodos para detectar tendencias estructurales.
+- Predicción: proyecciones orientadas a la acción (ventas, tesorería, resultados).
+- Móvil: indicadores clave siempre a mano para dirección y socios.
+
+Beneficios
+----------
+
+- Claridad: información simple, visual y relevante, sin ruido.
+- Consistencia: misma lógica de análisis en todas las áreas del negocio.
+- Confianza: cifras trazables y preparadas para decidir con seguridad.
+- Velocidad: menos tiempo preparando informes, más tiempo tomando decisiones.
+- Escalabilidad: preparado para crecer, integrar nuevos ERPs y más empresas.
+
+Para quién
+----------
+
+Directivos, responsables financieros y equipos de gestión que necesitan ver, entender y actuar sobre los datos
+con rapidez, rigor y seguridad, sin depender de técnicos ni proyectos largos de BI.
+
+Llamada a la acción
+-------------------
+
+Explora el Catálogo del Sistema para ver el detalle de cada módulo y solicita una demostración
+adaptada a tu empresa.

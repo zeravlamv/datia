@@ -1,0 +1,129 @@
+{% load i18n %}
+<div class="dashboard-v2-container entity-dashboard" data-entity="articulos">
+    <div class="fin-toolbar">
+        <div class="fin-toolbar-left">
+            <h3 class="fin-card-title" style="margin:0;">{% trans "Dashboard de Artículos" %}</h3>
+        </div>
+        <div class="fin-toolbar-right" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+            <input type="text"
+                   class="search-input"
+                   placeholder="{% trans 'Buscar por código o descripción' %}"
+                   data-entity-search="articulos"
+                   style="min-width:220px;">
+            <button type="button"
+                    class="btn-fin-action"
+                    data-entity-refresh="articulos">
+                {% trans "Actualizar" %}
+            </button>
+            <button type="button"
+                    class="btn-fin-action"
+                    onclick="exportArticulosDashboard('csv')">
+                {% trans "Exportar Excel" %}
+            </button>
+            <button type="button"
+                    class="btn-fin-action"
+                    onclick="exportArticulosDashboard('pdf')">
+                {% trans 'Exportar PDF' %}
+            </button>
+        </div>
+    </div>
+
+    <div class="fin-grid-container">
+        <div class="fin-grid-item">
+            <div class="fin-card-simple">
+                <div class="fin-card-header">
+                    <span class="fin-card-title">{% trans "Resumen de Artículos" %}</span>
+                </div>
+                <div class="fin-kpi-row entity-kpi-row">
+                    <div class="fin-kpi-box" data-kpi="total_articulos">
+                        <div class="fin-kpi-label">{% trans "Artículos activos" %}</div>
+                        <div class="fin-kpi-value" data-kpi-value>--</div>
+                    </div>
+                    <div class="fin-kpi-box" data-kpi="ventas_totales">
+                        <div class="fin-kpi-label">{% trans "Ventas totales" %}</div>
+                        <div class="fin-kpi-value" data-kpi-value>--</div>
+                    </div>
+                    <div class="fin-kpi-box" data-kpi="compras_totales">
+                        <div class="fin-kpi-label">{% trans "Compras totales" %}</div>
+                        <div class="fin-kpi-value" data-kpi-value>--</div>
+                    </div>
+                    <div class="fin-kpi-box" data-kpi="operaciones_totales">
+                        <div class="fin-kpi-label">{% trans "Operaciones" %}</div>
+                        <div class="fin-kpi-value" data-kpi-value>--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="fin-grid-item">
+            <div class="fin-card-simple">
+                <div class="fin-card-header">
+                    <span class="fin-card-title">{% trans "Top artículos por ventas" %}</span>
+                </div>
+                <div class="fin-chart-container" data-chart="top_ventas" style="height:260px;"></div>
+            </div>
+        </div>
+
+        <div class="fin-grid-item">
+            <div class="fin-card-simple">
+                <div class="fin-card-header">
+                    <span class="fin-card-title">{% trans "Top artículos por compras" %}</span>
+                </div>
+                <div class="fin-chart-container" data-chart="top_compras" style="height:260px;"></div>
+            </div>
+        </div>
+
+        <div class="fin-grid-item">
+            <div class="fin-card-simple">
+                <div class="fin-card-header">
+                    <span class="fin-card-title">{% trans "Listado de artículos" %}</span>
+                </div>
+                <div class="fin-table-container">
+                    <table class="fin-table">
+                        <thead>
+                            <tr>
+                                <th>{% trans "Código" %}</th>
+                                <th>{% trans "Descripción" %}</th>
+                                <th class="text-right">{% trans "Ventas" %}</th>
+                                <th class="text-right">{% trans "Operaciones" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody data-entity-table="articulos">
+                            <tr>
+                                <td colspan="4" class="text-center">--</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="fin-grid-item">
+            <div class="fin-card-simple">
+                <div class="fin-card-header">
+                    <span class="fin-card-title">{% trans "Detalle del artículo seleccionado" %}</span>
+                </div>
+                <div class="fin-detail-grid" data-entity-detail="articulos">
+                    <div class="fin-kpi-row">
+                        <div class="fin-kpi-box">
+                            <div class="fin-kpi-label" data-detail-field="descripcion">--</div>
+                            <div class="fin-kpi-sub" data-detail-field="codigo"></div>
+                        </div>
+                        <div class="fin-kpi-box">
+                            <div class="fin-kpi-label">{% trans "Ventas" %}</div>
+                            <div class="fin-kpi-value" data-detail-field="ventas_importe">--</div>
+                        </div>
+                        <div class="fin-kpi-box">
+                            <div class="fin-kpi-label">{% trans "Compras" %}</div>
+                            <div class="fin-kpi-value" data-detail-field="compras_importe">--</div>
+                        </div>
+                        <div class="fin-kpi-box">
+                            <div class="fin-kpi-label">{% trans "Operaciones venta" %}</div>
+                            <div class="fin-kpi-value" data-detail-field="ventas_operaciones">--</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

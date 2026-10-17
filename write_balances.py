@@ -1,0 +1,110 @@
+﻿# -*- coding: utf-8 -*-
+import os
+
+html = """{% load static i18n %}
+<div id="tab-actualidad-balances" class="financial-theme">
+    <div class="dashboard-v2-container">
+        <div id="fin-balances-grid" class="fin-grid-container">
+            
+            <!-- SECTION: P&L DETAIL (Desglose Mensual) -->
+            <div id="fin-section-detail" class="fin-grid-item" draggable="true" data-id="detail">
+                <div class="fin-card-simple">
+                    <div class="fin-card-header">
+                        <span class="fin-card-title">{% trans "Desglose mensual" %}</span>
+                        <i class="fas fa-grip-lines fin-drag-handle"></i>
+                    </div>
+                    <div id="fin-chart-pl" class="fin-chart-container" style="height: 350px;"></div>
+                </div>
+            </div>
+
+            <!-- SECTION: BALANCE (Balance de situación) -->
+            <div id="fin-section-balance" class="fin-grid-item" draggable="true" data-id="balance">
+                <div class="fin-card-simple">
+                    <div class="fin-card-header">
+                        <span class="fin-card-title">{% trans "Balance de Situación" %} <span id="fin-balance-period-label" style="font-size:0.8rem; font-weight:normal; margin-left:10px; color:#a1a1aa;"></span></span>
+                        <i class="fas fa-grip-lines fin-drag-handle"></i>
+                    </div>
+                    <div class="fin-balance-layout" style="display: flex; gap: 20px; align-items: flex-start; padding: 15px;">
+                        <div class="fin-balance-col-left" style="flex: 0 0 250px;">
+                            <div class="fin-balance-controls" style="margin-bottom: 15px;">
+                                <select id="fin-balance-root" onchange="changeBalanceRoot()" style="width: 100%; background: #27272a; color: white; border: 1px solid #3f3f46; padding: 8px; border-radius: 4px;">
+                                    <option value="activo" selected>{% trans "Activo" %}</option>
+                                    <option value="pasivo">{% trans "Pasivo y Patrimonio Neto" %}</option>
+                                </select>
+                            </div>
+                            <div id="fin-balance-summary" class="fin-balance-summary"></div>
+                        </div>
+                        <div class="fin-balance-col-main" style="flex: 1; min-width: 0;">
+                            <div id="fin-balance-error" style="display:none; color:#ef4444; margin-bottom:10px;"></div>
+                            <div class="fin-table-container">
+                                <table class="fin-table fin-table-compact">
+                                    <thead>
+                                        <tr>
+                                            <th>{% trans "Partida" %}</th>
+                                            <th style="text-align:right;">{% trans "Importe" %}</th>
+                                            <th style="text-align:right;">{% trans "Peso %" %}</th>
+                                            <th style="text-align:right;">{% trans "Comp. PY" %}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="fin-balance-table-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="fin-balance-col-right" style="flex: 0 0 300px;">
+                            <div id="fin-balance-detail" class="fin-chart-container" style="height:300px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION: CUENTA DE EXPLOTACIÓN -->
+            <div id="fin-section-pl-report" class="fin-grid-item" draggable="true" data-id="pl_report">
+                <div class="fin-card-simple">
+                    <div class="fin-card-header">
+                        <span class="fin-card-title">{% trans "Cuenta de Explotación" %} <span id="pl-report-period-label" style="font-size:0.8rem; font-weight:normal; margin-left:10px; color:#a1a1aa;"></span></span>
+                        <div class="fin-card-tools" style="display: flex; gap: 10px; align-items: center;">
+                            <select id="pl-report-level" onchange="changePLLevel()" style="background:#27272a; color:white; border:1px solid #3f3f46; border-radius:4px; padding:4px 8px; font-size:0.85rem;">
+                                <option value="1">{% trans "Nivel 1 (Grupos)" %}</option>
+                                <option value="2" selected>{% trans "Nivel 2 (Subgrupos)" %}</option>
+                                <option value="3">{% trans "Nivel 3 (Cuentas)" %}</option>
+                                <option value="4">{% trans "Nivel 4 (Subcuentas)" %}</option>
+                            </select>
+                            <button class="btn-fin-action" onclick="exportPLReport('csv')" title="{% trans 'Exportar a CSV' %}"><i class="fas fa-file-csv"></i></button>
+                            <button class="btn-fin-action" onclick="exportPLReport('pdf')" title="{% trans 'Exportar a PDF' %}"><i class="fas fa-file-pdf"></i></button>
+                        </div>
+                        <i class="fas fa-grip-lines fin-drag-handle"></i>
+                    </div>
+                    <div class="fin-balance-layout" style="display: flex; gap: 20px; align-items: flex-start; padding: 15px;">
+                        <div class="fin-balance-col-left" style="flex: 0 0 250px;">
+                            <div id="fin-pl-summary" class="fin-balance-summary"></div>
+                        </div>
+                        <div class="fin-balance-col-main" style="flex: 1; min-width: 0;">
+                            <div class="fin-table-container">
+                                <table id="pl-report-table" class="fin-table fin-table-compact">
+                                    <thead>
+                                        <tr>
+                                            <th>{% trans "Cuenta" %}</th>
+                                            <th>{% trans "Descripción" %}</th>
+                                            <th style="text-align:right;">{% trans "Actual" %}</th>
+                                            <th style="text-align:right;">{% trans "Anterior" %}</th>
+                                            <th style="text-align:right;">{% trans "Var %" %}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="pl-report-table-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+"""
+
+with open("datia/templates/datia/components/tab_actualidad_balances.html", "w", encoding="utf-8") as f:
+    f.write(html)
+
+print("Balances HTML updated.")
+

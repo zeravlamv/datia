@@ -1,0 +1,12 @@
+.compare-container{display:flex;flex-direction:column;gap:16px;width:100%}
+.compare-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.compare-card{border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);border-radius:12px;padding:8px;display:flex;flex-direction:column}
+.compare-title{color:#a1a1aa;font-weight:600;margin:4px 8px}
+.compare-chart{width:100%;height:240px}
+.compare-grid{width:100%}
+.compare-grid table{width:100%;border-collapse:collapse}
+.compare-grid th,.compare-grid td{border:1px solid rgba(255,255,255,0.08);padding:8px;color:#e4e4e7;text-align:right}
+.compare-grid th:first-child,.compare-grid td:first-child{text-align:left}
+.compare-grid thead th{background:rgba(255,255,255,0.04);color:#a1a1aa}
+.compare-legend{color:#e4e4e7;line-height:1.5;margin:8px}
+.compare-note{color:#a1a1aa;margin:8px}

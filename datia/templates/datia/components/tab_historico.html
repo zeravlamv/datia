@@ -1,0 +1,200 @@
+{% load i18n %}
+<div id="tab-historico" class="tab-panel" style="min-height: 80vh; padding: 20px;">
+
+    <!-- Header Section -->
+    <div style="max-width: 1200px; margin: 0 auto 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <div>
+                <h2 style="color: #e4e4e7; font-size: 1.8rem; font-weight: 700; margin: 0 0 0.5rem 0;">
+                    📌 {% trans "Histórico de Consultas" %}
+                </h2>
+                <p style="color: #a1a1aa; margin: 0;">
+                    {% trans "Consultas guardadas que puedes reutilizar y actualizar" %}
+                </p>
+            </div>
+            <button id="refresh-all-historico-btn" class="btn-glow"
+                style="padding: 8px 16px; font-size: 0.9rem; display: none;" onclick="refreshAllQueries()">
+                🔄 {% trans "Actualizar Todo" %}
+            </button>
+        </div>
+    </div>
+
+    <!-- Saved Queries Grid -->
+    <div id="historico-container" style="max-width: 1200px; margin: 0 auto;">
+        <div id="historico-grid"
+            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem;">
+            <!-- History cards will be inserted here by JavaScript -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="historico-empty" style="text-align: center; padding: 4rem 2rem; display: none;">
+            <div style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.3;">📋</div>
+            <h3 style="color: #a1a1aa; font-weight: 500; margin: 0 0 0.5rem 0;">
+                {% trans "No hay consultas guardadas" %}
+            </h3>
+            <p style="color: #71717a; margin: 0;">
+                {% trans "Dale 👍 a una respuesta en la pestaña IA para guardarla aquí" %}
+            </p>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // Load history when switching to Histórico tab
+    document.addEventListener('DOMContentLoaded', function () {
+        // Listen for the custom event dispatched by core.js
+        document.addEventListener('datia:tab-change', function (e) {
+            if (e.detail && e.detail.tabId === 'tab-historico') {
+                loadHistoricoView();
+            }
+        });
+    });
+
+    async function loadHistoricoView() {
+        try {
+            const emp = encodeURIComponent(currEmpresa);
+            const eje = encodeURIComponent(currEjercicio);
+            const res = await fetch(`${API}/ai/history?empresa=${emp}&ejercicio=${eje}`);
+            const data = await res.json();
+
+            const grid = document.getElementById('historico-grid');
+            const empty = document.getElementById('historico-empty');
+            const refreshBtn = document.getElementById('refresh-all-historico-btn');
+
+            if (!data.history || data.history.length === 0) {
+                grid.style.display = 'none';
+                empty.style.display = 'block';
+                refreshBtn.style.display = 'none';
+                return;
+            }
+
+            grid.style.display = 'grid';
+            empty.style.display = 'none';
+            refreshBtn.style.display = 'block';
+            grid.innerHTML = '';
+
+            data.history.forEach(item => {
+                renderHistoricoCard(item, grid);
+            });
+        } catch (e) {
+            console.error('Error loading histórico:', e);
+        }
+    }
+
+    function renderHistoricoCard(item, container) {
+        const card = document.createElement('div');
+        card.id = `historico-${item.id}`;
+        card.style.cssText = 'background: rgba(255,255,255,0.03); border: 1px solid #3f3f46; border-radius: 12px; padding: 1.25rem; transition: all 0.2s; cursor: pointer;';
+        card.onmouseenter = () => card.style.borderColor = 'var(--accent)';
+        card.onmouseleave = () => card.style.borderColor = '#3f3f46';
+
+        // Format timestamp
+        const updatedAt = new Date(item.updated_at);
+        const timeStr = updatedAt.toLocaleDateString('es-ES', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        const type = (item.last_answer && item.last_answer.type) ? item.last_answer.type : 'qa';
+        const origin = (item.last_answer && item.last_answer.origin) ? item.last_answer.origin : '';
+        const htmlContent = (item.last_answer && item.last_answer.html) ? item.last_answer.html : '';
+        const kind = (item.last_answer && item.last_answer.kind) ? item.last_answer.kind : 'ventas';
+        const originBadge = (type === 'ai_report') ? `<span style="padding: 2px 8px; font-size: 0.7rem; border: 1px solid var(--accent); border-radius: 999px; color: var(--accent); margin-left: 0.5rem;">${origin}</span>` : '';
+
+        card.innerHTML = `
+        <div style="margin-bottom: 1rem;">
+            <div style="color: #e4e4e7; font-weight: 600; font-size: 1.05rem; margin-bottom: 0.5rem;">
+                ${item.query}${originBadge}
+            </div>
+            <div style="color: #71717a; font-size: 0.8rem;">
+                <span>📅 ${timeStr}</span>
+            </div>
+        </div>
+        
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button class="btn-glow" style="padding: 6px 12px; font-size: 0.75rem; border-color: #34d399; color: #34d399; flex: 1;" 
+                    onclick="event.stopPropagation(); executeHistoricoItem(${item.id})">
+                ▶️ {% trans "Ejecutar" %}
+            </button>
+            <button class="btn-glow" style="padding: 6px 12px; font-size: 0.75rem; border-color: #3b82f6; color: #3b82f6;" 
+                    onclick="event.stopPropagation(); refreshHistoricoQuery(${item.id})">
+                🔄
+            </button>
+            <button class="btn-glow" style="padding: 6px 12px; font-size: 0.75rem; border-color: #ef4444; color: #ef4444;" 
+                    onclick="event.stopPropagation(); deleteHistoricoQuery(${item.id}, '${item.query.replace(/'/g, "\\'")}')">
+                🗑️
+            </button>
+            <button class="btn-glow" style="padding: 6px 12px; font-size: 0.75rem; border-color: var(--accent); color: var(--accent);" 
+                    onclick="event.stopPropagation(); openShareModal(${item.id}, '${item.query.replace(/'/g, "\\'")}')">
+                🔗 {% trans "Compartir" %}
+            </button>
+        </div>
+    `;
+
+        card.dataset.type = type;
+        card.dataset.query = item.query;
+        if (type === 'ai_report') {
+            card.dataset.html = htmlContent;
+            card.dataset.origin = origin;
+            card.dataset.kind = kind;
+        }
+
+        container.appendChild(card);
+    }
+
+    async function executeHistoricoItem(id) {
+        const card = document.getElementById(`historico-${id}`);
+        if (!card) return;
+        const type = card.dataset.type || 'qa';
+        const query = card.dataset.query || '';
+        if (type === 'ai_report' && card.dataset.html) {
+            const html = card.dataset.html;
+            const origin = card.dataset.origin || 'ia-general';
+            const kind = card.dataset.kind || 'ventas';
+            if (typeof AIReportManager !== 'undefined' && AIReportManager && typeof AIReportManager.showSavedReport === 'function') {
+                AIReportManager.showSavedReport(html, kind, origin);
+                return;
+            }
+        }
+        switchTab('tab-ia');
+        document.getElementById('ai-input').value = query;
+        await askAI();
+    }
+
+    async function refreshHistoricoQuery(id) {
+        const btn = event.target;
+        const originalText = btn.innerText;
+        btn.innerText = '⏳';
+        btn.disabled = true;
+
+        try {
+            const res = await fetch(`${API}/ai/history/${id}/refresh`, {
+                method: 'POST'
+            });
+            const data = await res.json();
+
+            if (data.status === 'refreshed') {
+                btn.innerText = '✓';
+                setTimeout(() => {
+                    loadHistoricoView(); // Reload the view
+                }, 500);
+            }
+        } catch (e) {
+            console.error('Error refreshing:', e);
+            btn.innerText = '✗';
+        }
+
+        setTimeout(() => {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }, 1500);
+    }
+
+    function deleteHistoricoQuery(id, query) {
+        showDeleteConfirmation(id, query);
+    }
+</script>

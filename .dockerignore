@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+.git/
+.gitignore
+.env
+.venv/
+venv/
+node_modules/
+dist/
+build/
+local/
+debug_*/
+scripts/*.tmp
+datia.log

@@ -1,0 +1,566 @@
+{% load static i18n %}
+<div id="tab-datia-3" class="tab-panel">
+
+    <!-- HERO BACKGROUND -->
+    <div class="background-container">
+        <!-- Main Image -->
+        <div class="bg-image" style="background-image: url('{% static 'bg_datia_v2.png' %}');"></div>
+        <!-- Gradient Overlay -->
+        <div class="bg-overlay"></div>
+    </div>
+
+    <!-- FEATURE CAROUSEL ASSETS -->
+    <link rel="stylesheet" href="{% static 'css/feature_carousel.css' %}">
+    <script src="{% static 'js/feature_carousel.js' %}"></script>
+
+    <!-- MAIN CONTENT -->
+    <div class="content-container" style="max-width: 95% !important;">
+
+        <!-- HEADER -->
+        <div class="header-section">
+            <div class="logo-wrapper round-logo">
+
+                <img id="datia-3-tab-logo" src="{% static 'logo_analytics.png' %}" alt="Datia Logo" class="main-logo">
+                <script>
+                    (function () {
+                        try {
+                            var saved = localStorage.getItem('datia-selected-logo');
+                            var img = document.getElementById('datia-3-tab-logo');
+                            if (saved && img) {
+                                img.src = saved;
+                            }
+                        } catch (e) { console.error(e); }
+                    })();
+                </script>
+            </div>
+
+            <h1><span id="app-title-datia-3">Datia</span></h1>
+            <p class="subtitle">
+                El poder del análisis avanzado, simplificado para tu empresa.
+            </p>
+        </div>
+
+        <!-- SECTION: Feature Carousel (Replacement for Static Cards) -->
+        <div style="margin-bottom: 4rem; width: 100%;">
+            {% include "datia/components/feature_carousel.html" %}
+        </div>
+
+        <!-- SECTION: Integración de Datos y ETL -->
+        <div class="illustration-section" style="margin-bottom: 4rem;">
+            <div class="glass-showcase">
+                <div class="steps-col" style="flex: 2;">
+                    <h2>1. Integración de Datos y ETL</h2>
+                    <p class="intro-p">Datia se conecta a tus fuentes de datos (ERP, CRM, hojas de cálculo) y extrae la
+                        información de forma segura y eficiente. El proceso de ETL (Extracción, Transformación y Carga)
+                        se realiza en segundo plano, manteniendo tus datos siempre actualizados.</p>
+
+                    <div class="step-item">
+                        <div class="step-num">E</div>
+                        <div class="step-text">
+                            <h4>Extracción</h4>
+                            <p>Conexión a MSSQL (solo lectura) para extraer datos de tablas predefinidas. El sistema
+                                identifica automáticamente nuevas entradas desde la última sincronización.</p>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-num">T</div>
+                        <div class="step-text">
+                            <h4>Transformación</h4>
+                            <p>Los datos se limpian, se normalizan y se enriquecen. Se aplican reglas de negocio y se
+                                calculan métricas clave. El mapeo de campos (Dimensión, Métrica, Ignorar) permite una
+                                flexibilidad total.</p>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-num">L</div>
+                        <div class="step-text">
+                            <h4>Carga</h4>
+                            <p>Los datos transformados se cargan en tablas de PostgreSQL, optimizadas para consultas de
+                                alto rendimiento. La sincronización incremental evita duplicados y asegura la integridad
+                                de los datos.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="illus-col" style="flex: 1;">
+                    <img src="{% static 'etl_diagram.png' %}" alt="ETL Diagram" class="showcase-img">
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION: Inteligencia Artificial y Machine Learning -->
+        <div class="illustration-section">
+            <div class="glass-showcase">
+                <div class="illus-col">
+                    <img src="{% static 'ai_pipeline_diagram.png' %}" alt="AI Pipeline Diagram" class="showcase-img">
+                </div>
+                <div class="steps-col">
+                    <h2>2. Inteligencia Artificial y Machine Learning</h2>
+                    <p class="intro-p">Datia integra un motor de IA local (<strong>Ollama</strong>) que se ejecuta en tu
+                        propia infraestructura, garantizando la máxima privacidad. Vectorizamos tus datos para permitir
+                        búsquedas semánticas y análisis complejos.</p>
+
+                    <div class="step-item">
+                        <div class="step-num">V</div>
+                        <div class="step-text">
+                            <h4>Vectorización (Embeddings)</h4>
+                            <p>Convertimos documentos, registros y metadatos en vectores numéricos. Esto permite a la IA
+                                entender el contexto y la relación semántica entre diferentes piezas de información.</p>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-num">R</div>
+                        <div class="step-text">
+                            <h4>Búsqueda Semántica (RAG)</h4>
+                            <p>Utilizamos un enfoque de Generación Aumentada por Recuperación (RAG) para encontrar la
+                                información más relevante en tu base de datos vectorial y responder preguntas complejas.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-num">A</div>
+                        <div class="step-text">
+                            <h4>Análisis y Razonamiento</h4>
+                            <p>El modelo de lenguaje local (LLM) utiliza la información recuperada para analizar
+                                tendencias, identificar anomalías y generar explicaciones en lenguaje natural.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION: Análisis de Datos y Reporting -->
+        <div class="illustration-section" style="margin-bottom: 4rem;">
+            <div class="glass-showcase">
+                <div class="steps-col">
+                    <h2>3. Análisis de Datos y Reporting</h2>
+                    <p class="intro-p">Visualiza tus KPIs en tiempo real a través de dashboards interactivos y widgets
+                        modulares. La arquitectura está diseñada para ofrecer respuestas instantáneas, con una latencia
+                        inferior a 200ms.</p>
+
+                    <div class="step-item">
+                        <div class="step-num"><i class="fas fa-tachometer-alt"></i></div>
+                        <div class="step-text">
+                            <h4>Dashboards Modulares</h4>
+                            <p>Los widgets se cargan en paralelo, permitiendo una visualización rápida y fluida. Cada
+                                componente (gráfico, tabla, KPI) es independiente y se actualiza de forma asíncrona.</p>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-num"><i class="fas fa-database"></i></div>
+                        <div class="step-text">
+                            <h4>Tablas Pre-calculadas</h4>
+                            <p>Para garantizar la máxima velocidad, el sistema utiliza tablas agregadas en PostgreSQL.
+                                Las consultas complejas se resuelven en milisegundos, sin impactar el rendimiento de tu
+                                ERP.</p>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-num"><i class="fas fa-palette"></i></div>
+                        <div class="step-text">
+                            <h4>Personalización y Temas</h4>
+                            <p>La interfaz permite la personalización de logos y colores (Verde/Violeta), guardando las
+                                preferencias del usuario en el `localStorage` para una experiencia consistente.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="illus-col">
+                    <img src="{% static 'dashboard_analytics.png' %}" alt="Dashboard Analytics" class="showcase-img">
+                </div>
+            </div>
+        </div>
+
+        <!-- OTHER FEATURES GRID -->
+        <div class="cards-grid" style="margin-top: 4rem;">
+            <!-- Card 4: Multi-empresa -->
+            <div class="feature-card">
+                <div class="icon-box"><i class="fas fa-building"></i></div>
+                <h3>4. Multi-empresa y Permisos</h3>
+                <p>Gestión centralizada de múltiples empresas y ejercicios fiscales. Un sistema de permisos granulares
+                    basado en metadatos asegura que cada usuario accede únicamente a la información autorizada.</p>
+            </div>
+
+            <!-- Card 5: Gestión de Patrones -->
+            <div class="feature-card">
+                <div class="icon-box"><i class="fas fa-sitemap"></i></div>
+                <h3>5. Gestión de Patrones</h3>
+                <p>El sistema se guía por "patrones" que definen la lógica de negocio, las reglas de revisión y las
+                    nuevas funcionalidades. Esto permite una evolución ordenada y un mantenimiento sencillo.</p>
+            </div>
+
+            <!-- Card 6: Frontend Architecture -->
+            <div class="feature-card">
+                <div class="icon-box"><i class="fab fa-react"></i></div>
+                <h3>6. Arquitectura Frontend (SPA)</h3>
+                <p>Construido como una Single Page Application (SPA) con `core.js`, ofrece una experiencia de usuario
+                    fluida y sin recargas. La comunicación con el backend se realiza vía API REST y Server-Sent Events
+                    (SSE).</p>
+            </div>
+        </div>
+
+        <!-- TECHNICAL FOOTER -->
+        <div class="tech-footer">
+            <p>Powered by <span>Python</span> • <span>Django</span> • <span>Ollama</span> • <span>PostgreSQL</span> •
+                <span>Vector DB</span>
+            </p>
+        </div>
+
+    </div>
+
+    <!-- ROBUST CSS STYLES WITH VARIABLES -->
+    <style>
+        /* Tech Footer */
+        .tech-footer {
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            width: 100%;
+            text-align: center;
+        }
+
+        .tech-footer p {
+            color: var(--text-muted, #52525b);
+            font-size: 0.8rem;
+            font-family: 'JetBrains Mono', monospace;
+            /* Monospace for tech feel */
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .tech-footer span {
+            color: var(--accent, #a78bfa);
+            font-weight: 600;
+        }
+
+        /* Container Reset */
+        #tab-datia {
+            position: relative;
+            width: 100%;
+            min-height: 100vh;
+            overflow-x: hidden;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            color: var(--text, #fff);
+        }
+
+        /* Background */
+        .background-container {
+            position: fixed;
+            /* Fixed to cover whole screen */
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            /* Behind content (container is 5) but inside main stacking context if applicable */
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .bg-image {
+            width: 100%;
+            height: 100%;
+            background-size: 135%;
+            /* Zoomed in / expanded */
+            background-position: center;
+            opacity: 0.9;
+        }
+
+        .bg-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* Stronger Vignette: Reach full black sooner to hide edges completely */
+            background: radial-gradient(circle at center, transparent 0%, rgba(9, 9, 11, 0.5) 40%, rgba(9, 9, 11, 0.9) 70%, #09090b 90%);
+        }
+
+        /* Content Layout */
+        .content-container {
+            position: relative;
+            z-index: 5;
+            /* Ensure above background */
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Header */
+        .header-section {
+            text-align: center;
+            margin-bottom: 5rem;
+            animation: fadeInDown 1s ease-out;
+        }
+
+        .logo-wrapper {
+            position: relative;
+            width: 140px;
+            height: 140px;
+            margin: 0 auto 2rem;
+            /* Make it round */
+            border-radius: 50%;
+            padding: 20px;
+            background: transparent;
+            border: none;
+            backdrop-filter: none;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-glow {
+            position: absolute;
+            inset: 0;
+            background: var(--accent-glow, rgba(168, 85, 247, 0.4));
+            filter: blur(30px);
+            border-radius: 50%;
+            animation: pulse 4s infinite;
+            z-index: -1;
+        }
+
+        .main-logo {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            position: relative;
+            border-radius: 50%;
+            filter: none;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .header-section h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin: 0 0 1rem;
+            line-height: 1.1;
+            letter-spacing: -0.05em;
+        }
+
+        .highlight-text {
+            /* Dynamic Gradient using variables if possible, fallback to CSS var */
+            color: var(--accent, #a78bfa);
+            text-shadow: 0 0 20px var(--accent-glow, rgba(168, 85, 247, 0.3));
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-muted, #d4d4d8);
+            font-weight: 300;
+            line-height: 1.6;
+        }
+
+        .subtitle span {
+            color: var(--accent, #a78bfa);
+            font-weight: 500;
+        }
+
+        /* Cards Grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+            width: 100%;
+            margin-bottom: 6rem;
+        }
+
+        .feature-card {
+            background: transparent;
+            border: 1px solid var(--card-border, rgba(255, 255, 255, 0.08));
+            border-radius: 16px;
+            padding: 2rem;
+            backdrop-filter: none;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent, rgba(168, 85, 247, 0.5));
+            box-shadow: 0 10px 30px -10px var(--accent-glow, rgba(0, 0, 0, 0));
+        }
+
+        .icon-box {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--accent, #fff);
+        }
+
+        .feature-card h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 0 0 0.5rem;
+            color: var(--text, #fff);
+        }
+
+        .feature-card p {
+            font-size: 0.95rem;
+            color: var(--text-muted, #a1a1aa);
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        /* Illustration Section */
+        .illustration-section {
+            width: 100%;
+        }
+
+        .glass-showcase {
+            background: transparent;
+            border: none;
+            border-radius: 24px;
+            padding: 3rem;
+            display: flex;
+            align-items: center;
+            gap: 4rem;
+            backdrop-filter: none;
+        }
+
+        .illus-col {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            position: relative;
+        }
+
+        .showcase-img {
+            width: 100%;
+            max-width: 380px;
+            height: auto;
+            filter: drop-shadow(0 0 30px var(--accent-glow, rgba(168, 85, 247, 0.2)));
+            transition: transform 0.5s ease;
+        }
+
+        .showcase-img:hover {
+            transform: scale(1.02);
+        }
+
+        .steps-col {
+            flex: 1;
+        }
+
+        .steps-col h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text, #fff);
+        }
+
+        .intro-p {
+            margin-bottom: 2rem;
+            color: var(--text-muted, #ccc);
+            font-size: 1rem;
+        }
+
+        .intro-p strong {
+            color: var(--accent, #a78bfa);
+        }
+
+        .step-item {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+            align-items: flex-start;
+        }
+
+        .step-num {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+            box-shadow: 0 0 10px var(--accent-glow, rgba(0, 0, 0, 0.2));
+            background: var(--accent, #8b5cf6);
+            color: #fff;
+            /* Always white number */
+        }
+
+        /* Gradient variations if desired, but solid variable is safer for theming */
+
+        .step-text h4 {
+            margin: 0 0 0.25rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text, #fff);
+        }
+
+        .step-text p {
+            margin: 0;
+            color: var(--text-muted, #a1a1aa);
+            font-size: 0.9rem;
+        }
+
+        /* Animations */
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 0.6;
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .glass-showcase {
+                flex-direction: column;
+                padding: 1.5rem;
+                gap: 2rem;
+            }
+
+            .header-section h1 {
+                font-size: 2.5rem;
+            }
+
+            .logo-wrapper {
+                width: 100px;
+                height: 100px;
+            }
+        }
+    </style>
+</div>

@@ -1,0 +1,300 @@
+/* =====================================================
+   DATIA · landing_cliente.css — Showcase de Producto
+   ===================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --gold: #f5a623;
+    --gold-dim: rgba(245, 166, 35, .15);
+    --bg: #090910;
+    --bg-card: #12121e;
+    --border: rgba(255, 255, 255, .07);
+    --text: #e2e2ee;
+    --muted: #888;
+    --radius: 14px;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+}
+
+/* ─── HEADER ─── */
+.mast {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(9, 9, 16, .9);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+}
+
+.mast .wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: .9rem;
+}
+
+.logo {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, var(--gold), #e8950f);
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.brand-text h1 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--gold);
+    line-height: 1.1;
+}
+
+.brand-text p {
+    font-size: .78rem;
+    color: var(--muted);
+}
+
+.btn {
+    display: inline-block;
+    padding: .55rem 1.3rem;
+    background: var(--gold);
+    color: #000;
+    font-weight: 700;
+    font-size: .85rem;
+    border-radius: 50px;
+    text-decoration: none;
+    transition: opacity .2s, transform .2s;
+}
+
+.btn:hover {
+    opacity: .88;
+    transform: translateY(-1px);
+}
+
+/* ─── WRAP ─── */
+.wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem;
+}
+
+/* ─── INTRO ─── */
+.showcase-intro {
+    text-align: center;
+    padding: 72px 24px 48px;
+}
+
+.intro-label {
+    display: inline-block;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--gold);
+    border: 1px solid rgba(245, 166, 35, .3);
+    border-radius: 50px;
+    padding: 5px 16px;
+    margin-bottom: 20px;
+}
+
+.showcase-intro h2 {
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 800;
+    line-height: 1.15;
+    margin-bottom: 14px;
+}
+
+.showcase-intro p {
+    color: var(--muted);
+    font-size: 1rem;
+    max-width: 540px;
+    margin: 0 auto;
+}
+
+/* ─── SHOWCASE ITEMS ─── */
+.showcase {
+    padding: 24px 0 80px;
+}
+
+.showcase .wrap {
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.sc-item {
+    display: grid;
+    grid-template-columns: 65fr 35fr;
+    gap: 0;
+    align-items: stretch;
+    margin-bottom: 0;
+    border-top: 1px solid var(--border);
+    min-height: 70vh;
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity .6s ease, transform .6s ease;
+}
+
+.sc-item.sc-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+
+/* Alterna: par → imagen derecha */
+.sc-item.sc-right {
+    direction: rtl;
+}
+
+.sc-item.sc-right>* {
+    direction: ltr;
+}
+
+/* ─── IMAGEN ─── */
+.sc-img-wrap {
+    position: relative;
+    overflow: hidden;
+    height: 70vh;
+    min-height: 500px;
+    background: #000;
+}
+
+.sc-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top left;
+    display: block;
+    transition: transform .5s ease;
+    filter: brightness(.92);
+}
+
+.sc-item:hover .sc-img {
+    transform: scale(1.025);
+    filter: brightness(1);
+}
+
+/* ─── TEXTO ─── */
+.sc-body {
+    padding: 40px 36px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 18px;
+    position: relative;
+    background: var(--bg);
+    height: 100%;
+}
+
+.sc-tag {
+    display: inline-block;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    background: var(--gold-dim);
+    border: 1px solid rgba(245, 166, 35, .3);
+    border-radius: 50px;
+    padding: 4px 14px;
+    width: fit-content;
+}
+
+.sc-title {
+    font-size: clamp(1.35rem, 2.5vw, 1.9rem);
+    font-weight: 800;
+    line-height: 1.2;
+    color: var(--text);
+}
+
+.sc-desc {
+    font-size: .9rem;
+    color: var(--muted);
+    line-height: 1.75;
+    max-width: 100%;
+}
+
+.sc-num {
+    position: absolute;
+    bottom: 28px;
+    right: 36px;
+    font-size: 5rem;
+    font-weight: 900;
+    color: rgba(255, 255, 255, .03);
+    line-height: 1;
+    user-select: none;
+    letter-spacing: -.04em;
+}
+
+/* ─── CTA FINAL ─── */
+.cta-final {
+    border-top: 1px solid var(--border);
+    text-align: center;
+}
+
+.cta-final .wrap {
+    padding-top: 52px;
+    padding-bottom: 52px;
+}
+
+.cta {
+    display: flex;
+    justify-content: center;
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 860px) {
+
+    .sc-item,
+    .sc-item.sc-right {
+        grid-template-columns: 1fr;
+        direction: ltr;
+        min-height: auto;
+    }
+
+    .sc-img-wrap {
+        height: 55vw;
+        min-height: 300px;
+    }
+
+    .sc-body {
+        padding: 32px 24px;
+    }
+
+    .sc-num {
+        font-size: 3.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .showcase-intro {
+        padding: 48px 16px 32px;
+    }
+
+    .sc-body {
+        padding: 24px 16px;
+        gap: 12px;
+    }
+}

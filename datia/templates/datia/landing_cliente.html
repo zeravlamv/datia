@@ -1,0 +1,72 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Datia · Showcase de Producto</title>
+  <link rel="stylesheet" href="{% static 'css/landing_cliente.css' %}?v={{ cache_bust }}">
+</head>
+
+<body>
+
+  <header class="mast">
+    <div class="wrap">
+      <div class="brand">
+        <span class="logo"></span>
+        <div class="brand-text">
+          <h1>Datia</h1>
+          <p>Decisiones financieras claras y enfocadas en resultados</p>
+        </div>
+      </div>
+      <div class="actions">
+        <a class="btn" href="/catalog/">Catálogo</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <section class="showcase-intro">
+      <div class="wrap">
+        <div class="intro-label">Capturas reales del producto</div>
+        <h2>Todo lo que verás cada día<br>en tu empresa</h2>
+        <p>Cada pantalla mostrada a continuación es real, tomada en un entorno de producción activo con datos reales. Sin maquetas.</p>
+      </div>
+    </section>
+
+    <section class="showcase">
+      <div class="wrap">
+        {% for s in screens %}
+        <article class="sc-item {% cycle 'sc-left' 'sc-right' %}">
+          <div class="sc-img-wrap">
+            <img src="{% url 'landing_cliente_img' name=s.name %}" alt="{{ s.titulo }}" loading="lazy" class="sc-img">
+          </div>
+          <div class="sc-body">
+            <span class="sc-tag">{{ s.categoria }}</span>
+            <h3 class="sc-title">{{ s.titulo }}</h3>
+            <p class="sc-desc">{{ s.desc }}</p>
+            <div class="sc-num">{{ forloop.counter|stringformat:"02d" }}</div>
+          </div>
+        </article>
+        {% empty %}
+        <p style="color:#888;text-align:center">No hay capturas disponibles.</p>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="cta-final">
+      <div class="wrap">
+        <div class="cta">
+          <a class="btn" href="/catalog/">Explorar el Catálogo</a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="{% static 'js/landing_cliente.js' %}?v={{ cache_bust }}"></script>
+</body>
+
+</html>

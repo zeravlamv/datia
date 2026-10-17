@@ -1,0 +1,192 @@
+{% load i18n %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/dashboard/prediccion.css' %}?v={% now 'U' %}">
+<link rel="stylesheet" href="{% static 'css/dashboard/tips_player.css' %}?v={% now 'U' %}">
+<link rel="stylesheet" href="{% static 'css/dashboard/compare.css' %}?v={% now 'U' %}">
+<div class="pred-container">
+    <div class="glass-card pred-header">
+        <div class="pred-title">{% trans "Predicción Financiera" %}</div>
+        <div class="pred-controls">
+            <label for="pred-horizon">{% trans "Horizonte" %}</label>
+            <select id="pred-horizon" class="sub-nav-btn">
+                <option value="3">3</option>
+                <option value="4" selected>4</option>
+                <option value="6">6</option>
+            </select>
+            <label for="pred-scenario">{% trans "Escenario" %}</label>
+            <select id="pred-scenario" class="sub-nav-btn">
+                <option value="base" selected>{% trans "Base" %}</option>
+                <option value="pesimista">{% trans "Pesimista" %}</option>
+            </select>
+            <label for="pred-cobro">{% trans "Cobro anticipado" %}</label>
+            <select id="pred-cobro" class="sub-nav-btn">
+                <option value="0">0%</option>
+                <option value="10">10%</option>
+                <option value="20">20%</option>
+                <option value="30">30%</option>
+            </select>
+            <label for="pred-pagos">{% trans "Diferir pagos" %}</label>
+            <select id="pred-pagos" class="sub-nav-btn">
+                <option value="0">0%</option>
+                <option value="10">10%</option>
+                <option value="20">20%</option>
+                <option value="30">30%</option>
+            </select>
+            <label for="pred-default">{% trans "Prob. default" %}</label>
+            <select id="pred-default" class="sub-nav-btn">
+                <option value="0">0%</option>
+                <option value="2">2%</option>
+                <option value="5">5%</option>
+                <option value="10">10%</option>
+            </select>
+            <label for="pred-level">{% trans "Nivel" %}</label>
+            <select id="pred-level" class="sub-nav-btn">
+                <option value="basico" selected>{% trans "Básico" %}</option>
+                <option value="tecnico">{% trans "Técnico" %}</option>
+                <option value="profesional">{% trans "Profesional" %}</option>
+            </select>
+            <button id="pred-refresh" class="sub-nav-btn">{% trans "Filtrar" %}</button>
+        </div>
+    </div>
+
+    <div class="glass-card pred-prompt">
+        <div class="pred-prompt-title">{% trans "Informe Profesional" %}</div>
+        <div class="pred-prompt-sub">{% trans "Análisis de proyección y tesorería basado en datos obtenidos" %}</div>
+        <div id="pred-report" class="pred-report"></div>
+    </div>
+
+    <div class="glass-card pred-section">
+        <div class="pred-section-title">{% trans "Resumen Ejecutivo" %}</div>
+        <div id="pred-summary" class="pred-summary"></div>
+        <div class="pred-chart-card">
+            <div class="pred-chart-title">{% trans "Combinado Mensual" %}</div>
+            <div id="pred-chart-combinado" class="pred-chart"></div>
+            <button class="pred-toggle" data-target="pred-data-combinado" aria-expanded="false">{% trans "Ver datos de origen" %}</button>
+            <div id="pred-data-combinado" class="pred-data-panel" style="display:none"></div>
+        </div>
+    </div>
+
+    <div class="glass-card pred-section">
+        <div class="pred-section-title">{% trans "Tabla de Proyección" %}</div>
+        <div id="pred-table" class="pred-table"></div>
+    </div>
+
+    <div class="glass-card pred-section">
+        <div class="pred-section-title">{% trans "Alertas de Tesorería" %}</div>
+        <div id="pred-alerts" class="pred-alerts"></div>
+    </div>
+
+    <div class="glass-card pred-section">
+        <div class="pred-section-title">{% trans "Recomendación Preventiva" %}</div>
+        <div id="pred-reco" class="pred-reco"></div>
+    </div>
+    
+    <div class="glass-card pred-section">
+        <div class="pred-section-title">{% trans "Gráficas" %}</div>
+        <div class="pred-charts">
+            <div class="pred-chart-card">
+                <div class="pred-chart-title">{% trans "Proyección Operativa" %}</div>
+                <div id="pred-chart-operativa" class="pred-chart"></div>
+                <button class="pred-toggle" data-target="pred-data-operativa" aria-expanded="false">{% trans "Ver datos de origen" %}</button>
+                <div id="pred-data-operativa" class="pred-data-panel" style="display:none"></div>
+            </div>
+            <div class="pred-chart-card">
+                <div class="pred-chart-title">{% trans "Tesorería" %}</div>
+                <div id="pred-chart-tesoreria" class="pred-chart"></div>
+                <button class="pred-toggle" data-target="pred-data-tesoreria" aria-expanded="false">{% trans "Ver datos de origen" %}</button>
+                <div id="pred-data-tesoreria" class="pred-data-panel" style="display:none"></div>
+                <div style="display:flex; gap:8px; margin-top:8px;">
+                    <button class="sub-nav-btn" id="pred-export-csv">{% trans "Exportar CSV" %}</button>
+                    <button class="sub-nav-btn" id="pred-export-pdf">{% trans "Exportar PDF" %}</button>
+                </div>
+            </div>
+            <div class="pred-chart-card">
+                <div class="pred-chart-title">{% trans "Liquidez Corriente" %}</div>
+                <div id="pred-chart-liquidez" class="pred-chart"></div>
+                <button class="pred-toggle" data-target="pred-data-liquidez" aria-expanded="false">{% trans "Ver datos de origen" %}</button>
+                <div id="pred-data-liquidez" class="pred-data-panel" style="display:none"></div>
+            </div>
+            <div class="pred-chart-card">
+                <div class="pred-chart-title">{% trans "Flujo de caja" %}</div>
+                <div id="pred-chart-flujocaja" class="pred-chart"></div>
+                <button class="pred-toggle" data-target="pred-data-flujocaja" aria-expanded="false">{% trans "Ver datos de origen" %}</button>
+                <div id="pred-data-flujocaja" class="pred-data-panel" style="display:none"></div>
+            </div>
+        </div>
+    </div>
+    <div class="glass-card pred-section">
+        <div class="pred-section-title">{% trans "Comparativa de Modelos" %}</div>
+        <div class="compare-container">
+            <div class="compare-row">
+                <div class="compare-card">
+                    <div class="compare-title">{% trans "Operativa (Resultado mensual)" %}</div>
+                    <div id="compare-op-pred" class="compare-chart"></div>
+                </div>
+                <div class="compare-card">
+                    <div class="compare-title">{% trans "Operativa (Utilidad trimestral)" %}</div>
+                    <div id="compare-op-anat" class="compare-chart"></div>
+                </div>
+            </div>
+            <div class="compare-row">
+                <div class="compare-card">
+                    <div class="compare-title">{% trans "Bandas de confianza (Predicción)" %}</div>
+                    <div id="compare-bands-pred" class="compare-chart"></div>
+                </div>
+                <div class="compare-card">
+                    <div class="compare-title">{% trans "Bandas de confianza (Anatomía)" %}</div>
+                    <div id="compare-bands-anat" class="compare-chart"></div>
+                </div>
+            </div>
+            <div class="compare-row">
+                <div class="compare-card">
+                    <div class="compare-title">{% trans "YoY vs Forecast (Predicción)" %}</div>
+                    <div id="compare-yoy-pred" class="compare-grid"></div>
+                </div>
+                <div class="compare-card">
+                    <div class="compare-title">{% trans "YoY vs Forecast (Anatomía)" %}</div>
+                    <div id="compare-yoy-anat" class="compare-grid"></div>
+                </div>
+            </div>
+            <div class="compare-row">
+                <div class="compare-card">
+                    <div class="compare-title">{% trans "Liquidez Corriente (Predicción)" %}</div>
+                    <div id="compare-liq-pred" class="compare-chart"></div>
+                </div>
+                <div class="compare-card">
+                    <div class="compare-title">{% trans "Liquidez Corriente (Anatomía)" %}</div>
+                    <div id="compare-liq-anat" class="compare-chart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="pred-tips-overlay" class="fin-tips-overlay" style="display:none;">
+        <div class="fin-tips-card">
+            <div class="fin-tips-header">
+                <div class="fin-tips-badge"><i class="fas fa-lightbulb"></i> Prophet</div>
+                <button id="pred-tips-close" class="fin-tips-close" type="button"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="fin-tips-body">
+                <div class="fin-tips-icon-container">
+                    <i id="pred-tip-icon" class="fas fa-robot"></i>
+                </div>
+                <div class="fin-tips-content">
+                    <h3 id="pred-tip-title" class="fin-tip-title">{% trans "Iniciando..." %}</h3>
+                    <p id="pred-tip-text" class="fin-tip-text">{% trans "Preparando el forecast." %}</p>
+                </div>
+            </div>
+            <div class="fin-tips-progress-container">
+                <div id="pred-tips-progress-bar" class="fin-tips-progress-fill"></div>
+            </div>
+            <div class="fin-tips-footer">
+                <label class="fin-tips-checkbox">
+                    <input type="checkbox" id="pred-tips-dont-show">
+                    <span class="fin-text-muted">{% trans "No volver a mostrar" %}</span>
+                </label>
+                <button id="pred-tips-skip" class="sub-nav-btn" type="button">{% trans "Saltar tutorial" %}</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="{% static 'js/dashboard/prediccion.js' %}?v={% now 'U' %}"></script>
+<script src="{% static 'js/dashboard/compare_view.js' %}?v={% now 'U' %}"></script>

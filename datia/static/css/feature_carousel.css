@@ -1,0 +1,352 @@
+/* Feature Carousel Styles */
+.fc-wrapper {
+    background: transparent;
+    /* Removed background */
+    border-radius: 24px;
+    padding: 1rem 0;
+    /* Reduced padding since no border */
+    width: 100%;
+    max-width: 1100px;
+    margin: 4rem auto;
+    border: none;
+    /* Removed border */
+    box-shadow: none;
+    /* Removed shadow */
+    position: relative;
+    overflow: visible;
+    /* Allow glow to spill if needed */
+    font-family: 'Inter', system-ui, sans-serif;
+    color: #fff;
+}
+
+/* Background Glow Effect - Made more subtle/ambient */
+.fc-wrapper::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(168, 85, 247, 0.05) 0%, transparent 70%);
+    /* Reduced opacity */
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* TABS NAVIGATION */
+.fc-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 4rem;
+    position: relative;
+    z-index: 2;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 1rem;
+}
+
+.fc-tab {
+    flex: 1;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.3s;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.fc-tab:hover {
+    opacity: 0.8;
+}
+
+.fc-tab.active {
+    opacity: 1;
+}
+
+.fc-tab-progress {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+}
+
+.fc-tab-bar {
+    width: 0%;
+    height: 100%;
+    background: var(--accent, #a855f7);
+    border-radius: 2px;
+}
+
+/* Animation for the active tab progress */
+.fc-tab.active .fc-tab-bar {
+    width: 0%;
+    animation: progressFill 5s linear forwards;
+}
+
+/* Previous tabs should stay full */
+.fc-tab.completed .fc-tab-bar {
+    width: 100%;
+}
+
+@keyframes progressFill {
+    from {
+        width: 0%;
+    }
+
+    to {
+        width: 100%;
+    }
+}
+
+.fc-tab-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* CONTENT AREA */
+.fc-content-area {
+    position: relative;
+    min-height: 400px;
+    z-index: 2;
+}
+
+.fc-slide {
+    display: none;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.5s ease-out;
+}
+
+.fc-slide.active {
+    display: grid;
+    animation: slideIn 0.5s ease-out forwards;
+}
+
+@keyframes slideIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Text Column */
+.fc-text-col {
+    text-align: left;
+}
+
+.fc-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    line-height: 1.1;
+    color: #fff;
+}
+
+.fc-subtitle {
+    font-size: 1.25rem;
+    line-height: 1.6;
+    color: #a1a1aa;
+    margin-bottom: 2rem;
+}
+
+.fc-highlight {
+    color: var(--accent, #a855f7);
+    font-weight: 600;
+}
+
+/* Visual Column */
+.fc-visual-col {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+/* VISUAL ELEMENTS MOCKUPS */
+
+/* Slide 1: Chart */
+.fc-mock-chart {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    width: 100%;
+}
+
+.fc-chart-bars {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    height: 150px;
+    gap: 10px;
+}
+
+.fc-bar {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px 4px 0 0;
+    animation: growBar 1s ease-out forwards;
+    transform-origin: bottom;
+}
+
+.fc-bar.highlight {
+    background: var(--accent, #a855f7);
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+}
+
+@keyframes growBar {
+    from {
+        transform: scaleY(0);
+    }
+
+    to {
+        transform: scaleY(1);
+    }
+}
+
+.fc-glass-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 2rem;
+    width: 100%;
+}
+
+.fc-metric-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.fc-metric-row:last-child {
+    border-bottom: none;
+}
+
+.fc-metric-val {
+    font-weight: 700;
+    font-family: monospace;
+}
+
+.fc-metric-val.success {
+    color: #4ade80;
+}
+
+/* Slide 2: Terminal & Orb */
+.fc-mock-terminal {
+    background: #000;
+    border-radius: 8px;
+    padding: 15px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: #a1a1aa;
+    border: 1px solid #333;
+    margin-top: 1rem;
+}
+
+.fc-term-line {
+    margin-bottom: 5px;
+}
+
+.fc-term-line.success {
+    color: #4ade80;
+}
+
+.fc-pulsing-orb {
+    width: 150px;
+    height: 150px;
+    background: var(--accent, #a855f7);
+    border-radius: 50%;
+    filter: blur(40px);
+    opacity: 0.5;
+    animation: pulseOrb 3s infinite alternate;
+}
+
+@keyframes pulseOrb {
+    from {
+        transform: scale(0.8);
+        opacity: 0.4;
+    }
+
+    to {
+        transform: scale(1.1);
+        opacity: 0.7;
+    }
+}
+
+/* Slide 3: Rules & Shield */
+.fc-rules-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.fc-rule-item {
+    font-size: 1.1rem;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 10px 15px;
+    border-radius: 8px;
+}
+
+.fc-shield-icon {
+    color: var(--accent, #a855f7);
+    filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.5));
+}
+
+/* Slide 4: Action */
+.fc-action-card {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.fc-btn-mock {
+    padding: 1rem 2rem;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 600;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.fc-btn-mock.primary {
+    background: var(--accent, #a855f7);
+    color: white;
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+    .fc-slide {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        text-align: center;
+    }
+
+    .fc-text-col {
+        text-align: center;
+    }
+
+    .fc-tabs {
+        gap: 0.5rem;
+    }
+
+    .fc-tab-label {
+        display: none;
+    }
+
+    /* Hide labels on mobile text */
+    .fc-tab.active .fc-tab-label {
+        display: block;
+        font-size: 0.8rem;
+    }
+}

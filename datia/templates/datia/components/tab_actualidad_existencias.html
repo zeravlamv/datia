@@ -1,0 +1,134 @@
+{% load static %}
+{% load i18n %}
+<link rel="stylesheet" href="{% static 'css/almacen.css' %}">
+<div id="almacen-panel" class="almacen-panel">
+    <div class="almacen-summary">
+        <div class="alm-summary-cards summary-wide">
+            <div class="alm-card">
+                <div class="alm-card-title">Valor inicial (Periodo 0)</div>
+                <div class="alm-card-value" id="alm-sum-base-valor">--</div>
+            </div>
+            <div class="alm-card">
+                <div class="alm-card-title">Variación de existencias</div>
+                <div class="alm-card-value" id="alm-sum-variacion">--</div>
+            </div>
+            <div class="alm-card">
+                <div class="alm-card-title">Existencia fin de año</div>
+                <div class="alm-card-value" id="alm-sum-end">--</div>
+                <div style="font-size:0.85rem; color:#a1a1aa; margin-top:6px;" id="alm-sum-end-valor"> </div>
+            </div>
+        </div>
+        <div class="alm-chart-block summary-wide">
+            <div class="alm-chart-title">Variación de existencias del ejercicio</div>
+            <div id="chart-alm-variacion" class="alm-chart"></div>
+        </div>
+    </div>
+    <div class="almacen-filters">
+        <div class="filter-item">
+            <label>Método de valoración</label>
+            <div class="inline-select-action">
+                <select id="alm-valoracion">
+                    <option value="medio">Precio Medio</option>
+                    <option value="ultima">Precio Última entrada</option>
+                    <option value="compra">Precio Compra</option>
+                </select>
+                <button id="alm-valoracion-fav" class="fav-btn" aria-label="{% trans 'Guardar favorito' %}" title="{% trans 'Guardar favorito' %}">★ {% trans 'Favorito' %}</button>
+            </div>
+        </div>
+        <div class="filter-item">
+            <label>Periodo</label>
+            <select id="alm-periodo">
+                <option value="0">Todos</option>
+                <option value="1">Mes 1</option>
+                <option value="2">Mes 2</option>
+                <option value="3">Mes 3</option>
+                <option value="4">Mes 4</option>
+                <option value="5">Mes 5</option>
+                <option value="6">Mes 6</option>
+                <option value="7">Mes 7</option>
+                <option value="8">Mes 8</option>
+                <option value="9">Mes 9</option>
+                <option value="10">Mes 10</option>
+                <option value="11">Mes 11</option>
+                <option value="12">Mes 12</option>
+            </select>
+        </div>
+        <div class="filter-item">
+            <label>Almacén</label>
+            <select id="alm-almacen"><option value="">Todos</option></select>
+        </div>
+        <div class="filter-item">
+            <label>Ubicación</label>
+            <select id="alm-ubicacion"><option value="">Todas</option></select>
+        </div>
+        <div class="filter-item">
+            <label>Tipología</label>
+            <select id="alm-tipologia"><option value="">Todas</option></select>
+        </div>
+        <div class="filter-actions">
+            <button id="alm-btn-aplicar">Aplicar</button>
+            <button id="alm-btn-export">Exportar CSV</button>
+        </div>
+        <div class="fav-info"><span id="alm-valoracion-fav-info"></span></div>
+    </div>
+    <div class="almacen-widgets">
+        <div class="alm-card">
+            <div class="alm-card-title">Stock total valorado</div>
+            <div class="alm-card-value" id="alm-total-valor">--</div>
+        </div>
+        <div class="alm-card">
+            <div class="alm-card-title">Unidades totales</div>
+            <div class="alm-card-value" id="alm-total-unidades">--</div>
+        </div>
+        <div class="alm-card">
+            <div class="alm-card-title">Próximos a caducar</div>
+            <div class="alm-card-value" id="alm-expiring">--</div>
+        </div>
+        <div class="alm-card">
+            <div class="alm-card-title">Stock crítico</div>
+            <div class="alm-card-value" id="alm-critical">--</div>
+        </div>
+    </div>
+    <div class="almacen-charts">
+        <div class="alm-chart-block">
+            <div class="alm-chart-title">Stock por almacén y ubicación</div>
+            <div id="chart-alm-almacen" class="alm-chart"></div>
+        </div>
+        <div class="alm-chart-block">
+            <div class="alm-chart-title">Pareto ABC</div>
+            <div id="chart-alm-abc" class="alm-chart"></div>
+        </div>
+    </div>
+    <div class="almacen-tables">
+        <div class="alm-table-block">
+            <div class="alm-table-title">Maestra de existencias</div>
+            <table class="alm-table">
+                <thead>
+                    <tr>
+                        <th>Artículo</th>
+                        <th>Descripción</th>
+                        <th>Tipología</th>
+                        <th>Almacén</th>
+                        <th>Ubicación</th>
+                        <th>Unidades</th>
+                    </tr>
+                </thead>
+                <tbody id="alm-master-body"></tbody>
+            </table>
+        </div>
+        <div class="alm-table-block">
+            <div class="alm-table-title">Artículos próximos a caducidad</div>
+            <table class="alm-table">
+                <thead>
+                    <tr>
+                        <th>Artículo</th>
+                        <th>Descripción</th>
+                        <th>Fecha caducidad</th>
+                        <th>Unidades</th>
+                    </tr>
+                </thead>
+                <tbody id="alm-expiring-body"></tbody>
+            </table>
+        </div>
+    </div>
+</div>

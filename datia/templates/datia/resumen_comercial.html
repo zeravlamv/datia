@@ -1,0 +1,234 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resumen Comercial · Datia Analytics</title>
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'css/resumen_comercial.css' %}">
+</head>
+<body class="resumen-body">
+    <header class="resumen-hero">
+        <div class="hero-inner">
+            <div class="hero-badge">Resumen Comercial</div>
+            <h1 class="hero-title">Decisiones claras, datos bajo tu control</h1>
+            <p class="hero-subtitle">
+                Datia convierte los datos de tu ERP en una visión ejecutiva 360º de ventas, compras,
+                existencias, tesorería y financiera. Pensado para directores generales y CFOs que
+                quieren claridad sin proyectos interminables de BI.
+            </p>
+            <div class="hero-actions">
+                <a href="#modulos" class="btn-primary">Ver módulos de la plataforma</a>
+                <a href="mailto:info@datia.es" class="btn-ghost">Solicitar demostración</a>
+            </div>
+            <div class="hero-meta">
+                <span>Integración solo lectura con tu ERP</span>
+                <span>IA financiera 100% on-premise</span>
+                <span>Implantación en horas, no en meses</span>
+            </div>
+        </div>
+        <div class="hero-orbit">
+            <div class="orbit-ring orbit-ring-1"></div>
+            <div class="orbit-ring orbit-ring-2"></div>
+            <div class="orbit-dot orbit-dot-1"></div>
+            <div class="orbit-dot orbit-dot-2"></div>
+            <div class="orbit-dot orbit-dot-3"></div>
+        </div>
+    </header>
+
+    <main class="resumen-main">
+        <section class="section problems-section" id="problemas">
+            <div class="section-header">
+                <p class="section-label">Por qué aparece Datia</p>
+                <h2 class="section-title">Problemas típicos antes de implantar la plataforma</h2>
+            </div>
+            <div class="problems-grid">
+                <article class="problem-card">
+                    <h3>Informes dispersos y lentos</h3>
+                    <p>
+                        Cada cierre requiere combinar hojas de cálculo, listados de ERP y correos. El resultado
+                        llega tarde y nadie tiene la foto completa del negocio.
+                    </p>
+                </article>
+                <article class="problem-card">
+                    <h3>Falta de visibilidad ejecutiva</h3>
+                    <p>
+                        La dirección recibe datos contables, no decisiones. Hay demasiados indicadores técnicos
+                        y pocas respuestas claras a preguntas de negocio.
+                    </p>
+                </article>
+                <article class="problem-card">
+                    <h3>Dependencia de terceros</h3>
+                    <p>
+                        Cualquier cambio en informes o cuadros de mando depende de consultores externos,
+                        con costes altos y plazos poco previsibles.
+                    </p>
+                </article>
+                <article class="problem-card">
+                    <h3>Miedo a exponer datos financieros</h3>
+                    <p>
+                        Muchos proyectos de BI implican subir datos sensibles a la nube. Datia mantiene
+                        toda la inteligencia en tu infraestructura, sin sacar tus cifras fuera.
+                    </p>
+                </article>
+            </div>
+        </section>
+
+        <section class="section value-section">
+            <div class="section-header">
+                <p class="section-label">Qué hace diferente a Datia</p>
+                <h2 class="section-title">Una capa ejecutiva por encima de tu ERP</h2>
+            </div>
+            <div class="value-grid">
+                <article class="value-card">
+                    <h3>Visión 360º en un solo lugar</h3>
+                    <p>
+                        Ventas, compras, existencias, tesorería y resultados financieros se presentan
+                        en un único panel ejecutivo, coherente y accionable.
+                    </p>
+                </article>
+                <article class="value-card">
+                    <h3>IA financiera on‑premise</h3>
+                    <p>
+                        Informes estratégicos y explicaciones en lenguaje natural generados por IA
+                        trabajando sobre tus datos, sin que salgan de tu infraestructura.
+                    </p>
+                </article>
+                <article class="value-card">
+                    <h3>Implantación en horas</h3>
+                    <p>
+                        El conector a tu ERP es sólo lectura. La carga histórica y los dashboards
+                        básicos se preparan en menos de una jornada de trabajo.
+                    </p>
+                </article>
+            </div>
+        </section>
+
+        <section class="section modules-section" id="modulos">
+            <div class="section-header">
+                <p class="section-label">Módulos principales</p>
+                <h2 class="section-title">Todo lo que necesitas, sin complicar el día a día</h2>
+            </div>
+            <div class="modules-grid">
+                <article class="module-card">
+                    <div class="module-icon">📊</div>
+                    <h3>Ventas</h3>
+                    <p>Visión por cliente y producto, ranking, análisis ABC y tendencias de ingresos.</p>
+                </article>
+                <article class="module-card">
+                    <div class="module-icon">🛒</div>
+                    <h3>Compras</h3>
+                    <p>Control de coste por proveedor, comparativas de precios y concentración de riesgo.</p>
+                </article>
+                <article class="module-card">
+                    <div class="module-icon">🏭</div>
+                    <h3>Existencias</h3>
+                    <p>Equilibrio entre servicio y stock, rotación y capital inmovilizado por almacén.</p>
+                </article>
+                <article class="module-card">
+                    <div class="module-icon">💹</div>
+                    <h3>Financiera</h3>
+                    <p>P&L, balance y ratios en lenguaje ejecutivo, con comparativas YoY y drill‑down.</p>
+                </article>
+                <article class="module-card">
+                    <div class="module-icon">💧</div>
+                    <h3>Tesorería</h3>
+                    <p>Previsión de cobros y pagos, alertas de liquidez y control de cartera de efectos.</p>
+                </article>
+                <article class="module-card">
+                    <div class="module-icon">📆</div>
+                    <h3>Presupuestos</h3>
+                    <p>Comparativa real vs presupuesto, desviaciones y análisis por partidas.</p>
+                </article>
+                <article class="module-card">
+                    <div class="module-icon">📈</div>
+                    <h3>Evolución & Predicción</h3>
+                    <p>Comparativas entre periodos y proyecciones orientadas a la acción.</p>
+                </article>
+                <article class="module-card">
+                    <div class="module-icon">📱</div>
+                    <h3>Móvil Ejecutivo</h3>
+                    <p>Indicadores clave siempre a mano, con vista simplificada para dirección.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-header">
+                <p class="section-label">Nuevas funcionalidades destacadas</p>
+                <h2 class="section-title">Capacidades avanzadas ya disponibles en la plataforma</h2>
+            </div>
+            <div class="value-grid">
+                <article class="value-card">
+                    <h3>Análisis IA Financiera (CFO)</h3>
+                    <p>
+                        Informes estratégicos en lenguaje natural sobre P&L, balance, tesorería y presupuestos,
+                        pensados para la dirección financiera. Incluye contexto enriquecido y exportación a PDF.
+                    </p>
+                </article>
+                <article class="value-card">
+                    <h3>IA aplicada a Ventas</h3>
+                    <p>
+                        Deep dives automáticos sobre clientes, productos y tendencias de ingresos. Detecta
+                        anomalías, concentra el foco en cuentas clave y sugiere acciones comerciales.
+                    </p>
+                </article>
+                <article class="value-card">
+                    <h3>Base de conocimiento IA & Auto‑entreno</h3>
+                    <p>
+                        Repositorio controlado de consultas y definiciones de negocio para que la IA aprenda
+                        cómo se analiza tu empresa, con historial y feedback integrado.
+                    </p>
+                </article>
+                <article class="value-card">
+                    <h3>Panel móvil para dirección</h3>
+                    <p>
+                        Vista ejecutiva adaptada a móvil que muestra solo los KPIs esenciales de ventas,
+                        compras y financiera, con control de visibilidad por empresa y usuario.
+                    </p>
+                </article>
+            </div>
+        </section>
+
+        <section class="section benefits-section">
+            <div class="section-header">
+                <p class="section-label">Resultados para dirección</p>
+                <h2 class="section-title">Beneficios directos para tu empresa</h2>
+            </div>
+            <div class="benefits-grid">
+                <article class="benefit-card">
+                    <h3>Claridad</h3>
+                    <p>Información simple y visual, sin ruido. Lo importante aparece primero, con contexto.</p>
+                </article>
+                <article class="benefit-card">
+                    <h3>Control</h3>
+                    <p>Márgenes, liquidez y objetivos monitorizados con la misma lógica en todas las áreas.</p>
+                </article>
+                <article class="benefit-card">
+                    <h3>Confianza</h3>
+                    <p>Cifras trazables, IA auditada y datos que nunca salen de tu empresa.</p>
+                </article>
+                <article class="benefit-card">
+                    <h3>Velocidad</h3>
+                    <p>Menos tiempo preparando informes, más tiempo tomando decisiones y ejecutando.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="section cta-section">
+            <div class="cta-inner">
+                <h2 class="cta-title">¿Listo para ver tu negocio con la claridad de Datia?</h2>
+                <p class="cta-text">
+                    Explora el Catálogo del Sistema para entender la arquitectura técnica o solicita una
+                    demostración con datos reales de tu empresa.
+                </p>
+                <div class="cta-actions">
+                    <a href="{% url 'catalog' %}" class="btn-primary">Ver Catálogo Técnico</a>
+                    <a href="mailto:info@datia.es" class="btn-ghost">Solicitar demo personalizada</a>
+                </div>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

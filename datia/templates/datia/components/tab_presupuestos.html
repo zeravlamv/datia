@@ -1,0 +1,98 @@
+{% load i18n %}
+{% load static %}
+
+<div id="budget-module-root" style="display: flex; flex-direction: column; height: calc(100vh - 140px); width: 100%; overflow: hidden;">
+    <!-- Toolbar (Fixed at top of module) -->
+    <div class="glass-panel" style="flex: 0 0 auto; margin-bottom: 20px; padding: 20px; display: flex; flex-direction: column; gap: 20px; z-index: 50; background: rgba(9, 9, 11, 0.95); border-bottom: 1px solid rgba(255,255,255,0.1);">
+
+        <!-- Row 1: Title and Subtitle -->
+        <div style="display: flex; align-items: baseline; gap: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;">
+            <h2 style="margin: 0; font-size: 1.5rem; color: #fff; font-weight: 700;">{% trans "Gestión de Presupuestos" %}</h2>
+            <div style="color: #a1a1aa; font-size: 0.95rem; border-left: 1px solid #52525b; padding-left: 15px;">
+                {% trans "Define objetivos y previsiones para el ejercicio próximo." %}
+            </div>
+        </div>
+
+        <!-- Row 2: Controls -->
+        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+
+            <!-- Inputs Group -->
+            <div style="display:flex; gap:15px; align-items:center; background: rgba(255,255,255,0.03); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <label for="budget-base-year" style="color:#e4e4e7; font-size:0.85rem; font-weight:500;">{% trans "Año Base" %}</label>
+                    <input type="number" id="budget-base-year" class="search-input" min="2000" max="2100" value="{{ ejercicio }}" style="width: 80px;">
+                </div>
+                <div style="width: 1px; height: 20px; background: rgba(255,255,255,0.1);"></div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <label for="budget-target-year" style="color:#e4e4e7; font-size:0.85rem; font-weight:500;">{% trans "Año Presupuesto" %}</label>
+                    <input type="number" id="budget-target-year" class="search-input" min="2000" max="2100" value="{{ ejercicio|add:'1' }}" style="width: 80px;">
+                </div>
+                <div style="width: 1px; height: 20px; background: rgba(255,255,255,0.1);"></div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <label for="budget-adjust-pct" style="color:#e4e4e7; font-size:0.85rem; font-weight:500;">{% trans "Ajuste" %}</label>
+                    <div style="position:relative;">
+                        <input id="budget-adjust-pct" type="text" inputmode="decimal" class="search-input" placeholder="0" style="width: 70px; padding-right: 25px;">
+                        <span style="position:absolute; right:8px; top:50%; transform:translateY(-50%); color:#a1a1aa; font-size:0.8rem;">%</span>
+                    </div>
+                </div>
+                <button onclick="loadPresupuestos('generate')" id="btn-budget-generate" class="btn-elegant" style="padding: 4px 12px; font-size: 0.85rem;">
+                    <i class="bi bi-magic"></i> {% trans "Generar" %}
+                </button>
+            </div>
+
+            <div style="flex:1;"></div> <!-- Spacer -->
+
+            <!-- Actions Group -->
+            <div style="display:flex; gap:10px;">
+                <button onclick="saveBudgetGrid()" class="btn-elegant">
+                    <i class="bi bi-save"></i> {% trans "Guardar" %}
+                </button>
+                <button onclick="loadBudgetComparison()" class="btn-elegant" aria-label="Comparativa" title="Comparativa">
+                    <i class="bi bi-bar-chart-line"></i> {% trans "Comparativa" %}
+                </button>
+                <div style="width: 1px; height: 30px; background: rgba(255,255,255,0.1); margin: 0 5px;"></div>
+                <button onclick="loadBudgetTree()" class="btn-elegant" aria-label="Árbol" title="Árbol">
+                    <i class="bi bi-diagram-3"></i> {% trans "Árbol" %}
+                </button>
+                <button onclick="loadPresupuestos()" class="btn-elegant" aria-label="Entrada" title="Entrada">
+                    <i class="bi bi-grid"></i> {% trans "Entrada" %}
+                </button>
+                <div style="width: 1px; height: 30px; background: rgba(255,255,255,0.1); margin: 0 5px;"></div>
+                <button onclick="toggleExpandAllTree(true)" class="btn-elegant" title="Expandir">
+                    <i class="bi bi-arrows-expand"></i>
+                </button>
+                <button onclick="toggleExpandAllTree(false)" class="btn-elegant" title="Colapsar">
+                    <i class="bi bi-arrows-collapse"></i>
+                </button>
+            </div>
+            <div id="budget-inline-confirm" class="inline-confirm" aria-live="polite" role="region"></div>
+        </div>
+    </div>
+
+    <!-- Main Content Area (Scrollable) -->
+    <div style="flex: 1; overflow-y: auto; overflow-x: hidden; padding-right: 5px;">
+        <div class="glass-panel" style="padding: 20px; overflow-x: hidden;">
+            <div id="budget-grid-container" style="display:none;">
+                <!-- Grid rendered by JS -->
+                <div style="text-align: center; color: #a1a1aa; padding: 40px;">
+                    <div class="loading-spinner"></div>
+                    Loading Budgets...
+                </div>
+            </div>
+            <div id="budget-tree-container" style="display:none;">
+                <div style="text-align: center; color: #a1a1aa; padding: 40px;">
+                    <div class="loading-spinner"></div>
+                    Loading Tree...
+                </div>
+            </div>
+            <div id="budget-comparison-container" style="display:block;">
+                <!-- Comparison rendered by JS -->
+                <div style="text-align: center; color: #a1a1aa; padding: 40px;">
+                    <div class="loading-spinner"></div>
+                    Cargando Comparativa...
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="{% static 'js/dashboard/presupuestos_comparativa.js' %}?v=32"></script>
+</div>

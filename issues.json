@@ -1,0 +1,66 @@
+[
+    {
+        "id": "ISS-049",
+        "title": "Persistencia de Modo Móvil",
+        "description": "El modo especializado no se guarda al recargar la página.",
+        "status": "pending",
+        "priority": "high",
+        "created_at": "2026-01-08T10:00:00"
+    },
+    {
+        "id": "ISS-050",
+        "title": "Editor Móvil Vacío",
+        "description": "Al abrir el editor móvil aparece vacío (imagen 2).",
+        "status": "resolved",
+        "priority": "high",
+        "created_at": "2026-01-08T10:00:00"
+    },
+    {
+        "id": "ISS-051",
+        "title": "Funcionalidad Drag & Drop",
+        "description": "Falta funcionalidad Drag & Drop en el resto de pestañas.",
+        "status": "pending",
+        "priority": "medium",
+        "created_at": "2026-01-08T10:00:00"
+    },
+    {
+        "id": "ISS-052",
+        "title": "Pestaña Móvil Faltante",
+        "description": "La pestaña 'Móvil' no aparece en la navegación.",
+        "status": "pending",
+        "priority": "medium",
+        "created_at": "2026-01-08T10:00:00"
+    },
+    {
+        "id": "ISS-053",
+        "title": "Refinamiento Vista Móvil",
+        "description": "Limpieza de cabecera, corrección de logo y carga de datos en widgets móviles.",
+        "status": "resolved",
+        "priority": "high",
+        "created_at": "2026-01-08T11:00:00"
+    },
+    {
+        "id": "ISS-054",
+        "title": "Tablas datiadb_ faltantes",
+        "description": "Las tablas con prefijo datiadb_ no se crean durante el proceso de sincronización (Materializar y Entrenar).",
+        "status": "pending",
+        "priority": "high",
+        "created_at": "2026-01-14T09:15:00"
+    },
+    {
+        "id": "ISS-055",
+        "title": "Error Sincronización Acumulados Stock",
+        "description": "La tabla datia_acumulados_stocks no se actualiza debido a la falta de columnas de timestamp en el proceso COPY.",
+        "status": "pending",
+        "priority": "high",
+        "created_at": "2026-01-19T14:10:00"
+    },
+    {
+        "id": "ISS-056",
+        "title": "Timeout en Analizar IA",
+        "description": "El botón 'Analizar IA' ha dejado de devolver informes y el sistema entra en timeout tras 16 minutos.",
+        "status": "pending",
+        "priority": "critical",
+        "created_at": "2026-02-13T09:47:00"
+    }
+]

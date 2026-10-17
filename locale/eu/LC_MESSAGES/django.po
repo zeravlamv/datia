@@ -1,0 +1,581 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-01-02 12:38+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:11
+msgid "Ventas"
+msgstr "Salmentak"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:15
+msgid "Compras"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:19
+msgid "Almacén"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:24
+msgid "Financiera"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:50
+msgid "Girar todas las tarjetas"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:57
+msgid "Detalles"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:74
+msgid "Ventas (1 Día)"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:96
+#: .\datia\templates\datia\components\tab_actualidad.html:145
+#: .\datia\templates\datia\components\tab_actualidad.html:190
+#: .\datia\templates\datia\components\tab_actualidad.html:235
+#: .\datia\templates\datia\components\tab_actualidad.html:278
+#: .\datia\templates\datia\components\tab_actualidad.html:321
+#: .\datia\templates\datia\components\tab_actualidad.html:365
+#: .\datia\templates\datia\components\tab_actualidad.html:409
+#: .\datia\templates\datia\components\tab_actualidad.html:453
+#: .\datia\templates\datia\components\tab_actualidad.html:507
+#: .\datia\templates\datia\components\tab_actualidad.html:554
+#: .\datia\templates\datia\components\tab_actualidad.html:652
+#: .\datia\templates\datia\components\tab_actualidad.html:687
+#: .\datia\templates\datia\components\tab_actualidad.html:735
+#: .\datia\templates\datia\components\tab_actualidad.html:782
+#: .\datia\templates\datia\components\tab_actualidad.html:818
+msgid "Tabla:"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:99
+#: .\datia\templates\datia\components\tab_actualidad.html:148
+#: .\datia\templates\datia\components\tab_actualidad.html:193
+#: .\datia\templates\datia\components\tab_actualidad.html:238
+#: .\datia\templates\datia\components\tab_actualidad.html:281
+#: .\datia\templates\datia\components\tab_actualidad.html:324
+#: .\datia\templates\datia\components\tab_actualidad.html:510
+#: .\datia\templates\datia\components\tab_actualidad.html:557
+msgid "Campo:"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:101
+#: .\datia\templates\datia\components\tab_actualidad.html:150
+#: .\datia\templates\datia\components\tab_actualidad.html:195
+#: .\datia\templates\datia\components\tab_actualidad.html:241
+#: .\datia\templates\datia\components\tab_actualidad.html:284
+#: .\datia\templates\datia\components\tab_actualidad.html:327
+#: .\datia\templates\datia\components\tab_actualidad.html:372
+#: .\datia\templates\datia\components\tab_actualidad.html:416
+#: .\datia\templates\datia\components\tab_actualidad.html:460
+#: .\datia\templates\datia\components\tab_actualidad.html:512
+#: .\datia\templates\datia\components\tab_actualidad.html:559
+#: .\datia\templates\datia\components\tab_actualidad.html:609
+msgid "Previo:"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:102
+msgid "Mismo día (Año anterior)"
+msgstr "Egun bera (Aurreko urtea)"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:107
+#: .\datia\templates\datia\components\tab_actualidad.html:156
+#: .\datia\templates\datia\components\tab_actualidad.html:201
+#: .\datia\templates\datia\components\tab_actualidad.html:245
+#: .\datia\templates\datia\components\tab_actualidad.html:288
+#: .\datia\templates\datia\components\tab_actualidad.html:331
+#: .\datia\templates\datia\components\tab_actualidad.html:376
+#: .\datia\templates\datia\components\tab_actualidad.html:420
+#: .\datia\templates\datia\components\tab_actualidad.html:464
+#: .\datia\templates\datia\components\tab_actualidad.html:516
+#: .\datia\templates\datia\components\tab_actualidad.html:564
+#: .\datia\templates\datia\components\tab_actualidad.html:742
+#: .\datia\templates\datia\components\tab_actualidad.html:788
+#: .\datia\templates\datia\components\tab_actualidad.html:824
+msgid "Actualizado:"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:108
+#: .\datia\templates\datia\components\tab_actualidad.html:157
+#: .\datia\templates\datia\components\tab_actualidad.html:202
+#: .\datia\templates\datia\components\tab_actualidad.html:246
+#: .\datia\templates\datia\components\tab_actualidad.html:289
+#: .\datia\templates\datia\components\tab_actualidad.html:332
+#: .\datia\templates\datia\components\tab_actualidad.html:377
+#: .\datia\templates\datia\components\tab_actualidad.html:421
+#: .\datia\templates\datia\components\tab_actualidad.html:465
+#: .\datia\templates\datia\components\tab_actualidad.html:517
+#: .\datia\templates\datia\components\tab_actualidad.html:565
+#: .\datia\templates\datia\components\tab_actualidad.html:743
+#: .\datia\templates\datia\components\tab_actualidad.html:789
+#: .\datia\templates\datia\components\tab_actualidad.html:825
+msgid "Hace 5 min"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:123
+msgid "Ventas (7 Días)"
+msgstr "Salmentak (7 Egun)"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:151
+msgid "7 Días (Año anterior)"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:168
+msgid "Ventas (30 Días)"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:196
+msgid "30 Días (Año anterior)"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:214
+msgid "Ticket Medio (1 Día)"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:242
+#: .\datia\templates\datia\components\tab_actualidad.html:285
+#: .\datia\templates\datia\components\tab_actualidad.html:328
+msgid "Ticket Medio (Año anterior)"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:244
+#: .\datia\templates\datia\components\tab_actualidad.html:287
+#: .\datia\templates\datia\components\tab_actualidad.html:330
+msgid "Diferencia porcentual"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:257
+msgid "Ticket Medio (7 Días)"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:300
+msgid "Ticket Medio (30 Días)"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:344
+msgid "Margen (1 Día)"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:373
+#: .\datia\templates\datia\components\tab_actualidad.html:417
+#: .\datia\templates\datia\components\tab_actualidad.html:461
+msgid "Margen (Año anterior)"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:375
+#: .\datia\templates\datia\components\tab_actualidad.html:419
+#: .\datia\templates\datia\components\tab_actualidad.html:463
+msgid "Puntos porcentuales"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:388
+msgid "Margen (7 Días)"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:432
+msgid "Margen (30 Días)"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:480
+msgid "Ventas (Sin IVA)"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:513
+#: .\datia\templates\datia\components\tab_actualidad.html:560
+msgid "Total Ejercicio Anterior"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:515
+msgid "Crecimiento anual"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:529
+msgid "Costes Directos"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:562
+msgid "Evolución costes"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:577
+msgid "Margen Bruto"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:610
+msgid "Margen Medio Anterior"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:670
+msgid "Evolución Ventas"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:708
+msgid "Top Clientes"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:755
+msgid "Top Artículos"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_actualidad.html:801
+msgid "Top Zonas"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_auto.html:8
+msgid "Auto Entreno & Contexto"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_auto.html:10
+msgid ""
+"Define qué es tu empresa y cómo opera. La IA usará esta información para "
+"entender mejor tus datos."
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_auto.html:17
+msgid "Contexto Negocio"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_auto.html:21
+msgid "Mapeo Datos"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_auto.html:24
+msgid "Sincronización"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_auto.html:28
+msgid "Relaciones (Joins)"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_auto.html:32
+msgid "Entrenamiento IA"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_auto.html:42
+msgid "Contexto de Negocio"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_auto.html:60
+msgid "Guardar Contexto"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_auto.html:70
+msgid "Mapeo de Datos"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_auto.html:74
+msgid "Seleccionar Tabla Origen (ERP)"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_auto.html:359
+msgid "Entrenamiento Masivo de IA"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_datia.html:35
+msgid "Inteligencia"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_datia.html:38
+msgid "Inteligencia de Negocio"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_datia.html:38
+msgid "Local, Privada y Universal"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_datia.html:39
+msgid ""
+"Tu SAGE 200 y todos tus datos, unificados en un solo corazón inteligente."
+msgstr "Zure SAGE 200 eta datu guztiak, bihotz adimendun bakar batean bateratuak."
+
+#: .\datia\templates\datia\components\tab_datia.html:57
+msgid "Universal & Multilingüe"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_datia.html:58
+msgid "Nativo para"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_datia.html:58
+msgid "y cualquier ERP (API, HTTP, ODBC)."
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_datia.html:59
+msgid "Multilingüe"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_datia.html:59
+msgid "para hablar el idioma de tu negocio."
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_datia.html:76
+msgid "Multi-Empresa"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_datia.html:77
+msgid ""
+"Gestión centralizada de múltiples razones sociales. Cambia de empresa con un "
+"clic y mantén contextos separados."
+msgstr "Hainbat enpresaren kudeaketa zentralizatua. Aldatu enpresaz klik batekin eta mantendu testuinguruak bereizita."
+
+#: .\datia\templates\datia\components\tab_datia.html:88
+msgid "Seguridad Granular"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_datia.html:89
+msgid ""
+"Acceso basado en roles y metadatos. Define quién ve qué (ventas, márgenes, "
+"costes) con precisión quirúrgica."
+msgstr "Roletan eta metadatuetan oinarritutako sarbidea. Zehaztu nork ikusten duen zer (salmentak, marjinak, kostuak) zehaztasun kirurgikoarekin."
+
+#: .\datia\templates\datia\components\tab_datia.html:100
+msgid "Privacidad por Diseño"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_datia.html:101
+msgid "Datia opera con un motor"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_datia.html:101
+msgid "Tus datos financieros nunca abandonan tu servidor."
+msgstr "Zure finantza-datuek ez dute inoiz zure zerbitzaria uzten."
+
+#: .\datia\templates\datia\components\tab_datia.html:106
+msgid "Conexión Agnóstica"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_datia.html:107
+msgid ""
+"Entrenamos al sistema con tus datos, sin importar el ERP (SAGE, SAP, "
+"Dynamics) usando estándares seguros (ODBC, HTTP, API)."
+msgstr "Sistema zure datuekin entrenatzen dugu, ERPa edozein dela ere (SAGE, SAP, Dynamics) estandar seguruak erabiliz (ODBC, HTTP, API)."
+
+#: .\datia\templates\datia\components\tab_datia.html:114
+msgid "Vectorización Local"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_datia.html:115
+msgid ""
+"Transformamos datos en vectores matemáticos ininteligibles para externos."
+msgstr "Datuak kanpokoentzat ulergaitzak diren bektore matematiko bihurtzen ditugu."
+
+#: .\datia\templates\datia\components\tab_datia.html:123
+msgid "Razonamiento Profundo"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_datia.html:124
+msgid ""
+"La IA cruza cientos de variables para responder 'Por qué bajó el margen' sin "
+"alucinaciones."
+msgstr "IAk ehunka aldagai gurutzatzen ditu 'Zergatik jaitsi da marjina' erantzuteko haluzinaziorik gabe."
+
+#: .\datia\templates\datia\components\tab_historico.html:9
+msgid "Histórico de Consultas"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_historico.html:12
+msgid "Consultas guardadas que puedes reutilizar y actualizar"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_historico.html:17
+msgid "Actualizar Todo"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_historico.html:33
+msgid "No hay consultas guardadas"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_historico.html:36
+msgid "Dale 👍 a una respuesta en la pestaña IA para guardarla aquí"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_historico.html:117
+msgid "Ejecutar"
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_ia.html:11
+msgid "tu negocio"
+msgstr "zure negozioa"
+
+#: .\datia\templates\datia\components\tab_ia.html:12
+#, python-format
+msgid ""
+"Hola, ¿qué quieres saber de <span id=\"ia-prompt-company\"\n"
+"                style=\"color: var(--accent); font-weight: "
+"700;\">%(business_text)s</span>?"
+msgstr "Kaixo, zer jakin nahi duzu hurrengoari buruz: <span id=\"ia-prompt-company\" style=\"color: var(--accent); font-weight: 700;\">%(business_text)s</span>?"
+
+#: .\datia\templates\datia\components\tab_ia.html:20
+msgid "Hazme cualquier pregunta sobre tu negocio..."
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_ia.html:38
+msgid "Hazme otra pregunta..."
+msgstr ""
+
+#: .\datia\templates\datia\dashboard.html:48
+msgid "Integrado con"
+msgstr ""
+
+#: .\datia\templates\datia\dashboard.html:54
+msgid "IA"
+msgstr ""
+
+#: .\datia\templates\datia\dashboard.html:55
+msgid "Auto entreno"
+msgstr ""
+
+#: .\datia\templates\datia\dashboard.html:56
+msgid "Actualidad"
+msgstr ""
+
+#: .\datia\templates\datia\dashboard.html:57
+msgid "Histórico"
+msgstr ""
+
+#: .\datia\templates\datia\dashboard.html:58
+msgid "Datia"
+msgstr ""
+
+#: .\datia\templates\datia\dashboard.html:88
+msgid "Configuración"
+msgstr ""
+
+#: .\datia\templates\datia\dashboard.html:104
+msgid "Cerrar sesión"
+msgstr ""
+
+#: .\datia\templates\datia\dashboard.html:105
+msgid "Salir"
+msgstr ""
+
+#: .\datia\templates\datia\dashboard.html:115
+msgid "Datos actualizados"
+msgstr ""
+
+#: .\datia\templates\datia\dashboard.html:117
+msgid "Sincronización pendiente"
+msgstr ""
+
+#: .\datia\templates\datia\dashboard.html:136
+msgid "Sincronizando..."
+msgstr "Sinkronizatzen..."
+
+msgid "📡 Conectando con Nodos Datia..."
+msgstr "📡 Datia Nodoekin konektatzen..."
+
+msgid "✨ Explorando Memoria Vectorial..."
+msgstr "✨ Memoria Bektoriala arakatzen..."
+
+msgid "🛡️ Validando Esquema Seguro..."
+msgstr "🛡️ Eskema Segurua balioztatzen..."
+
+msgid "✨ Materializando Respuesta..."
+msgstr "✨ Erantzuna gauzatzen..."
+
+msgid "✨ Entrenamiento Manual Solicitado..."
+msgstr "✨ Eskuzko Entrenamendua Eskatuta..."
+
+msgid "🎓 IA asimilando del experto..."
+msgstr "🎓 IA adituarengandik ikasten..."
+
+msgid "💾 Guardando nuevo conocimiento..."
+msgstr "💾 Ezagutza berria gordetzen..."
+
+msgid "✨ Generando respuesta maestra..."
+msgstr "✨ Erantzun nagusia sortzen..."
+
+msgid "Procesando cambio de idioma..."
+msgstr "Hizkuntza aldaketa prozesatzen..."
+
+msgid "No encuentro esta consulta en mi memoria verificada."
+msgstr "Ezin dut kontsulta hau nire egiaztatutako memorian aurkitu."
+
+msgid "Generar con IA (vZULU)"
+msgstr "IArekin sortu (vZULU)"
+
+msgid "Esto analizará tu pregunta y generará una respuesta nueva."
+msgstr "Honek zure galdera aztertuko du eta erantzun berri bat sortuko du."
+
+msgid "Error ZULU: Consulta vacía"
+msgstr "ZULU Errorea: Kontsulta hutsa"
+
+msgid "Idioma actualizado"
+msgstr "Hizkuntza eguneratua"
+
+msgid "Error de sistema:"
+msgstr "Sistema errorea:"
+
+msgid "⏳ Analizando..."
+msgstr "⏳ Aztertzen..."
+
+msgid "Generando insights y gráficos avanzados..."
+msgstr "Insightak eta grafiko aurreratuak sortzen..."
+
+msgid "✨ Analizar más"
+msgstr "✨ Gehiago aztertu"
+
+msgid "✨ Análisis Detallado"
+msgstr "✨ Azterketa Xehatua"
+
+msgid "Sin etiqueta"
+msgstr "Etiketarik gabe"
+
+msgid "Dale a 'Analizar más' para ver desgloses y distribuciones."
+msgstr "Sakatu 'Gehiago aztertu' banaketak ikusteko."
+
+msgid "Distribución de Ventas por Cliente (Pareto)"
+msgstr "Salmenten banaketa bezeroaren arabera (Pareto)"
+
+msgid "Distribución de Ventas (Pareto Top 20)"
+msgstr "Salmenten banaketa (Pareto Top 20)"
+
+msgid "Distribución de Ventas por Artículo (Pareto)"
+msgstr "Salmenten banaketa artikuluaren arabera (Pareto)"
+
+msgid "Concentración de Clientes (Top 5)"
+msgstr "Bezeroen kontzentrazioa (Top 5)"
+
+msgid "Este informe no contiene desgloses adicionales (Pareto), pero observa el gráfico principal arriba."
+msgstr "Txosten honek ez du banaketa gehigarririk (Pareto), baina ikusi goiko grafiko nagusia."
+
+msgid "No hay gráficos de desglose adicionales disponibles en este informe."
+msgstr "Ez dago banaketa-grafiko gehigarririk eskuragarri txosten honetan."
+
+msgid "Formato de tabla incorrecto o sin datos."
+msgstr "Taula formatu okerra edo daturik gabe."
+
+msgid "Por favor, introduce la contraseña."
+msgstr "Mesedez, sartu pasahitza."
+
+msgid "BORRANDO..."
+msgstr "EZABATZEN..."
+
+msgid "Éxito"
+msgstr "Arrakasta"
+
+msgid "Sistema reseteado correctamente"
+msgstr "Sistema behar bezala berrezarri da"
+
+msgid "Error de conexión:"
+msgstr "Konexio errorea:"
+
+msgid "CONFIRMAR RESET"
+msgstr "BERREZARPENA BAIESTATU"

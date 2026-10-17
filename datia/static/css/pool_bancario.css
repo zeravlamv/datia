@@ -1,0 +1,18 @@
+.pool-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.pool-kpi{background:var(--card-bg,#18181b);border:1px solid var(--border,#27272a);border-radius:10px;padding:14px}
+.pool-kpi-title{font-size:.85rem;color:#a1a1aa;margin-bottom:6px}
+.pool-kpi-val{font-size:1.4rem;font-weight:700;color:#e4e4e7}
+.pool-kpi-sub{font-size:.75rem;color:#a1a1aa}
+.pool-section{background:var(--card-bg,#18181b);border:1px solid var(--border,#27272a);border-radius:10px;padding:14px;margin-top:12px}
+.pool-section-title{font-size:.9rem;color:#e4e4e7;margin-bottom:6px}
+.pool-chart{width:100%;height:280px}
+.pool-filters{display:flex;gap:10px;justify-content:flex-end;margin-bottom:10px}
+.pool-accounts-controls{display:grid;grid-template-columns:1fr 1fr 1fr auto auto;gap:8px;margin-top:8px;margin-bottom:8px}
+.pool-accounts-controls input[type="text"]{background:#18181b;border:1px solid #27272a;color:#e4e4e7;border-radius:8px;padding:8px}
+.pool-acc-check{display:flex;align-items:center;gap:6px;justify-content:flex-start}
+.pool-accounts-list table{width:100%;border-collapse:collapse;border:1px solid #27272a;border-radius:8px;overflow:hidden}
+.pool-accounts-list th,.pool-accounts-list td{border-bottom:1px solid #27272a;padding:8px;color:#e4e4e7;font-size:.9rem}
+.pool-accounts-list th{background:#111117;color:#a1a1aa;text-align:left}
+.pool-accounts-list tr:hover{background:#12121a}
+@media (max-width: 1200px){.pool-grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width: 700px){.pool-grid{grid-template-columns:1fr}}

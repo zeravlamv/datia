@@ -1,0 +1,179 @@
+{% load static i18n %}
+<div id="tab-actualidad-tesoreria" class="financial-theme">
+    <div class="dashboard-v2-container">
+        <link rel="stylesheet" href="{% static 'css/tesoreria.css' %}">
+        <!-- KPI GRID (4x2) -->
+        <div class="fin-grid-container" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+            <!-- Row 1 -->
+            <div class="fin-kpi-card fin-bg-blue" id="card-pendiente-cobro" role="button" tabindex="0" aria-label="Abrir detalle por cuenta">
+                <div class="fin-kpi-title">
+                    Pendiente de cobro
+                    <button id="mark-pendiente-cobro" class="kpi-detail-chip" type="button" aria-label="Ver detalle por cuenta">Detalle</button>
+                    <span id="warn-pendiente-cobro" class="kpi-warn-chip">Descuadre</span>
+                </div>
+                <div class="fin-kpi-val" id="kpi-pendiente-cobro">-- €</div>
+                <div class="fin-kpi-desc">Total clientes pendientes</div>
+                <div class="fin-kpi-extra" id="extra-pendiente-cobro">Calculando…</div>
+            </div>
+            <div class="fin-kpi-card fin-bg-red">
+                <div class="fin-kpi-title">Periodos de cobro</div>
+                <div class="fin-kpi-val" id="kpi-impagados">--</div>
+                <div class="fin-kpi-desc">Distribución 30 / 60 / 90 / >90</div>
+                <div class="fin-kpi-extra" id="extra-impagados">Calculando…</div>
+            </div>
+            <div class="fin-kpi-card fin-bg-lightblue">
+                <div class="fin-kpi-title">Días de cobro</div>
+                <div class="fin-kpi-val" id="kpi-dias-cobro">-- días</div>
+                <div class="fin-kpi-desc">DSO Estimado</div>
+                <div class="fin-kpi-extra" id="extra-dias-cobro">Calculando…</div>
+            </div>
+            <div class="fin-kpi-card fin-bg-orange">
+                <div class="fin-kpi-title">Pendiente de pago <span id="warn-pendiente-pago" class="kpi-warn-chip">Descuadre</span></div>
+                <div class="fin-kpi-val" id="kpi-pendiente-pago">-- €</div>
+                <div class="fin-kpi-desc">Total proveedores</div>
+                <div class="fin-kpi-extra" id="extra-pendiente-pago">Calculando…</div>
+            </div>
+
+            <!-- Row 2 -->
+            <div class="fin-kpi-card fin-bg-green">
+                <div class="fin-kpi-title">Ratio de cobro</div>
+                <div class="fin-kpi-val" id="kpi-ratio-cobro">-- días</div>
+                <div class="fin-kpi-desc">Días promedio cobro</div>
+            </div>
+            <div class="fin-kpi-card fin-bg-green">
+                <div class="fin-kpi-title">Ratio de pago</div>
+                <div class="fin-kpi-val" id="kpi-ratio-pago">-- días</div>
+                <div class="fin-kpi-desc">Días promedio pago</div>
+            </div>
+            <div class="fin-kpi-card fin-bg-orange-dark">
+                <div class="fin-kpi-title">Ratio de tesorería</div>
+                <div class="fin-kpi-val" id="kpi-ratio-tesoreria">--</div>
+                <div class="fin-kpi-desc">Liquidez (AC / PC)</div>
+            </div>
+            <div class="fin-kpi-card fin-bg-red-dark">
+                <div class="fin-kpi-title">Ratio de endeudamiento</div>
+                <div class="fin-kpi-val" id="kpi-ratio-endeudamiento">--</div>
+                <div class="fin-kpi-desc">Pasivo / Patrimonio</div>
+            </div>
+        </div>
+
+        <!-- CASH & WORKING CAPITAL -->
+        <div class="fin-grid-container" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
+            <div class="fin-kpi-card fin-bg-green">
+                <div class="fin-kpi-title">{% trans "Tesorería (Disponible)" %}</div>
+                <div class="fin-kpi-val" id="kpi-cash">--</div>
+                <div class="fin-kpi-desc">{% trans "Sumatorio Grupo 57" %}</div>
+            </div>
+            <div class="fin-kpi-card fin-bg-lightblue">
+                <div class="fin-kpi-title">{% trans "Fondo de Maniobra" %}</div>
+                <div class="fin-kpi-val" id="kpi-wc">--</div>
+                <div class="fin-kpi-desc">{% trans "Activo Corriente - Pasivo Corriente" %}</div>
+            </div>
+        </div>
+
+        <!-- Gráficos de Cobros y Pagos por periodos -->
+        <div class="fin-grid-container" style="display:grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin: 10px 0 20px 0;">
+            <div class="fin-card-simple">
+                <div class="fin-card-header">{% trans "Cobros por periodo" %}</div>
+                <div id="chart-aging-cobros" style="width:100%; height:260px;"></div>
+            </div>
+            <div class="fin-card-simple">
+                <div class="fin-card-header">{% trans "Pagos por periodo" %}</div>
+                <div id="chart-aging-pagos" style="width:100%; height:260px;"></div>
+            </div>
+        </div>
+
+        <!-- CHARTS GRID -->
+        <div class="fin-grid-container" style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+            <!-- Clientes -->
+            <div class="fin-card-simple">
+                <div class="fin-card-header">{% trans "Saldos Clientes" %}</div>
+                <div id="chart-tesoreria-clientes" style="width:100%; height:250px;"></div>
+            </div>
+            <!-- Proveedores -->
+            <div class="fin-card-simple">
+                <div class="fin-card-header">{% trans "Saldo Proveedores" %}</div>
+                <div id="chart-tesoreria-proveedores" style="width:100%; height:250px;"></div>
+            </div>
+            <!-- Bancos -->
+            <div class="fin-card-simple">
+                <div class="fin-card-header">{% trans "Saldos Bancos" %}</div>
+                <div id="chart-tesoreria-bancos" style="width:100%; height:250px;"></div>
+            </div>
+        </div>
+
+        <!-- (Eliminados) gráficos de antigüedad cobros/pagos genéricos -->
+
+        <!-- ROW 3: Evolution -->
+        <div class="fin-card-simple" style="margin-top: 20px;">
+            <div class="fin-card-header">{% trans "Comparativo Ingresos - Gastos" %}</div>
+            <div id="chart-tesoreria-evolucion" style="width:100%; height:300px;"></div>
+        </div>
+
+        <!-- ROW 4: Forecast -->
+        <div class="fin-card-simple" style="margin-top: 20px;">
+            <div class="fin-card-header">{% trans "Previsión de Flujo de Caja (6 Meses)" %}</div>
+            <div id="tes-chart-forecast" style="width:100%; height:300px;"></div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    /* Scoped Styles for Treasury Cards */
+    .fin-kpi-card {
+        padding: 20px;
+        border-radius: 8px;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 120px;
+    }
+
+    .fin-kpi-title {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        margin-bottom: 5px;
+    }
+
+    .fin-kpi-val {
+        font-size: 1.8rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    .fin-kpi-desc {
+        font-size: 0.75rem;
+        opacity: 0.8;
+    }
+
+    .fin-bg-blue {
+        background-color: #3b82f6;
+    }
+
+    .fin-bg-red {
+        background-color: #ef4444;
+    }
+
+    .fin-bg-lightblue {
+        background-color: #60a5fa;
+    }
+
+    .fin-bg-orange {
+        background-color: #f97316;
+    }
+
+    .fin-bg-green {
+        background-color: #10b981;
+    }
+
+    .fin-bg-orange-dark {
+        background-color: #ea580c;
+    }
+
+    .fin-bg-red-dark {
+        background-color: #dc2626;
+    }
+</style>
+<script src="{% static 'js/dashboard/tesoreria_aging.js' %}"></script>

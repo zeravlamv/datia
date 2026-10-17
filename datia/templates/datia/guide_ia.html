@@ -1,0 +1,120 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guía Técnica IA - Datia</title>
+    <link rel="stylesheet" href="{% static 'css/guide_ia.css' %}">
+</head>
+<body>
+    <header class="guide-header">
+        <h1 class="guide-title">Guía Técnica: Configuración y Sincronización para IA</h1>
+        <p class="guide-subtitle">Campos, mapeos, relaciones, sincronización y conexión con servicios IA</p>
+        <nav class="guide-actions">
+            <a class="btn" href="{% url 'catalog' %}">Volver al Catálogo</a>
+        </nav>
+    </header>
+    <main class="guide-content">
+        <section id="intro" class="guide-section">
+            <h2>Objetivo y Entorno</h2>
+            <p>Habilitar y optimizar consultas mediante IA sobre datos sincronizados entre MSSQL (solo lectura) y Postgres (IA y materialización), respetando separación HTML/CSS/JS e informes IA desde JSON en disco.</p>
+            <ul class="bullet">
+                <li>Windows, administración Django</li>
+                <li>MSSQL lectura, Postgres IA/embeddings</li>
+                <li>JSON de contexto IA en DATIA_AI_CONTEXT_DIR</li>
+                <li>Tablas entrenadas en Postgres prefijo datiadb_</li>
+            </ul>
+        </section>
+        <section id="arquitectura" class="guide-section">
+            <h2>Arquitectura Semántica</h2>
+            <div class="cards">
+                <div class="card">
+                    <h3>DataSource</h3>
+                    <p>Define tabla origen MSSQL y nombre destino en Postgres (datiadb_...).</p>
+                    <p><a href="file:///c:/Users/miguel%20vergara/Desktop/datia/datia/models/semantic.py#L71-L85">semantic.py</a></p>
+                </div>
+                <div class="card">
+                    <h3>DataField</h3>
+                    <p>Define campo: field_name, business_name, data_type, usage_type, synonyms, flags.</p>
+                    <p><a href="file:///c:/Users/miguel%20vergara/Desktop/datia/datia/models/semantic.py#L87-L129">semantic.py</a></p>
+                </div>
+                <div class="card">
+                    <h3>StandardField</h3>
+                    <p>Glosario corporativo; puede fijar tipos y roles (fix_type).</p>
+                    <p><a href="file:///c:/Users/miguel%20vergara/Desktop/datia/datia/models/semantic.py#L163-L181">semantic.py</a></p>
+                </div>
+                <div class="card">
+                    <h3>DataRelation</h3>
+                    <p>Relaciones entre fuentes con cardinalidad (1-1, 1-N, N-1).</p>
+                    <p><a href="file:///c:/Users/miguel%20vergara/Desktop/datia/datia/models/semantic.py#L132-L160">semantic.py</a></p>
+                </div>
+            </div>
+        </section>
+        <section id="campos" class="guide-section">
+            <h2>Definición de Campos</h2>
+            <ul class="bullet">
+                <li>Tipos: int, decimal, date, bool, text</li>
+                <li>Validaciones: is_active, is_key, is_pii</li>
+                <li>Uso: dimension, metric, date, data</li>
+                <li>Negocio: business_name único, synonyms en español</li>
+            </ul>
+            <pre class="code">
+from datia.models.semantic import DataSource, DataField
+ds = DataSource.objects.create(empresa_id=1, name="Líneas Pedido", source_table="LineasAlbaranCliente", is_virtual=False, is_active=True)
+DataField.objects.create(source=ds, field_name="CodigoArticulo", business_name="articulo_id", data_type="int", usage_type="dimension", is_active=True, is_key=True, synonyms=["producto","articulo"])
+DataField.objects.create(source=ds, field_name="ImporteNeto", business_name="importe_bruto", data_type="decimal", usage_type="metric", is_active=True)
+DataField.objects.create(source=ds, field_name="FechaLinea", business_name="fecha", data_type="date", usage_type="date", is_active=True)
+            </pre>
+        </section>
+        <section id="mapeos" class="guide-section">
+            <h2>Mapeos Origen/Destino</h2>
+            <p>Tablas entrenadas usan <b>business_name</b> como nombre de columna destino (fallback a field_name); tabla destino via get_local_table_name.</p>
+            <p><a href="file:///c:/Users/miguel%20vergara/Desktop/datia/datia/services/etl_service.py#L1996-L2013">etl_service.py</a></p>
+        </section>
+        <section id="relaciones" class="guide-section">
+            <h2>Relaciones y Claves</h2>
+            <pre class="code">
+from datia.models.semantic import DataRelation, DataField, DataSource
+cab = DataSource.objects.get(name="Cabecera Pedido Cliente")
+lin = DataSource.objects.get(name="Líneas Pedido Cliente")
+f_emp_lin = DataField.objects.get(source=lin, field_name="CodigoEmpresa")
+f_emp_cab = DataField.objects.get(source=cab, field_name="CodigoEmpresa")
+DataRelation.objects.create(source=lin, from_field=f_emp_lin, target=cab, to_field=f_emp_cab, cardinality="N-1")
+            </pre>
+            <p><a href="file:///c:/Users/miguel%20vergara/Desktop/datia/datia/services/query_builder.py#L168-L183">query_builder.py</a></p>
+        </section>
+        <section id="sincronizacion" class="guide-section">
+            <h2>Sincronización Selectiva</h2>
+            <ul class="bullet">
+                <li>Estándar: raw+metrics, incremental por ejercicios</li>
+                <li>Entrenadas: introspección, materialización Drop+Create+COPY</li>
+                <li>sync_type: all, trained, standard; granular por table_ids</li>
+            </ul>
+            <p><a href="file:///c:/Users/miguel%20vergara/Desktop/datia/datia/patterns/11-Sincronizacion%20Selectiva.md">Patrón</a></p>
+            <p><a href="file:///c:/Users/miguel%20vergara/Desktop/datia/datia/services/etl_service.py#L2077-L2169">etl_service.py</a></p>
+            <p><a href="file:///c:/Users/miguel%20vergara/Desktop/datia/datia/services/etl_service.py#L1982-L2050">materialización entrenadas</a></p>
+        </section>
+        <section id="ia" class="guide-section">
+            <h2>Integración con IA</h2>
+            <ul class="bullet">
+                <li>Informes: JSON→HTML con trazabilidad de fuente/archivo/mtime</li>
+                <li>Consultas: overlay semántico (tabla y label) y normalización en español</li>
+            </ul>
+            <p><a href="file:///c:/Users/miguel%20vergara/Desktop/datia/datia/services/dashboard_service.py#L61-L100">DashboardService</a></p>
+            <p><a href="file:///c:/Users/miguel%20vergara/Desktop/datia/datia/services/query_builder.py#L85-L105">Normalización</a></p>
+            <p><a href="file:///c:/Users/miguel%20vergara/Desktop/datia/datia/services/query_builder.py#L107-L165">Overlay semántico</a></p>
+        </section>
+        <section id="validacion" class="guide-section">
+            <h2>Validación e Indicadores</h2>
+            <ul class="bullet">
+                <li>manage.py check sin errores</li>
+                <li>Columnas en datiadb_* coinciden con business_name</li>
+                <li>Relaciones reproducibles y joins correctos</li>
+                <li>Informes IA muestran CONTEXT_SOURCE/FILE/MTIME/KEYS</li>
+            </ul>
+        </section>
+    </main>
+    <script src="{% static 'js/guide_ia.js' %}"></script>
+</body>
+</html>

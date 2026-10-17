@@ -1,0 +1,228 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>DATIA - Whitepaper Ejecutivo</title>
+    <style>
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            color: #333;
+            line-height: 1.5;
+            font-size: 11pt;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid #3b82f6;
+            padding-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 24pt;
+            color: #1e40af;
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        .header .subtitle {
+            font-size: 14pt;
+            color: #64748b;
+            margin-top: 10px;
+        }
+
+        h2 {
+            font-size: 16pt;
+            color: #3b82f6;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 5px;
+            margin-top: 20px;
+        }
+
+        .stats-grid {
+            width: 100%;
+            margin-bottom: 30px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+
+        .stat-value {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #1e40af;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 8pt;
+            color: #64748b;
+            text-transform: uppercase;
+        }
+
+        .investment-box {
+            background-color: #f0fdf4;
+            border: 1px solid #22c55e;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .amount {
+            font-size: 24pt;
+            color: #15803d;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            border: 1px solid #cbd5e1;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f1f5f9;
+        }
+
+        .gallery-img {
+            width: 100%;
+            height: auto;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+        }
+
+        .gallery-label {
+            text-align: center;
+            font-size: 9pt;
+            color: #666;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>DATIA</h1>
+        <div class="subtitle">Democratizando IA Conversacional para PYMEs</div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+        <div class="stat-item">
+            <span class="stat-value">100%</span>
+            <span class="stat-label">Privacidad</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">DeepSeek</span>
+            <span class="stat-label">R1 Integrado</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">&lt;4h</span>
+            <span class="stat-label">Deploy</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">Dual</span>
+            <span class="stat-label">PC + Mobile</span>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Resumen Ejecutivo</h2>
+        <p>
+            DATIA resuelve la barrera del <span class="highlight">"Compliance"</span> que impide a las PYMEs usar IA.
+            Nuestra tecnología <strong>SQL Guard</strong> y arquitectura híbrida permiten usar modelos avanzados (DeepSeek-R1, Llama 3)
+            <strong>sin que los datos sensibles salgan nunca de la infraestructura del cliente</strong>.
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>Módulos Operativos (100% Ready)</h2>
+        <table class="modules-table">
+            <tr>
+                <th>Módulo</th>
+                <th>Capacidades Clave</th>
+            </tr>
+            <tr>
+                <td><strong>Financiera</strong></td>
+                <td>P&L Dinámico, Balance de Situación, Ratios, Análisis Vertical/Horizontal.</td>
+            </tr>
+            <tr>
+                <td><strong>Tesorería</strong></td>
+                <td>Forecast 3 Meses, Análisis de Liquidez, Gestión de Cartera de Efectos.</td>
+            </tr>
+            <tr>
+                <td><strong>Ventas</strong></td>
+                <td>Detección de Anomalías, Tendencias Predictivas, Segmentación Pareto (ABC).</td>
+            </tr>
+            <tr>
+                <td><strong>AI Core</strong></td>
+                <td>Deep Dives en PDF, Auto-Training continuo, Auditoría anti-alucinaciones.</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>Arquitectura Técnica</h2>
+        <ul>
+            <li><strong>Backend:</strong> Django + PostgreSQL + Vector DB.</li>
+            <li><strong>Inteligencia:</strong> Motor híbrido (Local Ollama/DeepSeek + Cloud Metadata Analysis).</li>
+            <li><strong>Frontend:</strong> Vanilla JS ligero con ECharts (Escritorio) + Vista Ejecutiva (Móvil Puerto 8001).</li>
+        </ul>
+        <div style="text-align: center; margin-top: 10px;">
+            <img src="{% static 'datia_flow.png' %}" class="gallery-img">
+            <div class="gallery-label">Flujo Seguro de Datos</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Roadmap & Ejecución</h2>
+        <ul>
+            <li><strong>Mes 3:</strong> Fundamentos (MVP estable, 5 clientes piloto, primeros casos de éxito).</li>
+            <li><strong>Mes 6:</strong> Tracción inicial (15 clientes activos, MRR objetivo de €4.000).</li>
+            <li><strong>Mes 9:</strong> Escalado comercial (40 clientes activos, MRR objetivo de €10.000).</li>
+            <li><strong>Mes 12:</strong> Consolidación (ARR objetivo de €200.000, preparación de Serie A).</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Oportunidad de Inversión (Ronda Seed)</h2>
+        <div class="investment-box">
+            <div>Buscamos</div>
+            <div class="amount">€350.000</div>
+            <div>por el <strong>20% Equity</strong></div>
+            <div style="margin-top: 10px; font-size: 0.9em; color: #666;">Valoración Pre-Money: €1.4M</div>
+        </div>
+        <p style="margin-top: 15px; text-align: center;">
+            <strong>Uso de Fondos:</strong> Equipo Técnico (50%), Go-to-Market (33%), Infraestructura/Seguridad (17%).
+        </p>
+    </div>
+
+    <!-- Gallery Section (NEW) -->
+    <div class="section">
+        <h2>Galería de la Plataforma</h2>
+        <div>
+            <img src="{% static 'dashboard_analytics.png' %}" class="gallery-img">
+            <div class="gallery-label">Dashboard Financiero y Operativo</div>
+        </div>
+        <div>
+            <img src="{% static 'ai_feature_v2.png' %}" class="gallery-img">
+            <div class="gallery-label">Asistente IA Generando Reportes Estratégicos</div>
+        </div>
+    </div>
+</body>
+
+</html>

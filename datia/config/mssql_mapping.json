@@ -1,0 +1,279 @@
+{
+  "mappings": {
+    "Empresas": {
+      "source_table": "Empresas",
+      "fields": {
+        "empresa": "CodigoEmpresa",
+        "empresa_id": "CodigoEmpresa",
+        "nombre": "Empresa",
+        "cif": "CIF",
+        "fecha_creacion": "FechaCreacion",
+        "activa": "Activa"
+      }
+    },
+    "Periodos": {
+      "source_table": "Periodos",
+      "fields": {
+        "empresa": "CodigoEmpresa",
+        "ejercicio": "Ejercicio",
+        "anio": "Ejercicio",
+        "fecha_inicio": "FechaInicio",
+        "fecha_fin": "FechaFin",
+        "estado": "Estado",
+        "numero_periodo": "NumeroPeriodo"
+      }
+    },
+    "Articulos": {
+      "source_table": "Articulos",
+      "fields": {
+        "empresa": "CodigoEmpresa",
+        "articulo": "CodigoArticulo",
+        "articulo_id": "CodigoArticulo",
+        "descripcion": "DescripcionArticulo",
+        "familia": "CodigoFamilia",
+        "unidad_medida": "UnidadMedida",
+        "activo": "Activo",
+        "fecha_alta": "FechaAlta",
+        "precio_compra": "PrecioCompra"
+      }
+    },
+    "Clientes": {
+      "source_table": "Clientes",
+      "fields": {
+        "empresa": "CodigoEmpresa",
+        "cliente": "CodigoCliente",
+        "cliente_id": "CodigoCliente",
+        "nombre": "RazonSocial",
+        "nombre_fiscal": "RazonSocial",
+        "cif_nif": "NIF",
+        "fecha_alta": "FechaAlta",
+        "activo": "Activo",
+        "cod_postal": "CodPostal"
+      }
+    },
+    "Proveedores": {
+      "source_table": "Proveedores",
+      "fields": {
+        "empresa": "CodigoEmpresa",
+        "proveedor": "CodigoProveedor",
+        "proveedor_id": "CodigoProveedor",
+        "nombre": "RazonSocial",
+        "nombre_fiscal": "RazonSocial",
+        "cif_nif": "NIF",
+        "fecha_alta": "FechaAlta",
+        "activo": "Activo",
+        "cod_postal": "CodPostal"
+      }
+    },
+    "Familias": {
+      "source_table": "Familias",
+      "fields": {
+        "codigo_familia": "CodigoFamilia",
+        "descripcion": "DescripcionFamilia"
+      }
+    },
+    "PlanCuentas": {
+      "source_table": "PlanCuentas",
+      "fields": {
+        "empresa": "CodigoEmpresa",
+        "codigo_cuenta": "CodigoCuenta",
+        "descripcion": "Cuenta",
+        "nivel": "Nivel",
+        "grupo": "CodigoGrupo",
+        "codigo_grupo": "CodigoGrupo"
+      }
+    },
+    "Grupos": {
+      "source_table": "Grupos",
+      "fields": {
+        "empresa": "CodigoEmpresa",
+        "codigo_grupo": "CodigoGrupo",
+        "descripcion_grupo": "DescripcionGrupo"
+      }
+    },
+    "Almacenes": {
+      "source_table": "Almacenes",
+      "fields": {
+        "empresa": "CodigoEmpresa",
+        "codigo_almacen": "CodigoAlmacen",
+        "descripcion": "DescripcionAlmacen"
+      }
+    },
+    "CarteraEfectos": {
+      "source_table": "CarteraEfectos",
+      "fields": {
+        "empresa": "CodigoEmpresa",
+        "empresa_id": "CodigoEmpresa",
+        "ejercicio": "Ejercicio",
+        "id_efecto": "IdEfecto",
+        "tipo_tercero": "TipoTercero",
+        "tercero_id": "CodigoClienteProveedor",
+        "fecha_emision": "FechaFactura",
+        "fecha_vencimiento": "FechaVencimiento",
+        "importe": "ImporteEfecto",
+        "importe_cobrado": "ImporteCobrado",
+        "importe_pendiente": "ImportePendiente",
+        "estado": "Estado",
+        "status_borrado": "StatusBorrado"
+      }
+    },
+    "AcumuladosConta": {
+      "source_table": "AcumuladosConta",
+      "fields": {
+        "empresa": "CodigoEmpresa",
+        "ejercicio": "Ejercicio",
+        "numero_periodo": "NumeroPeriodo",
+        "codigo_cuenta": "CodigoCuenta",
+        "debe": "DebeAcum",
+        "haber": "HaberAcum"
+      }
+    },
+    "AcumuladoStock": {
+      "source_table": "AcumuladoStock",
+      "fields": {
+        "empresa": "CodigoEmpresa",
+        "ejercicio": "Ejercicio",
+        "periodo": "NumeroPeriodo",
+        "articulo": "CodigoArticulo",
+        "cantidad_saldo": "CantidadSaldo",
+        "importe_saldo": "ImporteSaldo"
+      }
+    },
+    "CabeceraPedidoCliente": {
+      "source_table": "CabeceraPedidoCliente",
+      "fields": {
+        "empresa": "CodigoEmpresa",
+        "ejercicio": "EjercicioPedido",
+        "serie": "Serie",
+        "numero": "Numero",
+        "fecha": "Fecha",
+        "cliente": "CodigoCliente",
+        "cliente_id": "CodigoCliente",
+        "importe_neto": "ImporteNeto",
+        "con_iva": "ImporteIVA",
+        "importe_iva": "ImporteIVA",
+        "importe_total": "ImporteTotal",
+        "estado": "Estado"
+      }
+    },
+    "LineasPedidoCliente": {
+      "source_table": "LineasPedidoCliente",
+      "fields": {
+        "empresa": "CodigoEmpresa",
+        "ejercicio": "EjercicioPedido",
+        "serie": "Serie",
+        "numero": "Numero",
+        "linea": "NumeroLinea",
+        "articulo": "CodigoArticulo",
+        "descripcion": "Descripcion",
+        "cantidad": "Cantidad",
+        "neto": "ImporteNeto",
+        "con_iva": "ImporteIVA",
+        "coste": "ImporteCoste",
+        "precio_unitario": "PrecioUnitario",
+        "descuento": "Descuento"
+      }
+    },
+    "CabeceraPedidoProveedor": {
+      "source_table": "CabeceraPedidoProveedor",
+      "fields": {
+        "empresa": "CodigoEmpresa",
+        "ejercicio": "EjercicioPedido",
+        "serie": "Serie",
+        "numero": "Numero",
+        "fecha": "Fecha",
+        "proveedor": "CodigoProveedor",
+        "proveedor_id": "CodigoProveedor",
+        "importe_neto": "ImporteNeto",
+        "con_iva": "ImporteIVA",
+        "importe_iva": "ImporteIVA",
+        "importe_total": "ImporteTotal",
+        "estado": "Estado"
+      }
+    },
+    "LineasPedidoProveedor": {
+      "source_table": "LineasPedidoProveedor",
+      "fields": {
+        "empresa": "CodigoEmpresa",
+        "ejercicio": "EjercicioPedido",
+        "serie": "Serie",
+        "numero": "Numero",
+        "linea": "NumeroLinea",
+        "articulo": "CodigoArticulo",
+        "descripcion": "Descripcion",
+        "cantidad": "Cantidad",
+        "neto": "ImporteNeto",
+        "con_iva": "ImporteIVA",
+        "coste": "ImporteCoste",
+        "precio_unitario": "PrecioUnitario",
+        "descuento": "Descuento"
+      }
+    },
+    "CabeceraAlbaranCliente": {
+      "source_table": "CabeceraAlbaranCliente",
+      "fields": {
+        "empresa": "CodigoEmpresa",
+        "ejercicio": "EjercicioAlbaran",
+        "serie": "SerieAlbaran",
+        "numero": "NumeroAlbaran",
+        "fecha": "FechaAlbaran",
+        "cliente": "CodigoCliente",
+        "nombre_cliente": "RazonSocial",
+        "neto": "ImporteNeto",
+        "con_iva": "ImporteFactura",
+        "coste": "CosteTotal",
+        "cod_postal": "CodPostal"
+      }
+    },
+    "LineasAlbaranCliente": {
+      "source_table": "LineasAlbaranCliente",
+      "fields": {
+        "empresa": "CodigoEmpresa",
+        "ejercicio": "EjercicioAlbaran",
+        "serie": "SerieAlbaran",
+        "numero": "NumeroAlbaran",
+        "fecha": "FechaLinea",
+        "cliente": "CodigoCliente",
+        "articulo": "CodigoArticulo",
+        "descripcion": "DescripcionArticulo",
+        "cantidad": "Unidades",
+        "neto": "ImporteBruto",
+        "con_iva": "ImporteFactura",
+        "coste": "ImporteCoste"
+      }
+    },
+    "CabeceraAlbaranProveedor": {
+      "source_table": "CabeceraAlbaranProveedor",
+      "fields": {
+        "empresa": "CodigoEmpresa",
+        "ejercicio": "EjercicioAlbaran",
+        "serie": "SerieAlbaran",
+        "numero": "NumeroAlbaran",
+        "fecha": "FechaAlbaran",
+        "proveedor": "CodigoProveedor",
+        "nombre_proveedor": "RazonSocial",
+        "neto": "ImporteLiquido",
+        "con_iva": "ImporteTotal",
+        "coste": "ImporteBruto",
+        "cod_postal": "CodPostal"
+      }
+    },
+    "LineasAlbaranProveedor": {
+      "source_table": "LineasAlbaranProveedor",
+      "fields": {
+        "empresa": "CodigoEmpresa",
+        "ejercicio": "EjercicioAlbaran",
+        "serie": "SerieAlbaran",
+        "numero": "NumeroAlbaran",
+        "fecha": "FechaLinea",
+        "proveedor": "CodigoProveedor",
+        "articulo": "CodigoArticulo",
+        "descripcion": "DescripcionArticulo",
+        "cantidad": "Cantidad",
+        "neto": "ImporteBruto",
+        "con_iva": "ImporteTotal",
+        "coste": "ImporteCoste"
+      }
+    }
+  }
+}

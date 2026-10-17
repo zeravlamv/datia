@@ -1,0 +1,30 @@
+:root{
+  --bg: #0b0b0f;
+  --text: #e4e4e7;
+  --muted: #a1a1aa;
+}
+*{box-sizing: border-box}
+body{
+  margin: 0; padding: 16px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+h1{ font-size: 20px; margin: 6px 0 12px; }
+h2{ font-size: 14px; color: var(--muted); margin: 8px 0; }
+.grid{
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+.chart{
+  width: 100%;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.02);
+}
+.chart-320{ height: 360px; }
+.chart-768{ height: 420px; }
+.chart-1366{ height: 420px; }
+.chart-1920{ height: 480px; }
+

@@ -1,0 +1,414 @@
+{% load static i18n %}
+<div id="tab-datia-2" class="tab-panel datia-landing-container">
+
+    <!-- BACKGROUND FX (Sutil y Elegante) -->
+    <div class="landing-bg">
+        <div class="soft-gradient-top"></div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <!-- FEATURE CAROUSEL ASSETS -->
+    <link rel="stylesheet" href="{% static 'css/feature_carousel.css' %}">
+    <script src="{% static 'js/feature_carousel.js' %}"></script>
+
+    <!-- MAIN CONTENT -->
+    <div class="landing-content">
+
+        <!-- 1. HERO: VALUE PROPOSITION -->
+        <section class="landing-section hero-section">
+            <div class="hero-badge-pill">
+                <span class="pulse-dot-green"></span> Inteligencia de Negocio Autónoma
+            </div>
+            <h1 class="hero-title">
+                Toma decisiones basadas en datos,<br>
+                <span class="gradient-text-gold">no en intuiciones.</span>
+            </h1>
+            <p class="hero-subtitle">
+                <span id="app-brand-datia-2">Datia</span> transforma tu ERP en un asistente financiero inteligente que responde preguntas complejas en segundos.
+                Sin suscripciones mensuales abusivas, sin enviar datos a la nube.
+            </p>
+
+            <div class="hero-cta-group">
+                <button class="btn-primary-gold" onclick="switchTab('tab-ia')">Hablar con mis datos</button>
+                <div class="trust-indicator">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                    <span>100% Privado y Local</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- FEATURE CAROUSEL -->
+        <section class="landing-section" style="margin-bottom: 6rem; width: 100%;">
+            {% include "datia/components/feature_carousel.html" %}
+        </section>
+
+        <!-- 3. USE CASES (Narrativa Comercial) -->
+        <section class="landing-section use-cases">
+            <div class="section-header">
+                <h2>¿Qué puedes resolver hoy?</h2>
+                <p>Ejemplos reales de lo que Datia hace por directores financieros.</p>
+            </div>
+
+            <div class="case-row">
+                <div class="case-text">
+                    <h3>"Necesito detectar fugas de margen"</h3>
+                    <p>En lugar de exportar 5 Excels y cruzarlos, simplemente pregunta:</p>
+                    <div class="chat-bubble">
+                        "Dime qué clientes han bajado su margen bruto por debajo del 15% este trimestre comparado con el anterior."
+                    </div>
+                    <p class="result-text">Resultado: Listado instantáneo con acciones recomendadas.</p>
+                </div>
+                <div class="case-visual">
+                    <!-- Abstract Chart Visual -->
+                    <div class="simple-chart">
+                        <div class="bar" style="height: 40%"></div>
+                        <div class="bar warning" style="height: 25%"></div>
+                        <div class="bar" style="height: 60%"></div>
+                        <div class="bar" style="height: 45%"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. TECH SECTION (Simplified for Confidence) -->
+        <section class="landing-section tech-trust">
+            <div class="tech-container">
+                <h2>Tecnología que trabaja para ti</h2>
+                <div class="tech-badges">
+                    <div class="tech-badge">
+                        <span class="tb-title">IA Local (Ollama)</span>
+                        <span class="tb-desc">Cerebro privado</span>
+                    </div>
+                    <div class="tech-badge">
+                        <span class="tb-title">Conexión Directa</span>
+                        <span class="tb-desc">SQL Server / Sage / Navision</span>
+                    </div>
+                    <div class="tech-badge">
+                        <span class="tb-title">Reportes PDF</span>
+                        <span class="tb-desc">Listos para el comité</span>
+                    </div>
+                </div>
+                <p class="tech-note">Compatible con cualquier ERP basado en SQL. Sin migrar datos.</p>
+            </div>
+        </section>
+
+        <!-- 5. FINAL CTA -->
+        <section class="landing-footer">
+            <h2>Toma el control de tu negocio.</h2>
+            <p>Deja de adivinar y empieza a saber.</p>
+            <button class="btn-primary-gold large" onclick="switchTab('tab-ia')">Probar Demo Ahora</button>
+        </section>
+
+    </div>
+</div>
+
+<style>
+    /* --- THEME VARIABLES --- */
+    :root {
+        --b-bg: #0a0a0c;
+        --b-card-bg: #141416;
+        --b-text: #ececec;
+        --b-text-muted: #9ca3af;
+        --b-gold: #fbbf24;
+        /* Amber-400 */
+        --b-gold-glow: rgba(251, 191, 36, 0.3);
+        --b-accent: #6366f1;
+        /* Indigo */
+    }
+
+    #tab-datia-2 {
+        background-color: var(--b-bg);
+        color: var(--b-text);
+        font-family: 'Inter', -apple-system, sans-serif;
+        min-height: 100vh;
+        position: relative;
+        overflow-x: hidden;
+    }
+
+    /* --- LAYOUT --- */
+    .landing-content {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 4rem 2rem;
+        position: relative;
+        z-index: 2;
+    }
+
+    /* --- HERO --- */
+    .hero-section {
+        text-align: center;
+        padding: 4rem 0 6rem;
+    }
+
+    .hero-badge-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 16px;
+        border-radius: 50px;
+        background: rgba(255, 255, 255, 0.08);
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-bottom: 2rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .pulse-dot-green {
+        width: 8px;
+        height: 8px;
+        background: #22c55e;
+        border-radius: 50%;
+        box-shadow: 0 0 8px #22c55e;
+    }
+
+    .hero-title {
+        font-size: 3.5rem;
+        line-height: 1.1;
+        font-weight: 800;
+        margin-bottom: 1.5rem;
+        letter-spacing: -0.02em;
+    }
+
+    .gradient-text-gold {
+        background: linear-gradient(135deg, #fff 20%, var(--b-gold) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subtitle {
+        font-size: 1.2rem;
+        color: var(--b-text-muted);
+        max-width: 650px;
+        margin: 0 auto 3rem;
+        line-height: 1.6;
+    }
+
+    .hero-cta-group {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .btn-primary-gold {
+        background: var(--b-gold);
+        color: #000;
+        font-weight: 700;
+        padding: 1rem 2rem;
+        border-radius: 8px;
+        border: none;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 4px 20px var(--b-gold-glow);
+    }
+
+    .btn-primary-gold:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px var(--b-gold-glow);
+    }
+
+    .btn-primary-gold.large {
+        padding: 1.2rem 3rem;
+        font-size: 1.2rem;
+    }
+
+    .trust-indicator {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.9rem;
+        color: #6b7280;
+    }
+
+    /* --- BENEFITS GRID --- */
+    .benefits-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 2rem;
+        margin-bottom: 6rem;
+    }
+
+    .benefit-card {
+        background: var(--b-card-bg);
+        padding: 2rem;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        transition: transform 0.3s;
+    }
+
+    .benefit-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .benefit-card.highlight {
+        border-color: rgba(34, 197, 94, 0.3);
+        background: linear-gradient(to bottom right, var(--b-card-bg), rgba(34, 197, 94, 0.05));
+    }
+
+    .icon-box {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+    }
+
+    .benefit-card h3 {
+        font-size: 1.25rem;
+        margin-bottom: 0.8rem;
+        color: #fff;
+    }
+
+    /* --- USE CASES --- */
+    .use-cases {
+        margin-bottom: 6rem;
+    }
+
+    .section-header {
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+
+    .section-header h2 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .case-row {
+        display: flex;
+        align-items: center;
+        gap: 3rem;
+        background: var(--b-card-bg);
+        border-radius: 20px;
+        padding: 3rem;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .chat-bubble {
+        background: #27272a;
+        padding: 1rem 1.5rem;
+        border-radius: 12px 12px 12px 0;
+        margin: 1.5rem 0;
+        border-left: 3px solid var(--b-gold);
+        color: #fff;
+        font-style: italic;
+    }
+
+    .result-text {
+        color: var(--b-gold);
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .simple-chart {
+        width: 200px;
+        height: 150px;
+        display: flex;
+        align-items: flex-end;
+        gap: 10px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #333;
+    }
+
+    .bar {
+        flex: 1;
+        background: #3f3f46;
+        border-radius: 4px 4px 0 0;
+    }
+
+    .bar.warning {
+        background: #ef4444;
+        animation: flash 2s infinite;
+    }
+
+    /* --- TECH TRUST --- */
+    .tech-trust {
+        text-align: center;
+        margin-bottom: 6rem;
+    }
+
+    .tech-container {
+        background: #0f0f11;
+        border-radius: 20px;
+        padding: 3rem;
+        border: 1px solid #27272a;
+    }
+
+    .tech-badges {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+    }
+
+    .tech-badge {
+        display: flex;
+        flex-direction: column;
+        padding: 1rem;
+        background: #18181b;
+        border-radius: 10px;
+        min-width: 150px;
+    }
+
+    .tb-title {
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 0.3rem;
+    }
+
+    .tb-desc {
+        font-size: 0.8rem;
+        color: #9ca3af;
+    }
+
+    .tech-note {
+        margin-top: 2rem;
+        font-size: 0.9rem;
+        color: #52525b;
+    }
+
+    /* --- FOOTER --- */
+    .landing-footer {
+        text-align: center;
+        padding: 4rem 0;
+    }
+
+    .landing-footer h2 {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+    }
+
+    @keyframes flash {
+
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.5;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .hero-title {
+            font-size: 2.5rem;
+        }
+
+        .case-row {
+            flex-direction: column;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .simple-chart {
+            margin: 0 auto;
+        }
+
+        .chat-bubble {
+            border-radius: 12px;
+        }
+    }
+</style>
+</div>

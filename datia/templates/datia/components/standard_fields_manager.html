@@ -1,0 +1,53 @@
+<div class="glass-card" style="padding: 2rem; background: rgba(24, 24, 27, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; margin-bottom: 2rem;">
+    <h3 style="color: #fff; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between;">
+        Campos Estándar
+        <span id="sf-status" style="font-size: 0.8rem; padding: 4px 12px; border-radius: 20px; background: rgba(255,255,255,0.1); color: #a1a1aa;">Sin cargar</span>
+    </h3>
+
+    <div style="display: flex; gap: 0.75rem; align-items: center; margin-bottom: 1rem;">
+        <input id="sf-search" type="text" placeholder="🔍 Buscar por nombre..." style="flex:1; background: rgba(0,0,0,0.3); border: 1px solid #3f3f46; border-radius: 8px; color: #fff; padding: 0.6rem;">
+        <select id="sf-role-filter" style="background: #09090b; border: 1px solid #3f3f46; border-radius: 8px; color: #fff; padding: 0.6rem;">
+            <option value="">Rol: Todos</option>
+            <option value="DIMENSION">DIMENSION</option>
+            <option value="METRIC">METRIC</option>
+            <option value="DATE">DATE</option>
+            <option value="PK">PK</option>
+            <option value="FK">FK</option>
+        </select>
+        <button onclick="loadStandardFields()" class="btn-glow" style="padding: 0 1rem;">🔄</button>
+        <button onclick="newStandardFieldRow()" class="btn-glow" style="padding: 0 1rem; background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.5);">➕ Nuevo</button>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 180px 180px 1fr 140px 80px 100px; gap: 0.6rem; padding: 0.5rem 1rem; background: rgba(255,255,255,0.05); border-radius: 8px 8px 0 0; font-size: 0.8rem; color: #a1a1aa; font-weight: 600;">
+        <div>Nombre</div>
+        <div>Nombre Negocio</div>
+        <div>Descripción</div>
+        <div>Rol</div>
+        <div>PK</div>
+        <div>Acciones</div>
+    </div>
+
+    <div id="standard-fields-list" style="max-height: 460px; overflow-y: auto; background: rgba(0,0,0,0.2); border: 1px solid #27272a; border-radius: 0 0 8px 8px;">
+        <div style="padding: 2rem; text-align: center; color: #52525b;">Sin datos. Pulsa 🔄 para cargar.</div>
+    </div>
+</div>
+
+<div id="sf-confirm-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; backdrop-filter: blur(4px); align-items:center; justify-content:center;">
+    <div style="background: #18181b; border: 1px solid rgba(255, 255, 255, 0.1); padding: 2rem; border-radius: 16px; width:90%; max-width:480px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); text-align: center;">
+        <div style="width: 64px; height: 64px; background: rgba(239, 68, 68, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+                <path d="M3 6h18M8 6v12m8-12v12M5 6l1-2h12l1 2" />
+            </svg>
+        </div>
+        <h3 style="color: #fff; margin-bottom: 0.75rem; font-size: 1.5rem; font-weight: 600;">Confirmar eliminación</h3>
+        <p id="sf-confirm-msg" style="color: #a1a1aa; font-size: 0.95rem; line-height: 1.6; margin-bottom: 2rem;"></p>
+        <div style="display: flex; gap: 1rem; justify-content: center;">
+            <button onclick="closeSfConfirmModal()" style="padding: 10px 24px; background: transparent; color: #a1a1aa; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; font-weight: 500; transition: all 0.2s;" onmouseover="this.style.borderColor='rgba(255,255,255,0.3)'; this.style.color='#fff'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.color='#a1a1aa'">
+                Cancelar
+            </button>
+            <button onclick="sfExecuteModalConfirm()" id="sf-confirm-btn" style="padding: 10px 24px; background: #ef4444; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2); transition: all 0.2s;" onmouseover="this.style.background='#dc2626'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#ef4444'; this.style.transform='translateY(0)'">
+                Sí, eliminar
+            </button>
+        </div>
+    </div>
+    </div>

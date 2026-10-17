@@ -1,0 +1,44 @@
+{% load static %}
+{% load i18n %}
+<div id="tab-actualidad-movil" style="height: 100%;">
+    <link rel="stylesheet" href="{% static 'css/mobile_builder.css' %}">
+    <div class="mobile-builder-container">
+
+        <!-- LEFT: SOURCE (Available Widgets) -->
+        <div class="mb-panel mb-source">
+            <h3 class="mb-title">{% trans "Widgets Disponibles" %}</h3>
+            <p class="mb-subtitle">{% trans "Arrastra elementos a la vista móvil" %}</p>
+
+            <div id="mobile-builder-source" class="mb-list">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- RIGHT: TARGET (Mobile Preview) -->
+        <div class="mb-panel mb-target-wrapper">
+            <div class="mb-phone-frame">
+                <div class="mb-notch"></div>
+                <div class="mb-screen">
+                    <div class="mb-status-bar">
+                        <span>9:41</span>
+                        <span>📶 🔋</span>
+                    </div>
+                    <div class="mb-app-header">
+                        <span>Datia Mobile</span>
+                    </div>
+
+                    <div id="mobile-builder-target" class="mb-list mb-dropzone">
+                        <!-- Dropped items go here -->
+                    </div>
+                </div>
+            </div>
+            <div class="mb-controls">
+                <p>{% trans "Vista Previa en Vivo" %}</p>
+                <small>{% trans "Los cambios se guardan automáticamente" %}</small>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+ 

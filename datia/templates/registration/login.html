@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Datia - Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 3rem;
+            width: 100%;
+            max-width: 420px;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .logo h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo p {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 1rem;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            border-left: 4px solid #c33;
+        }
+
+        .footer-text {
+            text-align: center;
+            color: #999;
+            font-size: 0.85rem;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <h1>Datia</h1>
+            <p>Inteligencia de Negocio Autónoma</p>
+        </div>
+
+        {% if form.errors %}
+        <div class="error-message">
+            Usuario o contraseña incorrectos. Por favor, inténtalo de nuevo.
+        </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'login' %}">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="id_username">Usuario</label>
+                <input type="text" name="username" id="id_username" required autofocus>
+            </div>
+
+            <div class="form-group">
+                <label for="id_password">Contraseña</label>
+                <input type="password" name="password" id="id_password" required>
+            </div>
+
+            <input type="hidden" name="next" value="{{ next }}">
+
+            <button type="submit" class="btn-login">Iniciar Sesión</button>
+        </form>
+
+        <p class="footer-text">© 2024 Datia - Privacidad Local</p>
+    </div>
+</body>
+
+</html>

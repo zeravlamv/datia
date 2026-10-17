@@ -1,0 +1,91 @@
+{% load static i18n %}
+<link rel="stylesheet" href="{% static 'css/dashboard/anatomia_utilidad.css' %}?v={% now 'U' %}">
+<div class="financial-theme">
+    <div class="dashboard-v2-container">
+        <div class="fin-grid-item">
+            <div class="fin-card-simple">
+                <div class="fin-card-header" style="display:flex; align-items:center; justify-content:space-between;">
+                    <span class="fin-card-title">{% trans "Anatomía de la Utilidad" %}</span>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <button class="btn-fin-action" onclick="toggleAnatomyFormulas(true)" title="{% trans 'Ver fórmulas' %}">{% trans "Fórmulas" %}</button>
+                        <i class="fas fa-grip-lines fin-drag-handle"></i>
+                    </div>
+                </div>
+                <div class="fin-toolbar">
+                    <div style="display:flex; gap:12px; align-items:center; margin-left:auto;">
+                        <label class="fin-text-muted" for="fin-anatomy-color">{% trans "Color base" %}</label>
+                        <input id="fin-anatomy-color" type="color" onchange="changeAnatomyColor(this.value)" />
+                        <label class="fin-text-muted" for="fin-anatomy-years">{% trans "Años de entrenamiento" %}</label>
+                        <select id="fin-anatomy-years" onchange="changeAnatomyYears(this.value)">
+                            <option value="3">3</option>
+                            <option value="5" selected>5</option>
+                            <option value="7">7</option>
+                            <option value="10">10</option>
+                        </select>
+                        <label class="fin-text-muted" for="fin-anatomy-pl-eq">{% trans "Equivalencias P&L" %}</label>
+                        <input id="fin-anatomy-pl-eq" type="checkbox" onchange="changeAnatomyPLEq(this.checked)" />
+                        <button class="btn-fin-action" onclick="exportAnatomyCSV()">{% trans "Exportar CSV" %}</button>
+                        <button class="btn-fin-action" onclick="exportAnatomyPNG()">{% trans "Exportar PNG" %}</button>
+                    </div>
+                </div>
+                <div id="fin-anatomy-progress-container" style="display:none; margin: 10px 0;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <span id="fin-anatomy-progress-text" class="fin-text-muted" style="font-size:0.85rem;">{% trans "Cargando..." %}</span>
+                        <span id="fin-anatomy-progress-pct" class="fin-text-muted" style="font-size:0.85rem; font-weight:bold;">0%</span>
+                    </div>
+                    <div class="fin-anatomy-progress-track">
+                        <div id="fin-anatomy-progress-bar" class="fin-anatomy-progress-fill"></div>
+                    </div>
+                </div>
+                <div id="fin-anatomy-legend" class="fin-balance-summary"></div>
+                <div id="fin-anatomy-waffle" style="width:100%; min-height:280px;"></div>
+                <div id="fin-anatomy-expenses" style="margin-top:12px;"></div>
+                <div class="fin-axis"></div>
+                <div class="fin-axis"></div>
+                <div class="fin-anatomy-section-title">{% trans "Coste por cada 100" %}</div>
+                <div id="fin-anatomy-per100">
+                    <div id="fin-anatomy-per100-pie" style="width:100%; min-height:420px;"></div>
+                </div>
+                <div id="fin-anatomy-forecast" style="margin-top:12px;">
+                    <div id="fin-anatomy-forecast-chart"></div>
+                    <div id="fin-anatomy-forecast-explain" class="fin-anatomy-explain"></div>
+                </div>
+                <div class="fin-axis"></div>
+                <div id="fin-anatomy-formulas" class="fin-ratio-back" style="display:none; margin-top:12px;">
+                    <div style="text-align:right;">
+                        <button class="btn-fin-action" onclick="toggleAnatomyFormulas(false)">{% trans "Cerrar" %}</button>
+                    </div>
+                    <div class="fin-analysis-section">
+                        <div class="fin-analysis-label">{% trans "Título" %}</div>
+                        <div class="ratio-text">{% trans "Anatomía de la Utilidad — Fórmulas y Origen" %}</div>
+                    </div>
+                    <div class="fin-analysis-section">
+                        <div class="fin-analysis-label">{% trans "YoY" %}</div>
+                        <div class="ratio-text">
+                            {% blocktrans %}Variación interanual (%): (CY − PY) / |PY| × 100. En gastos, descensos se muestran en verde y aumentos en rojo.{% endblocktrans %}
+                        </div>
+                    </div>
+                    <div class="fin-analysis-section">
+                        <div class="fin-analysis-label">{% trans "Common Size" %}</div>
+                        <div class="ratio-text">
+                            {% blocktrans %}Porcentaje sobre ingresos: Parte / Ingresos × 100, calculado por trimestre con periodos 1–12.{% endblocktrans %}
+                        </div>
+                    </div>
+                    <div class="fin-analysis-section">
+                        <div class="fin-analysis-label">{% trans "Forecast" %}</div>
+                        <div class="ratio-text">
+                            {% blocktrans %}Utilidad neta trimestral = Ingresos − Coste de Ventas − Gastos Administrativos − Impuestos. Modelo Prophet con estacionalidad anual (bandas Low/High) y fallback a agregación del último año.{% endblocktrans %}
+                        </div>
+                    </div>
+                    <div class="fin-analysis-section">
+                        <div class="fin-analysis-label">{% trans "Datos" %}</div>
+                        <div class="ratio-text">
+                            {% blocktrans %}Fuentes: /api/financial/anatomy/utility y /api/financial/anatomy/forecast (Postgres); P&L nivel 2 para desglose de gastos; MSSQL solo consulta.{% endblocktrans %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="{% static 'js/dashboard/anatomia_utilidad.js' %}?v={% now 'U' %}"></script>

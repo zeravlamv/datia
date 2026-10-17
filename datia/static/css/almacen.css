@@ -1,0 +1,208 @@
+.almacen-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.almacen-summary {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: stretch;
+    gap: 16px;
+    margin-top: 4px;
+}
+.almacen-summary .summary-wide {
+    flex: 1 1 100%;
+}
+.alm-summary-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    width: 100%;
+}
+.almacen-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+.filter-item label {
+    display: block;
+    font-size: 0.8rem;
+    color: #a1a1aa;
+    margin-bottom: 6px;
+}
+.filter-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.filter-item label {
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+.filter-item select {
+    background: #27272a;
+    color: #fff;
+    border: 1px solid #3f3f46;
+    border-radius: 6px;
+    padding: 6px 8px;
+    min-height: 36px;
+    line-height: 1;
+}
+.filter-item select.is-fav {
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 2px rgba(245,158,11,0.20);
+}
+.filter-actions {
+    display: flex;
+    gap: 8px;
+}
+.filter-actions button {
+    background: #3f3f46;
+    color: #fff;
+    border: 1px solid #52525b;
+    border-radius: 6px;
+    padding: 8px 12px;
+    min-height: 36px;
+    cursor: pointer;
+}
+.almacen-widgets {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+.fav-btn {
+    margin-left: 0;
+    background: #3f3f46;
+    color: #f59e0b;
+    border: 1px solid #52525b;
+    border-radius: 6px;
+    padding: 8px 12px;
+    min-height: 36px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+}
+.fav-btn.active {
+    background: #f59e0b;
+    color: #111827;
+    border-color: #f59e0b;
+}
+.fav-info {
+    margin-top: 6px;
+    font-size: 0.8rem;
+    color: #a1a1aa;
+    flex-basis: 100%;
+}
+.inline-select-action {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.inline-select-action select {
+    width: auto;
+}
+.inline-select-action .fav-btn {
+    white-space: nowrap;
+}
+.alm-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--accent-border);
+    border-radius: 12px;
+    padding: 16px;
+}
+.almacen-summary .alm-card {
+    flex: 0 0 auto;
+    text-align: center;
+    padding: 20px 22px;
+    border-radius: 14px;
+    border: 1px solid var(--accent-border);
+    background: rgba(255,255,255,0.04);
+}
+.alm-card-title {
+    font-size: 0.9rem;
+    color: #a1a1aa;
+    margin-bottom: 8px;
+}
+.almacen-summary .alm-card-title {
+    text-align: center;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: .2px;
+    margin-bottom: 10px;
+}
+.alm-card-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+}
+.almacen-summary .alm-card-value {
+    text-align: center;
+    font-size: 1.8rem;
+    line-height: 1.2;
+    font-weight: 700;
+}
+.alm-card-value.danger {
+    color: #f87171;
+}
+.almacen-charts {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+.alm-chart-block {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--accent-border);
+    border-radius: 12px;
+    padding: 12px;
+}
+.alm-chart-title {
+    font-size: 0.95rem;
+    color: #a1a1aa;
+    margin-bottom: 10px;
+}
+.alm-chart {
+    width: 100%;
+    height: 360px;
+}
+.almacen-tables {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+.alm-table-block {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--accent-border);
+    border-radius: 12px;
+    padding: 12px;
+}
+.alm-table-title {
+    font-size: 0.95rem;
+    color: #a1a1aa;
+    margin-bottom: 10px;
+}
+.alm-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.alm-table th, .alm-table td {
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding: 8px;
+    font-size: 0.85rem;
+}
+.alm-table th {
+    color: #a1a1aa;
+    text-align: left;
+}
+@media (max-width: 1024px) {
+    .almacen-filters {
+        flex-wrap: wrap;
+    }
+    .almacen-widgets {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .almacen-charts, .almacen-tables {
+        grid-template-columns: 1fr;
+    }
+}

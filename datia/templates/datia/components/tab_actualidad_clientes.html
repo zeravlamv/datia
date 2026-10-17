@@ -1,0 +1,320 @@
+{% load i18n %}
+<div class="dashboard-v2-container entity-dashboard" data-entity="clientes">
+    <div class="fin-toolbar">
+        <div class="fin-toolbar-left">
+            <h3 class="fin-card-title" style="margin:0;">{% trans "Dashboard de Clientes" %}</h3>
+        </div>
+        <div class="fin-toolbar-right" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+            <input type="text"
+                   class="search-input"
+                   placeholder="{% trans 'Buscar por código o nombre' %}"
+                   data-entity-search="clientes"
+                   style="min-width:220px;">
+            <button type="button"
+                    class="btn-fin-action"
+                    data-entity-refresh="clientes">
+                {% trans "Actualizar" %}
+            </button>
+            <button type="button"
+                    class="btn-fin-action"
+                    onclick="exportClientesDashboard('csv')">
+                {% trans "Exportar Excel" %}
+            </button>
+            <button type="button"
+                    class="btn-fin-action"
+                    onclick="exportClientesDashboard('pdf')">
+                {% trans 'Exportar PDF' %}
+            </button>
+        </div>
+    </div>
+
+    <div class="entity-dashboard-layout mode-overview">
+        <div class="entity-dashboard-column entity-dashboard-column-left">
+            <div class="fin-grid-container">
+                <div class="fin-grid-item">
+                    <div class="fin-card-simple">
+                        <div class="fin-card-header">
+                            <span class="fin-card-title">{% trans "Resumen de Clientes" %}</span>
+                        </div>
+                        <div class="fin-kpi-row entity-kpi-row">
+                            <div class="fin-kpi-box" data-kpi="total_clientes">
+                                <div class="fin-kpi-label">{% trans "Clientes activos" %}</div>
+                                <div class="fin-kpi-value" data-kpi-value>--</div>
+                            </div>
+                            <div class="fin-kpi-box" data-kpi="ventas_totales">
+                                <div class="fin-kpi-label">{% trans "Ventas totales" %}</div>
+                                <div class="fin-kpi-value" data-kpi-value>--</div>
+                            </div>
+                            <div class="fin-kpi-box" data-kpi="ticket_medio">
+                                <div class="fin-kpi-label">{% trans "Ticket medio" %}</div>
+                                <div class="fin-kpi-value" data-kpi-value>--</div>
+                            </div>
+                            <div class="fin-kpi-box" data-kpi="operaciones_totales">
+                                <div class="fin-kpi-label">{% trans "Operaciones" %}</div>
+                                <div class="fin-kpi-value" data-kpi-value>--</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fin-grid-item">
+                    <div class="fin-card-simple">
+                        <div class="fin-card-header">
+                            <span class="fin-card-title">{% trans "Ventas mensuales" %}</span>
+                        </div>
+                        <div class="fin-chart-container" data-chart="ventas_mensuales" style="height:260px;"></div>
+                    </div>
+                </div>
+
+                <div class="fin-grid-item">
+                    <div class="fin-card-simple">
+                        <div class="fin-card-header">
+                            <span class="fin-card-title">{% trans "Frecuencia de compra por cliente" %}</span>
+                        </div>
+                        <div class="fin-chart-container" data-chart="frecuencia" style="height:260px;"></div>
+                    </div>
+                </div>
+
+                <div class="fin-grid-item">
+                    <div class="fin-card-simple">
+                        <div class="fin-card-header">
+                            <span class="fin-card-title">{% trans "Top clientes" %}</span>
+                        </div>
+                        <div class="fin-chart-container" data-chart="top_clientes" style="height:260px;"></div>
+                    </div>
+                </div>
+
+                <div class="fin-grid-item">
+                    <div class="fin-card-simple">
+                        <div class="fin-card-header">
+                            <span class="fin-card-title">{% trans "Listado de clientes" %}</span>
+                        </div>
+                        <div class="fin-table-container">
+                            <table class="fin-table">
+                                <thead>
+                                    <tr>
+                                        <th>{% trans "Código" %}</th>
+                                        <th>{% trans "Nombre" %}</th>
+                                        <th class="text-right">{% trans "Ventas" %}</th>
+                                        <th class="text-right">{% trans "Operaciones" %}</th>
+                                        <th class="text-right">{% trans "Ticket medio" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody data-entity-table="clientes">
+                                    <tr>
+                                        <td colspan="5" class="text-center">--</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="entity-dashboard-column entity-dashboard-column-right">
+            <div class="fin-grid-container">
+                <div class="fin-grid-item">
+                    <div class="fin-card-simple">
+                        <div class="fin-card-header">
+                            <span class="fin-card-title">{% trans "Ficha 360º del cliente" %}</span>
+                        </div>
+                        <div class="fin-detail-grid" data-entity-detail="clientes">
+                            <div class="cliente-header-360">
+                                <div class="cliente-identity">
+                                    <div class="cliente-identity-main">
+                                        <div class="cliente-name" data-detail-field="nombre">--</div>
+                                        <div class="cliente-code-chip" data-detail-field="codigo">--</div>
+                                    </div>
+                                    <div class="cliente-identity-meta">
+                                        <span class="cliente-meta-item">
+                                            <span class="cliente-meta-label">{% trans "Nombre fiscal" %}</span>
+                                            <span class="cliente-meta-value" data-detail-field="nombre_fiscal">--</span>
+                                        </span>
+                                        <span class="cliente-meta-item">
+                                            <span class="cliente-meta-label">{% trans "CIF/NIF" %}</span>
+                                            <span class="cliente-meta-value" data-detail-field="cif_nif">--</span>
+                                        </span>
+                                        <span class="cliente-meta-item">
+                                            <span class="cliente-meta-label">{% trans "Código postal" %}</span>
+                                            <span class="cliente-meta-value" data-detail-field="cod_postal">--</span>
+                                        </span>
+                                        <span class="cliente-meta-item">
+                                            <span class="cliente-meta-label">{% trans "Fecha de alta" %}</span>
+                                            <span class="cliente-meta-value" data-detail-field="fecha_alta">--</span>
+                                        </span>
+                                        <span class="cliente-meta-item">
+                                            <span class="cliente-meta-label">{% trans "Estado" %}</span>
+                                            <span class="cliente-meta-value" data-detail-field="activo">--</span>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="cliente-kpis-main">
+                                    <div class="cliente-kpi-box">
+                                        <div class="cliente-kpi-label">{% trans "Ventas totales" %}</div>
+                                        <div class="cliente-kpi-value" data-detail-field="ventas_totales">--</div>
+                                    </div>
+                                    <div class="cliente-kpi-box">
+                                        <div class="cliente-kpi-label">{% trans "Operaciones" %}</div>
+                                        <div class="cliente-kpi-value" data-detail-field="operaciones">--</div>
+                                    </div>
+                                    <div class="cliente-kpi-box">
+                                        <div class="cliente-kpi-label">{% trans "Ticket medio" %}</div>
+                                        <div class="cliente-kpi-value" data-detail-field="ticket_medio">--</div>
+                                    </div>
+                                    <div class="cliente-kpi-box">
+                                        <div class="cliente-kpi-label">{% trans "Saldo pendiente de cobro" %}</div>
+                                        <div class="cliente-kpi-value" data-detail-field="pendiente_cobro">--</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="fin-kpi-row">
+                                <div class="fin-kpi-box">
+                                    <div class="fin-kpi-label">{% trans "Total pedidos" %}</div>
+                                    <div class="fin-kpi-value" data-detail-field="total_pedidos">--</div>
+                                </div>
+                                <div class="fin-kpi-box">
+                                    <div class="fin-kpi-label">{% trans "Margen %" %}</div>
+                                    <div class="fin-kpi-value" data-detail-field="margen_pct">--</div>
+                                </div>
+                                <div class="fin-kpi-box">
+                                    <div class="fin-kpi-label">{% trans "Antigüedad (días)" %}</div>
+                                    <div class="fin-kpi-value" data-detail-field="antiguedad_dias">--</div>
+                                </div>
+                                <div class="fin-kpi-box">
+                                    <div class="fin-kpi-label">{% trans "Última compra" %}</div>
+                                    <div class="fin-kpi-value" data-detail-field="ultima_compra">--</div>
+                                </div>
+                            </div>
+
+                            <div class="cliente-engagement-grid">
+                                <div class="cliente-engagement-block">
+                                    <div class="cliente-engagement-label">{% trans "Pedidos últimos 12 meses" %}</div>
+                                    <div class="cliente-engagement-value" data-detail-field="pedidos_12m">--</div>
+                                </div>
+                                <div class="cliente-engagement-block">
+                                    <div class="cliente-engagement-label">{% trans "Días medios entre pedidos" %}</div>
+                                    <div class="cliente-engagement-value" data-detail-field="dias_promedio_entre_pedidos">--</div>
+                                </div>
+                            </div>
+
+                            <div class="fin-grid-container">
+                                <div class="fin-grid-item">
+                                    <div class="fin-card-simple">
+                                        <div class="fin-card-header">
+                                            <span class="fin-card-title">{% trans "Pedidos del cliente" %}</span>
+                                        </div>
+                                        <div class="fin-table-container">
+                                            <table class="fin-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th style="width:32px;"></th>
+                                                        <th>{% trans "Documento" %}</th>
+                                                        <th>{% trans "Fecha" %}</th>
+                                                        <th>{% trans "Fecha entrega" %}</th>
+                                                        <th>{% trans "Proyecto" %}</th>
+                                                        <th>{% trans "Sección" %}</th>
+                                                        <th>{% trans "Delegación" %}</th>
+                                                        <th>{% trans "Canal" %}</th>
+                                                        <th>{% trans "Departamento" %}</th>
+                                                        <th class="text-right">{% trans "Importe" %}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody data-detail-table="orders">
+                                                    <tr>
+                                                        <td colspan="10" class="text-center">--</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="fin-grid-item">
+                                    <div class="fin-card-simple">
+                                        <div class="fin-card-header">
+                                            <span class="fin-card-title">{% trans "Albaranes del cliente" %}</span>
+                                        </div>
+                                        <div class="fin-table-container">
+                                            <table class="fin-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th></th>
+                                                        <th>{% trans "Documento" %}</th>
+                                                        <th>{% trans "Fecha" %}</th>
+                                                        <th>{% trans "Artículo" %}</th>
+                                                        <th>{% trans "Descripción" %}</th>
+                                                        <th class="text-right">{% trans "Unidades" %}</th>
+                                                        <th class="text-right">{% trans "Precio" %}</th>
+                                                        <th class="text-right">{% trans "Importe" %}</th>
+                                                        <th class="text-right">{% trans "Coste" %}</th>
+                                                        <th class="text-right">{% trans "Margen" %}</th>
+                                                        <th class="text-right">{% trans "Margen %" %}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody data-detail-table="deliveries">
+                                                    <tr>
+                                                        <td colspan="11" class="text-center">--</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="fin-grid-container">
+                                <div class="fin-grid-item">
+                                    <div class="fin-card-simple">
+                                        <div class="fin-card-header">
+                                            <span class="fin-card-title">{% trans "Mapa de calor cliente vs cartera" %}</span>
+                                        </div>
+                                        <div class="fin-chart-container" data-detail-chart="cliente_heatmap" style="height:220px;"></div>
+                                    </div>
+                                </div>
+                                <div class="fin-grid-item">
+                                    <div class="fin-card-simple">
+                                        <div class="fin-card-header">
+                                            <span class="fin-card-title">{% trans "Dispersión cliente vs resto" %}</span>
+                                        </div>
+                                        <div class="fin-chart-container" data-detail-chart="cliente_scatter" style="height:220px;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="fin-grid-container">
+                                <div class="fin-grid-item">
+                                    <div class="fin-card-simple">
+                                        <div class="fin-card-header">
+                                            <span class="fin-card-title">{% trans "Ventas mensuales del cliente" %}</span>
+                                        </div>
+                                        <div class="fin-chart-container" data-detail-chart="ventas_mensuales" style="height:220px;"></div>
+                                    </div>
+                                </div>
+                                <div class="fin-grid-item">
+                                    <div class="fin-card-simple">
+                                        <div class="fin-card-header">
+                                            <span class="fin-card-title">{% trans "Top artículos" %}</span>
+                                        </div>
+                                        <div class="fin-chart-container" data-detail-chart="top_articulos" style="height:220px;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="fin-grid-container">
+                                <div class="fin-grid-item">
+                                    <div class="fin-card-simple">
+                                        <div class="fin-card-header">
+                                            <span class="fin-card-title">{% trans "Frecuencia de compra" %}</span>
+                                        </div>
+                                        <div class="fin-chart-container" data-detail-chart="frecuencia_compra" style="height:220px;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prueba visual — Coste por cada 100</title>
+  <link rel="stylesheet" href="per100_test.css">
+</head>
+<body>
+  <h1>Prueba visual — Coste por cada 100</h1>
+  <p>Cuatro contenedores con resoluciones aproximadas. Comprobar que no hay solapamiento de etiquetas.</p>
+  <div class="grid">
+    <section>
+      <h2>320 × 568</h2>
+      <div id="chart-320" class="chart chart-320" role="img" aria-label="Coste por cada 100 — 320x568"></div>
+    </section>
+    <section>
+      <h2>768 × 1024</h2>
+      <div id="chart-768" class="chart chart-768" role="img" aria-label="Coste por cada 100 — 768x1024"></div>
+    </section>
+    <section>
+      <h2>1366 × 768</h2>
+      <div id="chart-1366" class="chart chart-1366" role="img" aria-label="Coste por cada 100 — 1366x768"></div>
+    </section>
+    <section>
+      <h2>1920 × 1080</h2>
+      <div id="chart-1920" class="chart chart-1920" role="img" aria-label="Coste por cada 100 — 1920x1080"></div>
+    </section>
+  </div>
+  <script src="../js/echarts.min.js"></script>
+  <script src="per100_test.js"></script>
+</body>
+</html>
+

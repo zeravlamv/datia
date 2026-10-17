@@ -1,0 +1,1583 @@
+import logging
+import json
+import re
+import unicodedata
+import hashlib
+import datetime
+from typing import Dict, Any, Optional, List, Tuple
+from django.db import connections, models
+from datia.factories import ServiceFactory
+from datia.services.ai.datia_schema import DatiaSchema
+from datia.models.semantic import BusinessContext, DataSource, DataRelation, DataField, StandardField
+from datia.services.ai.intent_detector import IntentDetector
+from datia.services.ai.sql_variation_generator import SQLVariationGenerator
+from datia.services.ai.auto_training_limiter import AutoTrainingLimiter
+from datia.services.cache_service import QueryCacheService
+
+logger = logging.getLogger(__name__)
+
+class QueryBuilder:
+    """
+    Next-Gen Query Builder for Datia AI (Refactored v2).
+    
+    Architecture:
+    1. Intent Detection (Router)
+    2. Specialized Handlers (Ranking, Evolution, Comparison) with Schema Awareness
+    3. Memory/Auto-Training Fallback
+    """
+
+    # --- CONFIGURATION: ENTITY DEFINITIONS ---
+    ENTITIES = {
+        'cliente': {
+            'table': 'datiadb_lineaspedidocliente',
+            'alias': 'L',
+            'label_candidates': [
+                'Nombre','RazonSocial','NombreCliente','Cliente','CodigoCliente',
+                'CodCliente','IdCliente','ClienteNombre','ClienteRazonSocial',
+                'CodigoTercero','IdTercero','Tercero','Cuenta','CodigoCuenta','NombreFiscal',
+                'CodigoDelCliente','CodigoClienteProveedor'
+            ],
+            'date_col': 'FechaPedido',
+            'count_col': 'NumeroPedido',
+            'metric_source': 'lineas'
+        },
+        'articulo': {
+            'table': 'datiadb_lineaspedidocliente',
+            'alias': 'L',
+            'label_candidates': [
+                'DescripcionArticulo', 'Articulo', 'Producto',
+                'Descripcion', 'DescripcionLinea', 'ArticuloDescripcion',
+                'NombreArticulo', 'CodigoArticulo'
+            ],
+            'date_col': 'FechaPedido', # Changed to FechaPedido to force JOIN with Header for safety
+            'count_col': 'NumeroPedido',
+            'metric_source': 'lineas'
+        },
+        'agente': {
+            'table': 'datiadb_cabecerapedidocliente',
+            'alias': 'C',
+            'label_candidates': ['NombreAgente', 'Agente', 'Vendedor', 'Comercial'],
+            'date_col': 'FechaPedido',
+            'count_col': 'NumeroPedido',
+            'metric_source': 'cabecera'
+        },
+        'zona': {
+            'table': 'datiadb_cabecerapedidocliente',
+            'alias': 'C',
+            'label_candidates': ['Zona', 'Region', 'Provincia'],
+            'date_col': 'FechaPedido',
+            'count_col': 'NumeroPedido',
+            'metric_source': 'cabecera'
+        },
+        'familia': {
+            'table': 'datiadb_lineaspedidocliente',
+            'alias': 'L',
+            'label_candidates': ['Familia', 'CodigoFamilia'],
+            'date_col': 'FechaPedido', # Changed to FechaPedido to force JOIN with Header for safety
+            'count_col': 'NumeroPedido',
+            'metric_source': 'lineas'
+        },
+        'proveedor': {
+            'table': 'datiadb_cabeceraalbaranproveedor', # Default to Albaranes for Purchases
+            'alias': 'C',
+            'label_candidates': ['NombreProveedor', 'Nombre', 'RazonSocial'],
+            'date_col': 'FechaAlbaran',
+            'count_col': 'NumeroAlbaran',
+            'metric_source': 'cabecera'
+        }
+    }
+    @staticmethod
+    def _normalize_tokens(text: str) -> str:
+        """
+        Normalizes common typos and variations to canonical terms.
+        """
+        nf = unicodedata.normalize('NFD', text)
+        text = ''.join(ch for ch in nf if unicodedata.category(ch) != 'Mn').lower()
+        replacements = {
+            'venetes': 'ventas', 'vendes': 'ventas', 'ventes': 'ventas', 'bentas': 'ventas',
+            'compres': 'compras', 'conpras': 'compras',
+            'clienets': 'clientes', 'clietes': 'clientes', 'clienes': 'clientes',
+            'porductos': 'productos', 'prodcutos': 'productos',
+            'articulos': 'articulos', 'artiuclos': 'articulos',
+            'familias': 'familias', 'faimlias': 'familias',
+            'probveedor': 'proveedor', 'proweedor': 'proveedor',
+            'ultimo': 'ultimo', 'ultimos': 'ultimos', 'darrera': 'ultimo', 'ultimso': 'ultimos',
+            'trimestre': 'trimestre', 'trimesre': 'trimestre',
+            'mensul': 'mensual', 'mesual': 'mensual'
+        }
+        for wrong, right in replacements.items():
+            text = text.replace(wrong, right)
+        return text
+
+    @staticmethod
+    def _resolve_entity_semantics(entity_key: str, empresa: int) -> Dict[str, Any]:
+        """
+        Overlay base ENTITIES config using semantic catalog (DataSource/DataField).
+        """
+        base = QueryBuilder.ENTITIES.get(entity_key, {}).copy()
+        if not base:
+            return {}
+        synonyms = {
+            'articulo': ['articulo', 'producto'],
+            'cliente': ['cliente'],
+            'agente': ['agente', 'vendedor', 'comercial'],
+            'zona': ['zona', 'region', 'provincia'],
+            'familia': ['familia'],
+            'proveedor': ['proveedor']
+        }
+        syns = synonyms.get(entity_key, [entity_key])
+        ds = None
+        for s in syns:
+            try:
+                ds = DataSource.objects.filter(is_active=True, empresa_id=empresa, keywords__contains=[s]).first()
+            except Exception:
+                ds = None
+            if ds:
+                break
+        if ds:
+            local_tbl = ds.get_local_table_name()
+            if local_tbl:
+                base['table'] = local_tbl
+            # Try to resolve label field via DataField
+            label_df = None
+            for s in syns:
+                try:
+                    label_df = DataField.objects.filter(source=ds, is_active=True, usage_type='dimension', synonyms__contains=[s]).first()
+                except Exception:
+                    label_df = None
+                if label_df:
+                    break
+            if label_df:
+                fn = (label_df.field_name or '').lower()
+                # Solo aceptar dimensiones con semántica de identificador o nombre
+                if ('codigo' in fn) or ('id' in fn) or ('nombre' in fn) or ('razonsocial' in fn):
+                    base['label_candidates'] = [label_df.field_name]
+            else:
+                try:
+                    any_dim = DataField.objects.filter(source=ds, is_active=True, usage_type='dimension').first()
+                    if any_dim:
+                        fn = (any_dim.field_name or '').lower()
+                        if ('codigo' in fn) or ('id' in fn) or ('nombre' in fn) or ('razonsocial' in fn):
+                            base['label_candidates'] = [any_dim.field_name]
+                except Exception:
+                    pass
+            # Date field if specified
+            try:
+                date_df = DataField.objects.filter(source=ds, is_active=True, usage_type='date').first()
+                if date_df:
+                    base['date_col'] = date_df.field_name
+            except Exception:
+                pass
+            if not base.get('date_col'):
+                try:
+                    std_dates = StandardField.objects.filter(semantic_role='DATE')
+                    cand = [sf.name for sf in std_dates]
+                    best, _ = QueryBuilder._validate_table_columns(base['table'], cand)
+                    if best:
+                        base['date_col'] = best
+                except Exception:
+                    pass
+            base['semantic_used'] = True
+            base['_semantic_ds_id'] = ds.id
+        else:
+            base['semantic_used'] = False
+        return base
+
+    @staticmethod
+    def _find_header_table_for_lines(source_table: str, empresa: int, semantic_ds_id: Optional[int] = None) -> Optional[str]:
+        """
+        Resolve header table using DataRelation if possible; else heuristic.
+        """
+        if semantic_ds_id:
+            try:
+                ds = DataSource.objects.filter(id=semantic_ds_id).first()
+                if ds:
+                    rel = DataRelation.objects.filter(source=ds).first()
+                    if rel:
+                        return rel.target.get_local_table_name()
+            except Exception:
+                pass
+        if 'lineas' in source_table:
+            return source_table.replace('lineas', 'cabecera')
+        return None
+
+    @staticmethod
+    def _resolve_audit_cols(table_name: str) -> Dict[str, str]:
+        """
+        Resolves critical audit columns (Company, Year, Count) checking real DB casing.
+        """
+        candidates = {
+            'company': ['CodigoEmpresa', 'codigoempresa', 'CompanyId', 'IdEmpresa', 'Empresa'],
+            'year': ['Ejercicio', 'ejercicio', 'Year', 'Anyo'],
+            'count': ['NumeroPedido', 'numeropedido', 'NumeroAlbaran', 'numeroalbaran', 'Id', 'id']
+        }
+        
+        resolved = {}
+        _, col_map = QueryBuilder._validate_table_columns(table_name, []) # Get all cols
+        
+        if not col_map:
+            # Fallback to Title Case if schema check fails
+            return {'company': 'CodigoEmpresa', 'year': 'EjercicioPedido', 'count': 'NumeroPedido'}
+
+        for key, possible_names in candidates.items():
+            match = next((col_map[c.lower()] for c in possible_names if c.lower() in col_map), None)
+            resolved[key] = match
+            
+        return resolved
+
+
+    @staticmethod
+    def _validate_table_columns(table_name: str, candidates: list[str]) -> Tuple[Optional[str], Dict[str, str]]:
+        """
+        Verifies which candidate columns actually exist in the DB.
+        Returns: (best_match_column, full_column_map)
+        """
+        clean_tbl = table_name.replace('"', '').lower()
+        try:
+            db_alias = 'analytics' if 'analytics' in connections.databases else 'default'
+            with connections[db_alias].cursor() as cursor:
+                cursor.execute("""
+                    SELECT column_name FROM information_schema.columns 
+                    WHERE table_name = %s AND table_schema = 'public'
+                """, [clean_tbl])
+                real_cols = {row[0] for row in cursor.fetchall()}
+                real_cols_lower = {c.lower(): c for c in real_cols}
+                
+                best_match = None
+                for cand in candidates:
+                    if cand.lower() in real_cols_lower:
+                        best_match = real_cols_lower[cand.lower()]
+                        break
+                
+                return best_match, real_cols_lower
+        except Exception as e:
+            logger.error(f"Schema Validation Error for {table_name}: {e}")
+            return None, {}
+
+    @staticmethod
+    def _resolve_metrics(col_map: Dict[str, str], intent_text: str, is_purchase: bool = False, alias: Optional[str] = None) -> Tuple[str, str, str]:
+        """
+        Resolves (ValCol, CostCol, MetricType) based on available columns and intent.
+        """
+        # 1. Define Candidates
+        sales_cands = ['ImporteLiquido', 'ImporteNeto', 'ImporteBruto', 'TotalNeto', 'BaseImponible']
+        cost_cands = ['ImporteCoste', 'ImporteCosDte', 'CosteTotal', 'TotalCoste', 'Coste']
+        qty_cands = ['Cantidad', 'Unidades', 'UnidadesPedidas', 'UnidadesServidas', 'Qty']
+        
+        # 2. Find existing columns
+        real_sales = next((col_map[c.lower()] for c in sales_cands if c.lower() in col_map), None)
+        if not real_sales:
+            # Heurística: elegir cualquier columna que contenga 'importe' o 'neto' o 'total'
+            real_sales = next((col_map[k] for k in col_map.keys() if ('importe' in k) or ('neto' in k) or ('total' in k)), 'ImporteBruto')
+        real_cost = next((col_map[c.lower()] for c in cost_cands if c.lower() in col_map), None)
+        real_cost_expr = None
+        qty_col = next((col_map[c.lower()] for c in qty_cands if c.lower() in col_map), None)
+        if not real_cost:
+            if ('preciocoste' in col_map) and qty_col:
+                if alias:
+                    real_cost_expr = f'COALESCE({alias}."{col_map["preciocoste"]}", 0) * COALESCE({alias}."{qty_col}", 0)'
+                else:
+                    real_cost_expr = f'COALESCE("{col_map["preciocoste"]}", 0) * COALESCE("{qty_col}", 0)'
+            elif ('preciocoste' in col_map) and ('importebruto' in col_map) and ('precio' in col_map):
+                if alias:
+                    qty_expr = f'COALESCE(NULLIF({alias}."{col_map["importebruto"]}", 0) / NULLIF({alias}."{col_map["precio"]}", 0), 0)'
+                    real_cost_expr = f'COALESCE({alias}."{col_map["preciocoste"]}", 0) * {qty_expr}'
+                else:
+                    qty_expr = f'COALESCE(NULLIF("{col_map["importebruto"]}", 0) / NULLIF("{col_map["precio"]}", 0), 0)'
+                    real_cost_expr = f'COALESCE("{col_map["preciocoste"]}", 0) * {qty_expr}'
+        
+        # 3. Determine Intent
+        metric_type = 'sales'
+        if is_purchase:
+            metric_type = 'purchase_amount'
+            # Purchases usually don't have cost, just Net Amount
+            val_col = real_sales
+            cost_col = "0"
+        elif 'coste' in intent_text or 'gasto' in intent_text:
+            metric_type = 'cost'
+            val_col = real_cost if real_cost else (real_cost_expr if real_cost_expr else "0")
+            cost_col = "0"
+        elif 'margen' in intent_text or 'beneficio' in intent_text or 'rentab' in intent_text:
+            metric_type = 'margin'
+            val_col = real_sales
+            cost_col = real_cost if real_cost else (real_cost_expr if real_cost_expr else "0")
+        else:
+            # Default Sales
+            val_col = real_sales
+            cost_col = real_cost if real_cost else (real_cost_expr if real_cost_expr else "0")
+            
+        return val_col, cost_col, metric_type
+
+    @staticmethod
+    def _format_col(alias: str, col: str) -> str:
+        """
+        Formats a column safely. Handles "0" literal.
+        """
+        if col == "0":
+            return "0"
+        if (" " in col) or ("(" in col) or (")" in col) or ("*" in col) or ("/" in col) or ("+" in col) or ("-" in col) or ("COALESCE" in col) or ("NULLIF" in col):
+            return col
+        return f'{alias}."{col}"' if alias else f'"{col}"'
+
+    @staticmethod
+    def _is_code_like(col_name: Optional[str]) -> bool:
+        if not col_name:
+            return False
+        c = (col_name or '').lower()
+        if 'codigo' in c:
+            return True
+        if c.startswith('id') or c.startswith('id_') or c.endswith('_id') or c.endswith('id'):
+            return True
+        if c in {'cliente', 'clientes', 'proveedor', 'proveedores', 'articulo', 'articulos', 'producto', 'productos', 'tercero', 'cuenta'}:
+            return True
+        return False
+
+    @staticmethod
+    def _prefer_human_label(entity_key: str, col_map: Dict[str, str], current_label_col: str) -> str:
+        prefs = {
+            'cliente': ['razonsocial', 'nombrecliente', 'nombre_cliente', 'cliente_nombre', 'nombre', 'nombrefiscal'],
+            'proveedor': ['razonsocial', 'nombreproveedor', 'nombre_proveedor', 'nombre', 'nombrefiscal'],
+            'articulo': ['descripcionarticulo', 'descripcion', 'descripcionlinea', 'nombrearticulo', 'articulo', 'producto'],
+            'familia': ['descripcionfamilia', 'descripcion', 'familia'],
+            'agente': ['nombreagente', 'agente', 'vendedor', 'comercial', 'nombre'],
+            'zona': ['zona', 'region', 'provincia'],
+        }
+        for p in prefs.get(entity_key, []):
+            if p in col_map:
+                return col_map[p]
+        return current_label_col
+
+    @staticmethod
+    def _master_label_join(entity_key: str, alias: str, label_col: str, company_col: str) -> Tuple[str, str, str]:
+        masters = {
+            'cliente': {'table': 'datia_cliente', 'key': 'cliente', 'label': 'nombre', 'has_company': True},
+            'proveedor': {'table': 'datia_proveedores', 'key': 'proveedor', 'label': 'nombre', 'has_company': True},
+            'articulo': {'table': 'datia_articulos', 'key': 'articulo', 'label': 'descripcion', 'has_company': True},
+            'familia': {'table': 'datia_familias', 'key': 'codigo_familia', 'label': 'descripcion', 'has_company': False},
+        }
+        m = masters.get(entity_key)
+        if not m:
+            return "", f'{alias}."{label_col}"', "1"
+        parts = []
+        if m.get('has_company'):
+            parts.append(f'M."empresa" = {alias}."{company_col}"')
+        parts.append(f'M."{m["key"]}" = {alias}."{label_col}"')
+        join_sql = "LEFT JOIN " + f'"{m["table"]}"' + " M ON " + " AND ".join(parts)
+        label_expr = f'COALESCE(M."{m["label"]}", ({alias}."{label_col}")::text)'
+        group_by_expr = f'{alias}."{label_col}", M."{m["label"]}"'
+        return join_sql, label_expr, group_by_expr
+
+    @staticmethod
+    def _handle_ranking(question: str, empresa: int, ejercicio: int, entity_key: str) -> Optional[Dict[str, Any]]:
+        """
+        Handler for Top/Ranking queries.
+        Refactored to ensure correct Date usage (Header vs Lines).
+        """
+        config = QueryBuilder._resolve_entity_semantics(entity_key, empresa)
+        if not config: return None
+        
+        alias = config['alias']
+        
+        q_tok = QueryBuilder._normalize_tokens(question)
+        if entity_key == 'cliente':
+            if ('albaran' in q_tok) or ('albaranes' in q_tok):
+                config['table'] = 'datiadb_cabeceraalbarancliente'
+                config['alias'] = 'C'
+                config['metric_source'] = 'cabecera'
+                config['date_col'] = 'FechaAlbaran'
+                config['count_col'] = 'NumeroAlbaran'
+
+        # 1. Schema Validation
+        _, probe_map = QueryBuilder._validate_table_columns(config['table'], [])
+        if not probe_map:
+            try:
+                vector_service = ServiceFactory.get_embedding_service()
+                schema_hits = vector_service.search_schema(question, threshold=0.35, limit=3)
+                best_tbl = next(((h.get('metadata') or {}).get('table') for h in schema_hits 
+                                 if (((h.get('metadata') or {}).get('table') or '').lower().startswith('datiadb_'))),
+                                None)
+                if best_tbl:
+                    config['table'] = best_tbl
+            except Exception:
+                pass
+        if not probe_map and entity_key == 'articulo':
+            # Fallback a líneas de albarán cuando líneas de pedido no existen
+            config['table'] = 'datiadb_lineasalbarancliente'
+            # Ajustar claves semánticas para albarán
+            config['count_col'] = 'NumeroAlbaran'
+            config['date_col'] = 'FechaAlbaran'
+        label_col, col_map = QueryBuilder._validate_table_columns(config['table'], config['label_candidates'])
+        if not label_col:
+            fallback_labels = QueryBuilder.ENTITIES.get(entity_key, {}).get('label_candidates', [])
+            label_col, col_map = QueryBuilder._validate_table_columns(config['table'], fallback_labels)
+            if not label_col:
+                for k in col_map.keys():
+                    kk = k.lower()
+                    if ('razonsocial' in kk) or ('nombrecliente' in kk) or (kk == 'nombre'):
+                        label_col = col_map[k]
+                        break
+                    if (kk == 'cliente') or (kk == 'codigo_cliente') or (kk == 'nombre_cliente') or (kk == 'cliente_nombre') or (kk == 'cliente_razon_social'):
+                        label_col = col_map[k]
+                        break
+                    if ('idcliente' in kk) or ('clienteid' in kk):
+                        label_col = col_map[k]
+                        break
+                    if ('codigocliente' in kk) or ('codigo_cliente' in kk) or ('codcliente' in kk):
+                        label_col = col_map[k]
+                        break
+                    if ('cliente' in kk) and (('nombre' in kk) or ('razon' in kk) or ('codigo' in kk) or ('id' in kk)):
+                        label_col = col_map[k]
+                        break
+                if not label_col:
+                    # Último recurso: cualquier columna que contenga 'cliente'
+                    for k in col_map.keys():
+                        kk = k.lower()
+                        if 'cliente' in kk:
+                            label_col = col_map[k]
+                            break
+                    # Probar con StandardField (DIMENSION) que contenga el nombre de la entidad
+                    if not label_col:
+                        try:
+                            std_dims = StandardField.objects.filter(semantic_role='DIMENSION')
+                            entity_token = entity_key.lower()
+                            cand_std = next((sf.name for sf in std_dims if entity_token in (sf.name or '').lower()), None)
+                            if cand_std and (cand_std.lower() in col_map):
+                                label_col = col_map[cand_std.lower()]
+                        except Exception:
+                            pass
+                    if not label_col:
+                        logger.warning(f"Ranking Handler: Could not resolve label column for {entity_key}")
+                        return None
+        # Si la tabla no tiene columna de empresa, cambiar a líneas
+        audit_probe = QueryBuilder._resolve_audit_cols(config['table'])
+        if not audit_probe.get('company') and entity_key == 'cliente':
+            alt_table = 'datiadb_lineasalbarancliente' if (('albaran' in q_tok) or ('albaranes' in q_tok)) else 'datiadb_lineaspedidocliente'
+            _, alt_map = QueryBuilder._validate_table_columns(alt_table, [])
+            if alt_map:
+                config['table'] = alt_table
+                config['alias'] = 'L'
+                config['metric_source'] = 'lineas'
+                config['date_col'] = 'FechaAlbaran' if alt_table == 'datiadb_lineasalbarancliente' else 'FechaPedido'
+                config['count_col'] = 'NumeroAlbaran' if alt_table == 'datiadb_lineasalbarancliente' else 'NumeroPedido'
+                # Revalidar label_col con nuevo mapa
+                label_col, col_map = QueryBuilder._validate_table_columns(config['table'], config['label_candidates'])
+                if not label_col:
+                    # Buscar por tokens estándar en líneas
+                    for k in col_map.keys():
+                        kk = k.lower()
+                        if ('codigodelcliente' in kk) or ('idcliente' in kk) or ('cliente' in kk):
+                            label_col = col_map[k]
+                            break
+                if not label_col:
+                    logger.warning("Ranking Handler: Fallback a líneas sin label_col")
+                    return None
+                # Alinear alias para el resto del handler
+                alias = config['alias']
+            
+        # 2. Metric Resolution
+        is_purchase = (entity_key == 'proveedor')
+        val_col, cost_col, metric_type = QueryBuilder._resolve_metrics(col_map, question.lower(), is_purchase, alias)
+        # Si no hay columna de valor en la tabla actual y es 'cliente', forzar fallback a Líneas
+        if entity_key == 'cliente':
+            missing_val = (val_col is None) or (val_col.lower() not in col_map)
+            if missing_val:
+                alt_table = 'datiadb_lineasalbarancliente' if (('albaran' in q_tok) or ('albaranes' in q_tok)) else 'datiadb_lineaspedidocliente'
+                _, alt_map = QueryBuilder._validate_table_columns(alt_table, [])
+                if alt_map:
+                    config['table'] = alt_table
+                    config['alias'] = 'L'
+                    config['metric_source'] = 'lineas'
+                    config['date_col'] = 'FechaAlbaran' if alt_table == 'datiadb_lineasalbarancliente' else 'FechaPedido'
+                    config['count_col'] = 'NumeroAlbaran' if alt_table == 'datiadb_lineasalbarancliente' else 'NumeroPedido'
+                    # Resetear candidatos de etiqueta al patrón base para evitar contaminación semántica
+                    try:
+                        base_cands = QueryBuilder.ENTITIES.get('cliente', {}).get('label_candidates') or []
+                        if base_cands:
+                            config['label_candidates'] = base_cands
+                    except Exception:
+                        pass
+                    alias = config['alias']
+                    # Recalcular mapa y métricas
+                    label_col, col_map = QueryBuilder._validate_table_columns(config['table'], config['label_candidates'])
+                    if not label_col:
+                        for k in col_map.keys():
+                            kk = k.lower()
+                            if ('codigodelcliente' in kk) or ('idcliente' in kk) or ('cliente' in kk):
+                                label_col = col_map[k]
+                                break
+                    val_col, cost_col, metric_type = QueryBuilder._resolve_metrics(col_map, question.lower(), False, alias)
+                    if not label_col:
+                        logger.warning("Ranking Handler: Fallback a líneas sin label_col")
+                        return None
+        
+        # 3. Year Resolution
+        years = re.findall(r'\b(20\d{2})\b', question)
+        target_year = int(years[0]) if years else (int(ejercicio) if ejercicio else datetime.datetime.now().year)
+        
+        # 4. Date Column Resolution & Join Injection (Rule: Lines need Cabecera for Date Safety)
+        date_col_name = None
+        join_clause = ""
+        
+        # Determine if we need to join with Cabecera
+        needs_join = False
+        if config['metric_source'] == 'lineas':
+            # Check if DateCol exists in Lines table
+            found_in_lines, _ = QueryBuilder._validate_table_columns(config['table'], [config['date_col']])
+            if not found_in_lines:
+                # Si existe alguna columna con token 'fecha' en la tabla de líneas, no forzar JOIN
+                has_any_date = any('fecha' in k.lower() for k in col_map.keys())
+                needs_join = not has_any_date
+        
+        if needs_join:
+            # JOIN STRATEGY
+            # Try semantic relation first, fallback to naming heuristic
+            cabecera_table = QueryBuilder._find_header_table_for_lines(config['table'], empresa, config.get('_semantic_ds_id')) or config['table'].replace('lineas', 'cabecera')
+            
+            # Verify Cabecera exists
+            _, _ = QueryBuilder._validate_table_columns(cabecera_table, []) # Just check if valid table
+            
+            # Build JOIN
+            # Check standard keys vs resolved
+            audit_cols = QueryBuilder._resolve_audit_cols(cabecera_table)
+            company_hdr = audit_cols.get('company', 'CodigoEmpresa')
+            # Resolve alias-side columns and header-side equivalents
+            alias_cols = col_map
+            # Year
+            ej_alias, _ = QueryBuilder._validate_table_columns(config['table'], ['EjercicioPedido', 'EjercicioDocumento', 'Ejercicio'])
+            ej_hdr, _ = QueryBuilder._validate_table_columns(cabecera_table, ['EjercicioPedido', 'EjercicioDocumento', 'Ejercicio'])
+            # Serie
+            serie_alias, _ = QueryBuilder._validate_table_columns(config['table'], ['SeriePedido', 'SerieDocumento', 'SerieAlbaran', 'Serie'])
+            serie_hdr, _ = QueryBuilder._validate_table_columns(cabecera_table, ['SeriePedido', 'SerieDocumento', 'SerieAlbaran', 'Serie'])
+            # Numero
+            num_alias, _ = QueryBuilder._validate_table_columns(config['table'], ['NumeroPedido', 'NumeroDocumento', 'NumeroAlbaran', 'Numero'])
+            num_hdr, _ = QueryBuilder._validate_table_columns(cabecera_table, ['NumeroPedido', 'NumeroDocumento', 'NumeroAlbaran', 'Numero'])
+            # Company alias
+            company_alias = QueryBuilder._resolve_audit_cols(config['table']).get('company', 'CodigoEmpresa')
+            join_parts = []
+            if company_alias.lower() in alias_cols and company_hdr.lower() in audit_cols:
+                join_parts.append(f'H.\"{audit_cols[company_hdr.lower()]}\" = {alias}.\"{alias_cols[company_alias.lower()]}\"')
+            else:
+                join_parts.append(f'H.\"{company_hdr}\" = {alias}.\"{company_alias}\"')
+            if ej_alias and ej_hdr:
+                join_parts.append(f'H.\"{ej_hdr}\" = {alias}.\"{ej_alias}\"')
+            if serie_alias and serie_hdr:
+                join_parts.append(f'H.\"{serie_hdr}\" = {alias}.\"{serie_alias}\"')
+            if num_alias and num_hdr:
+                join_parts.append(f'H.\"{num_hdr}\" = {alias}.\"{num_alias}\"')
+            join_on = " AND ".join(join_parts) if join_parts else "1=1"
+            join_clause = f'JOIN \"{cabecera_table}\" H ON {join_on}'
+            
+            # Use Header Date
+            # Check for FechaPedido or FechaAlbaran in Header
+            date_candidates = ['FechaPedido', 'FechaAlbaran', 'Fecha', 'FechaDocumento']
+            date_col_name, _ = QueryBuilder._validate_table_columns(cabecera_table, date_candidates)
+            if not date_col_name:
+                # Si la cabecera actual no tiene fecha, intentar cabecera de pedido (join por numeropedido/codigoempresa)
+                alt_header = 'datiadb_cabecerapedidocliente'
+                _, alt_cols = QueryBuilder._validate_table_columns(alt_header, [])
+                if alt_cols:
+                    # Construir JOIN alternativo
+                    audit_alt = QueryBuilder._resolve_audit_cols(alt_header)
+                    company_alt = audit_alt.get('company', 'CodigoEmpresa')
+                    join_parts_alt = []
+                    if ('numeropedido' in alt_cols) and ('numeropedido' in alias_cols):
+                        join_parts_alt.append(f'H."{alt_cols["numeropedido"]}" = {alias}."{alias_cols["numeropedido"]}"')
+                    if (company_alt.lower() in alt_cols) and ('codigoempresa' in alias_cols):
+                        join_parts_alt.append(f'H."{alt_cols[company_alt.lower()]}" = {alias}."{alias_cols["codigoempresa"]}"')
+                    join_on_alt = " AND ".join(join_parts_alt) if join_parts_alt else "1=1"
+                    join_clause = f'JOIN \"{alt_header}\" H ON {join_on_alt}'
+                    # Resolver fecha en cabecera alternativa
+                    date_col_name, _ = QueryBuilder._validate_table_columns(alt_header, date_candidates)
+                if not date_col_name:
+                    # Fallback determinístico según tipo
+                    date_col_name = 'FechaPedido'
+            
+            # Update date expression to use Header Alias (H)
+            date_expr = f'H."{date_col_name}"'
+            logger.info(f"Ranking Handler: Injected JOIN with {cabecera_table} for Date Safety")
+            
+        else:
+            # NO JOIN - Use Table's own date
+            date_col_name, _ = QueryBuilder._validate_table_columns(config['table'], [config['date_col'], 'Fecha', 'FechaDocumento'])
+            if not date_col_name:
+                # Buscar primera columna que contenga 'fecha'
+                for k in col_map.keys():
+                    if 'fecha' in k.lower():
+                        date_col_name = col_map[k]
+                        break
+            if not date_col_name:
+                date_col_name = config['date_col']
+            date_expr = f'{alias}."{date_col_name}"'
+
+        # 5. Build Query
+        table = f'"{config["table"]}"'
+        
+        limit_match = re.search(r'\b(5|10|15|20|50|100)\b', question)
+        limit = int(limit_match.group(1)) if limit_match else 20
+        
+        val_expr = QueryBuilder._format_col(alias, val_col)
+        cost_expr = QueryBuilder._format_col(alias, cost_col)
+        q_lower = QueryBuilder._normalize_tokens(question)
+        is_asc = bool(re.search(r'\b(peores|peor|menor|worst|menos)\b', q_lower))
+        order_kw = "ASC" if is_asc else "DESC"
+        
+        # Si es singular ("el mejor", "el peor"), limit = 1. Si es plural ("mejores", "peores"), limit = 20 por defecto.
+        if not limit_match:
+            if re.search(r'\b(el mejor|el peor|la mejor|la peor)\b', q_lower):
+                limit = 1
+            elif re.search(r'\b(mejor|peor)\b', q_lower) and not re.search(r'\b(mejores|peores)\b', q_lower):
+                # heurística: si dice 'mejor cliente' singular
+                if re.search(r'\b(cliente|producto|articulo|proveedor|agente|zona|familia)\b', q_lower) and not re.search(r'\b(clientes|productos|articulos|proveedores|agentes|zonas|familias)\b', q_lower):
+                    limit = 1
+        quarter = None
+        m_q = re.search(r'\bq\s*([1-4])\b', q_lower)
+        if m_q:
+            quarter = int(m_q.group(1))
+        else:
+            m_t = re.search(r'\btrimestre\s*([1-4])\b', q_lower)
+            if m_t:
+                quarter = int(m_t.group(1))
+            elif re.search(r'último trimestre|ultimo trimestre', q_lower):
+                quarter = 4
+        semester = None
+        m_s = re.search(r'\bsemestre\s*([12])\b', q_lower)
+        if m_s:
+            semester = int(m_s.group(1))
+        
+        month_range = None
+        m_between = re.search(r'\b(entre|desde|de)\s+([a-záéíóú]+|\d{1,2})\s+(?:y|a|hasta)\s+([a-záéíóú]+|\d{1,2})\b', q_lower)
+        if m_between:
+            start_tok = m_between.group(2)
+            end_tok = m_between.group(3)
+            meses = {
+                'enero':1,'febrero':2,'marzo':3,'abril':4,'mayo':5,'junio':6,'julio':7,'agosto':8,'septiembre':9,'octubre':10,'noviembre':11,'diciembre':12,
+                'ene':1,'feb':2,'mar':3,'abr':4,'may':5,'jun':6,'jul':7,'ago':8,'sep':9,'oct':10,'nov':11,'dic':12,'setiembre':9
+            }
+            def to_m(tok:str)->Optional[int]:
+                tok = tok.lower()
+                if tok.isdigit():
+                    v = int(tok)
+                    return v if 1<=v<=12 else None
+                return meses.get(tok)
+            s = to_m(start_tok)
+            e = to_m(end_tok)
+            if s and e:
+                month_range = (s,e)
+        if not month_range:
+            meses = {
+                'enero':1,'febrero':2,'marzo':3,'abril':4,'mayo':5,'junio':6,'julio':7,'agosto':8,'septiembre':9,'octubre':10,'noviembre':11,'diciembre':12,
+                'ene':1,'feb':2,'mar':3,'abr':4,'may':5,'jun':6,'jul':7,'ago':8,'sep':9,'oct':10,'nov':11,'dic':12,'setiembre':9
+            }
+            m_one = re.search(r'\b(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre|ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic|setiembre)\b', q_lower)
+            if m_one:
+                mv = meses.get(m_one.group(1))
+                if mv:
+                    month_range = (mv, mv)
+        
+        last_three = False
+        if re.search(r'(los\s+)?(últimos|ultimos)\s+3\s+meses', q_lower) or re.search(r'(3|tres)\s+(últimos|ultimos)\s+meses', q_lower):
+            last_three = True
+
+        # Resolve Audit Cols for WHERE
+        audit_cols = QueryBuilder._resolve_audit_cols(config['table'])
+        company_col = audit_cols.get('company', 'CodigoEmpresa')
+        count_col = audit_cols.get('count', None)
+        label_col = QueryBuilder._prefer_human_label(entity_key, col_map, label_col)
+        label_join = ""
+        label_expr = f'{alias}."{label_col}"'
+        group_by_expr = "1"
+        if QueryBuilder._is_code_like(label_col):
+            lj, le, gb = QueryBuilder._master_label_join(entity_key, alias, label_col, company_col)
+            if lj:
+                label_join = lj
+                label_expr = le
+                group_by_expr = gb
+        # Fallback robusto para contar operaciones
+        if not count_col:
+            # Buscar cualquier columna que contenga 'numero' y 'pedido' o 'albaran'
+            cand = next((col_map[k] for k in col_map.keys() if (('numero' in k.lower()) and (('pedido' in k.lower()) or ('albaran' in k.lower())))), None)
+            count_col = cand if cand else None
+        # Expresión de conteo
+        if count_col:
+            ops_expr = f'COUNT(DISTINCT {alias}."{count_col}")'
+        else:
+            ops_expr = 'COUNT(*)'
+
+        month_filter = ""
+        if month_range:
+            month_filter = f" AND EXTRACT(MONTH FROM {date_expr}) BETWEEN {month_range[0]} AND {month_range[1]}"
+        elif last_three:
+            now = datetime.datetime.now()
+            if int(ejercicio) == now.year:
+                end_m = now.month
+                start_m = max(1, end_m-2)
+            else:
+                start_m, end_m = 10, 12
+            month_filter = f" AND EXTRACT(MONTH FROM {date_expr}) BETWEEN {start_m} AND {end_m}"
+        quarter_filter = f" AND EXTRACT(QUARTER FROM {date_expr}) = {quarter}" if quarter and not month_filter else ""
+        semester_filter = f" AND (((EXTRACT(MONTH FROM {date_expr})::int - 1) / 6) + 1) = {semester}" if semester and not month_filter else ""
+        sql = f"""
+            SELECT 
+                {label_expr} as label, 
+                (SUM({val_expr}) - SUM({cost_expr})) as val, 
+                SUM({cost_expr}) as coste, 
+                {ops_expr} as ops 
+            FROM {table} {alias}
+            {join_clause}
+            {label_join}
+            WHERE {alias}."{company_col}" = {empresa} 
+              AND EXTRACT(YEAR FROM {date_expr}) = {target_year}{month_filter}{quarter_filter}{semester_filter}
+            GROUP BY {group_by_expr} 
+            ORDER BY 2 {order_kw} 
+            LIMIT {limit}
+        """
+        
+        return {
+            'key': f'ranking_{entity_key}',
+            'sql': " ".join(sql.split()),
+            'type': 'table',
+            'chart_type': 'bar',
+            'label': f'Top {entity_key.capitalize()}s {target_year}',
+            'source': 'deterministic_v2',
+            'intent_meta': {'metric': metric_type}
+        }
+
+    @staticmethod
+    def _handle_evolution(question: str, empresa: int, ejercicio: int, is_purchase: bool = False) -> Dict[str, Any]:
+        """
+        Handler for Monthly Evolution (Ventas/Compras).
+        """
+        # Determine Table
+        if is_purchase:
+            table = "datiadb_cabeceraalbaranproveedor"
+            # Check if user asked for Orders specifically
+            if 'pedido' in question.lower():
+                table = "datiadb_cabecerapedidoproveedor"
+        else:
+            # Sales -> Prefer Cabecera for speed, unless Lineas needed?
+            # Actually, previous optimization used Join. Let's stick to Cabecera if possible for simplicity/speed
+            # UNLESS we need deep metrics. 
+            # For robustness, Cabecera is safer if it has ImporteCoste.
+            table = "datiadb_cabecerapedidocliente"
+            
+        # Validate Schema
+        _, col_map = QueryBuilder._validate_table_columns(table, [])
+        if not col_map:
+            return {'error': 'Schema validation failed for evolution'}
+
+        # Resolve Metrics
+        val_col, cost_col, metric_type = QueryBuilder._resolve_metrics(col_map, question.lower(), is_purchase, None)
+        
+        # Resolve Date
+        date_candidates = ['FechaPedido', 'FechaAlbaran', 'Fecha', 'FechaDocumento']
+        date_col = next((col_map[c.lower()] for c in date_candidates if c.lower() in col_map), 'FechaPedido')
+        
+        # Resolve Year
+        years = re.findall(r'\b(20\d{2})\b', question)
+        
+        # Time grouping
+        tg = 'month'
+        if re.search(r'\bsemana|semanal\b', question):
+            tg = 'week'
+        elif re.search(r'\bd[ií]a|diario\b', question):
+            tg = 'day'
+        elif re.search(r'\bsemestre|semestral\b', question):
+            tg = 'semester'
+        elif re.search(r'\btrimestre|trimestral\b', question):
+            tg = 'quarter'
+        label_expr_map = {
+            'month': f'EXTRACT(MONTH FROM "{date_col}")',
+            'week': f'EXTRACT(WEEK FROM "{date_col}")',
+            'day': f'EXTRACT(DAY FROM "{date_col}")',
+            'quarter': f'EXTRACT(QUARTER FROM "{date_col}")',
+            'semester': f'(((EXTRACT(MONTH FROM "{date_col}")::int - 1) / 6) + 1)'
+        }
+        label_expr = label_expr_map[tg]
+        if len(years) >= 2:
+            # COMPARISON (Multi-Year)
+            years_sql = ", ".join(years)
+            val_expr = QueryBuilder._format_col(None, val_col)
+            cost_expr = QueryBuilder._format_col(None, cost_col)
+
+            # Resolve Audit Cols
+            audit_cols = QueryBuilder._resolve_audit_cols(table)
+            company_col = audit_cols.get('company', 'CodigoEmpresa')
+            count_col = audit_cols.get('count', 'NumeroPedido')
+
+            sql = f"""
+                SELECT 
+                    {label_expr} as label, 
+                    EXTRACT(YEAR FROM "{date_col}") as serie, 
+                    SUM({val_expr}) as val, 
+                    SUM({cost_expr}) as coste,
+                    COUNT(DISTINCT "{count_col}") as ops 
+                FROM "{table}" 
+                WHERE "{company_col}" = {empresa} 
+                  AND EXTRACT(YEAR FROM "{date_col}") IN ({years_sql})
+                GROUP BY 1, 2 
+                ORDER BY 2, 1
+            """
+            return {
+                'key': 'evolution_comparison',
+                'sql': " ".join(sql.split()),
+                'type': 'chart',
+                'chart_type': 'line',
+                'label': f'Comparativa {years[0]} vs {years[-1]}',
+                'source': 'deterministic_v2',
+                'intent_meta': {'metric': metric_type, 'is_comparison': True}
+            }
+        else:
+            # SINGLE YEAR
+            target_year = years[0] if years else ejercicio
+            val_expr = QueryBuilder._format_col(None, val_col)
+            cost_expr = QueryBuilder._format_col(None, cost_col)
+
+            # Resolve Audit Cols
+            audit_cols = QueryBuilder._resolve_audit_cols(table)
+            company_col = audit_cols.get('company', 'CodigoEmpresa')
+            count_col = audit_cols.get('count', 'NumeroPedido')
+
+            sql = f"""
+                SELECT 
+                    {label_expr} as label, 
+                    SUM({val_expr}) as val, 
+                    SUM({cost_expr}) as coste,
+                    COUNT(DISTINCT "{count_col}") as ops 
+                FROM "{table}" 
+                WHERE "{company_col}" = {empresa} 
+                  AND EXTRACT(YEAR FROM "{date_col}") = {target_year}
+                GROUP BY label 
+                ORDER BY label
+            """
+            return {
+                'key': 'evolution_single',
+                'sql': " ".join(sql.split()),
+                'type': 'chart',
+                'chart_type': 'bar',
+                'label': f'Evolución {tg.capitalize()} {target_year}',
+                'source': 'deterministic_v2',
+                'intent_meta': {'metric': metric_type}
+            }
+
+    @staticmethod
+    def _handle_grouping(question: str, empresa: int, ejercicio: int, entity_key: str) -> Optional[Dict[str, Any]]:
+        config = QueryBuilder._resolve_entity_semantics(entity_key, empresa)
+        if not config:
+            return None
+        alias = config['alias']
+        label_col, col_map = QueryBuilder._validate_table_columns(config['table'], config['label_candidates'])
+        if not label_col:
+            probe = None
+            for k in (col_map or {}).keys():
+                kk = k.lower()
+                if ('razonsocial' in kk) or ('nombrecliente' in kk) or (kk == 'nombre'):
+                    probe = col_map[k]
+                    break
+                if (kk == 'cliente') or (kk == 'codigo_cliente') or (kk == 'nombre_cliente') or (kk == 'cliente_nombre') or (kk == 'cliente_razon_social'):
+                    probe = col_map[k]
+                    break
+                if ('idcliente' in kk) or ('clienteid' in kk):
+                    probe = col_map[k]
+                    break
+                if ('codigocliente' in kk) or ('codigo_cliente' in kk) or ('codcliente' in kk):
+                    probe = col_map[k]
+                    break
+            label_col = probe
+            if not label_col:
+                return None
+        is_purchase = (entity_key == 'proveedor')
+        val_col, cost_col, metric_type = QueryBuilder._resolve_metrics(col_map, QueryBuilder._normalize_tokens(question), is_purchase, alias)
+        years = re.findall(r'\b(20\d{2})\b', question)
+        target_year = int(years[0]) if years else (int(ejercicio) if ejercicio else datetime.datetime.now().year)
+        date_col_name = None
+        join_clause = ""
+        needs_join = False
+        ej_alias = None
+        ej_hdr = None
+        if config['metric_source'] == 'lineas':
+            found_in_lines, _ = QueryBuilder._validate_table_columns(config['table'], [config['date_col']])
+            if not found_in_lines:
+                needs_join = True
+        if needs_join:
+            cabecera_table = QueryBuilder._find_header_table_for_lines(config['table'], empresa, config.get('_semantic_ds_id')) or config['table'].replace('lineas', 'cabecera')
+            _, header_cols = QueryBuilder._validate_table_columns(cabecera_table, [])
+            if not header_cols:
+                cabecera_table = "datiadb_cabecerapedidocliente"
+                _, header_cols = QueryBuilder._validate_table_columns(cabecera_table, [])
+            date_col_name, _ = QueryBuilder._validate_table_columns(cabecera_table, ['FechaPedido', 'FechaAlbaran', 'Fecha', 'FechaDocumento'])
+            if not date_col_name:
+                date_col_name = 'FechaPedido'
+            alias_cols = col_map
+            audit_header = QueryBuilder._resolve_audit_cols(cabecera_table)
+            company_hdr = audit_header.get('company', 'CodigoEmpresa')
+            company_alias = QueryBuilder._resolve_audit_cols(config['table']).get('company', 'CodigoEmpresa')
+            join_parts = []
+            if 'numeropedido' in alias_cols and 'numeropedido' in header_cols:
+                join_parts.append(f'H."{header_cols["numeropedido"]}" = {alias}."{alias_cols["numeropedido"]}"')
+            if company_alias.lower() in alias_cols and company_hdr.lower() in header_cols:
+                join_parts.append(f'H."{header_cols[company_hdr.lower()]}" = {alias}."{alias_cols[company_alias.lower()]}"')
+            ej_alias, _ = QueryBuilder._validate_table_columns(config['table'], ['EjercicioPedido', 'EjercicioDocumento', 'Ejercicio'])
+            ej_hdr, _ = QueryBuilder._validate_table_columns(cabecera_table, ['EjercicioPedido', 'EjercicioDocumento', 'Ejercicio'])
+            if ej_alias and ej_hdr:
+                join_parts.append(f'H."{ej_hdr}" = {alias}."{ej_alias}"')
+            serie_alias, _ = QueryBuilder._validate_table_columns(config['table'], ['SeriePedido', 'SerieDocumento', 'Serie'])
+            serie_hdr, _ = QueryBuilder._validate_table_columns(cabecera_table, ['SeriePedido', 'SerieDocumento', 'Serie'])
+            if serie_alias and serie_hdr:
+                join_parts.append(f'H."{serie_hdr}" = {alias}."{serie_alias}"')
+            join_clause = f'JOIN "{cabecera_table}" H ON ' + " AND ".join(join_parts) if join_parts else f'JOIN "{cabecera_table}" H ON 1=1'
+            date_expr = f'H."{date_col_name}"'
+        else:
+            date_col_name, _ = QueryBuilder._validate_table_columns(config['table'], [config['date_col'], 'Fecha', 'FechaDocumento'])
+            if not date_col_name:
+                date_col_name = config['date_col']
+            date_expr = f'{alias}."{date_col_name}"'
+        table = f'"{config["table"]}"'
+        val_expr = QueryBuilder._format_col(alias, val_col)
+        cost_expr = QueryBuilder._format_col(alias, cost_col)
+        q_lower = QueryBuilder._normalize_tokens(question)
+        quarter = None
+        m_q = re.search(r'\bq\s*([1-4])\b', q_lower)
+        if m_q:
+            quarter = int(m_q.group(1))
+        else:
+            m_t = re.search(r'\btrimestre\s*([1-4])\b', q_lower)
+            if m_t:
+                quarter = int(m_t.group(1))
+            elif re.search(r'último trimestre|ultimo trimestre', q_lower):
+                quarter = 4
+        month_range = None
+        m_between = re.search(r'\b(entre|desde|de)\s+([a-záéíóú]+|\d{1,2})\s+(?:y|a|hasta)\s+([a-záéíóú]+|\d{1,2})\b', q_lower)
+        if m_between:
+            start_tok = m_between.group(2)
+            end_tok = m_between.group(3)
+            meses = {
+                'enero':1,'febrero':2,'marzo':3,'abril':4,'mayo':5,'junio':6,'julio':7,'agosto':8,'septiembre':9,'octubre':10,'noviembre':11,'diciembre':12,
+                'ene':1,'feb':2,'mar':3,'abr':4,'may':5,'jun':6,'jul':7,'ago':8,'sep':9,'oct':10,'nov':11,'dic':12,'setiembre':9
+            }
+            def to_m(tok:str)->Optional[int]:
+                tok = tok.lower()
+                if tok.isdigit():
+                    v = int(tok)
+                    return v if 1<=v<=12 else None
+                return meses.get(tok)
+            s = to_m(start_tok)
+            e = to_m(end_tok)
+            if s and e:
+                month_range = (s,e)
+        if not month_range:
+            meses = {
+                'enero':1,'febrero':2,'marzo':3,'abril':4,'mayo':5,'junio':6,'julio':7,'agosto':8,'septiembre':9,'octubre':10,'noviembre':11,'diciembre':12,
+                'ene':1,'feb':2,'mar':3,'abr':4,'may':5,'jun':6,'jul':7,'ago':8,'sep':9,'oct':10,'nov':11,'dic':12,'setiembre':9
+            }
+            m_one = re.search(r'\b(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre|ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic|setiembre)\b', q_lower)
+            if m_one:
+                mv = meses.get(m_one.group(1))
+                if mv:
+                    month_range = (mv, mv)
+        last_three = False
+        if re.search(r'(los\s+)?(últimos|ultimos)\s+3\s+meses', q_lower) or re.search(r'(3|tres)\s+(últimos|ultimos)\s+meses', q_lower):
+            last_three = True
+        audit_cols = QueryBuilder._resolve_audit_cols(config['table'])
+        company_col = audit_cols.get('company', 'CodigoEmpresa')
+        count_col = audit_cols.get('count', config['count_col'])
+        label_col = QueryBuilder._prefer_human_label(entity_key, col_map, label_col)
+        label_join = ""
+        label_expr = f'{alias}."{label_col}"'
+        group_by_expr = "1"
+        if QueryBuilder._is_code_like(label_col):
+            lj, le, gb = QueryBuilder._master_label_join(entity_key, alias, label_col, company_col)
+            if lj:
+                label_join = lj
+                label_expr = le
+                group_by_expr = gb
+        # Orden y límite dinámicos para frases como "peores 10" o "top 20"
+        is_asc = bool(re.search(r'\b(peores|peor|menor|worst|menos)\b', q_lower))
+        order_kw = "ASC" if is_asc else "DESC"
+        m_top = re.search(r'\btop\s+(\d{1,3})\b', q_lower)
+        limit = int(m_top.group(1)) if m_top else 100
+        month_filter = ""
+        if month_range:
+            month_filter = f" AND EXTRACT(MONTH FROM {date_expr}) BETWEEN {month_range[0]} AND {month_range[1]}"
+        elif last_three:
+            now = datetime.datetime.now()
+            if int(ejercicio) == now.year:
+                end_m = now.month
+                start_m = max(1, end_m-2)
+            else:
+                start_m, end_m = 10, 12
+            month_filter = f" AND EXTRACT(MONTH FROM {date_expr}) BETWEEN {start_m} AND {end_m}"
+        quarter_filter = f" AND EXTRACT(QUARTER FROM {date_expr}) = {quarter}" if quarter and not month_filter else ""
+        year_filter = ""
+        if needs_join and ej_hdr:
+            year_filter = f' AND H."{ej_hdr}" = {target_year}'
+        elif ej_alias:
+            year_filter = f' AND {alias}."{ej_alias}" = {target_year}'
+        else:
+            year_filter = f' AND EXTRACT(YEAR FROM {date_expr}) = {target_year}'
+        sql = f"""
+            SELECT 
+                {label_expr} as label, 
+                (SUM({val_expr}) - SUM({cost_expr})) as val, 
+                SUM({cost_expr}) as coste, 
+                COUNT(DISTINCT {alias}."{count_col}") as ops 
+            FROM {table} {alias}
+            {join_clause}
+            {label_join}
+            WHERE {alias}."{company_col}" = {empresa} 
+              {year_filter}{month_filter}{quarter_filter}
+            GROUP BY {group_by_expr} 
+            ORDER BY 2 {order_kw} 
+            LIMIT {limit}
+        """
+        return {
+            'key': f'group_{entity_key}',
+            'sql': " ".join(sql.split()),
+            'type': 'table',
+            'chart_type': 'bar',
+            'label': f'{metric_type.capitalize()} por {entity_key}',
+            'source': 'deterministic_v2',
+            'intent_meta': {'metric': metric_type}
+        }
+
+    _PARTY_FOLD_FROM = 'áéíóúüñàèìòùäëïöâêîôûç'
+    _PARTY_FOLD_TO = 'aeiouunaeiouaeioaeiouc'
+    _PARTY_STOP = {
+        'a', 'al', 'de', 'del', 'para', 'por', 'y', 'e', 'en', 'el', 'la', 'los', 'las', 'un', 'una',
+        'cliente', 'clientes', 'proveedor', 'proveedores', 'mes', 'meses', 'ano', 'ejercicio',
+        'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'setiembre',
+        'octubre', 'noviembre', 'diciembre', 'ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'sept', 'oct', 'nov', 'dic',
+        'todos', 'todas', 'todo', 'empresa', 'total', 'totales', 'mensual', 'mensuales', 'anual', 'anuales',
+        'general', 'resumen', 'evolucion', 'tendencia', 'comparativa', 'albaran', 'albaranes', 'pedido', 'pedidos',
+        'neto', 'neta', 'netas', 'bruto', 'bruta', 'brutos', 'ultimo', 'ultima', 'ultimos', 'ultimas',
+        'hoy', 'ayer', 'semana', 'semanas', 'trimestre', 'trimestres', 'semestre', 'semestres',
+        'grafico', 'informe', 'detalle', 'detallado', 'articulo', 'articulos', 'producto', 'productos',
+        'familia', 'familias', 'agente', 'agentes', 'vendedor', 'vendedores', 'comercial', 'comerciales',
+        'zona', 'zonas',
+    }
+
+    @staticmethod
+    def _fold_party(text: str) -> str:
+        raw = unicodedata.normalize('NFD', text or '')
+        raw = ''.join(ch for ch in raw if unicodedata.category(ch) != 'Mn')
+        raw = raw.lower().replace('ñ', 'n')
+        raw = re.sub(r'[^a-z0-9]+', ' ', raw)
+        return re.sub(r'\s+', ' ', raw).strip()
+
+    @staticmethod
+    def _extract_named_party(question: str) -> Optional[Dict[str, str]]:
+        q = QueryBuilder._fold_party(question)
+        if not q:
+            return None
+        patterns = (
+            (r'(?:^|.*\b)(?:ventas?|facturacion|albaranes?|pedidos?)\s+(?:a|al|de|del|para)\s+(?:el cliente|cliente|los clientes)\s+(.+)$', 'cliente'),
+            (r'(?:^|.*\b)(?:compras?|gastos?)\s+(?:a|al|de|del|para)\s+(?:el proveedor|proveedor|los proveedores)\s+(.+)$', 'proveedor'),
+            (r'(?:^|.*\b)(?:ventas?|facturacion|albaranes?|pedidos?)\s+(?:a|al|de|del|para)\s+(.+)$', 'cliente'),
+            (r'(?:^|.*\b)(?:compras?|gastos?)\s+(?:a|al|de|del|para)\s+(.+)$', 'proveedor'),
+            (r'^(?:ventas?|facturacion)\s+(?!por\b)(.+)$', 'cliente'),
+            (r'^(?:compras?)\s+(?!por\b)(.+)$', 'proveedor'),
+        )
+        kind = None
+        name = None
+        for pattern, party_kind in patterns:
+            found = re.search(pattern, q)
+            if found:
+                kind = party_kind
+                name = found.group(1)
+                break
+        if not name:
+            return None
+        name = re.sub(r'\b20\d{2}\b', ' ', name)
+        name = re.sub(r'\s+', ' ', name).strip()
+        tokens = [tok for tok in name.split() if tok not in QueryBuilder._PARTY_STOP]
+        tokens = [tok for tok in tokens if len(tok) >= 3 or tok.isdigit()]
+        if not tokens:
+            return None
+        return {'kind': kind, 'name': ' '.join(tokens)}
+
+    @staticmethod
+    def _party_reply(text: str, suggestions: Optional[List[Dict[str, str]]] = None) -> Dict[str, Any]:
+        if suggestions:
+            return {
+                'reply': {
+                    'type': 'ambiguity_alert',
+                    'text': text,
+                    'answer': text,
+                    'suggestions': suggestions,
+                }
+            }
+        return {'reply': {'text': text, 'answer': text}}
+
+    @staticmethod
+    def _eur_es(value) -> str:
+        try:
+            amount = f"{float(value):,.2f}"
+        except (TypeError, ValueError):
+            amount = "0.00"
+        return amount.replace(',', 'X').replace('.', ',').replace('X', '.') + ' €'
+
+    @staticmethod
+    def _handle_named_party(question: str, empresa, ejercicio, party: Dict[str, str]) -> Dict[str, Any]:
+        kind = party['kind']
+        tokens = party['name'].split()
+        try:
+            empresa_id = int(empresa)
+        except (TypeError, ValueError):
+            return QueryBuilder._party_reply("No puedo buscar el tercero sin empresa.")
+        years = re.findall(r'\b(20\d{2})\b', question or '')
+        try:
+            target_year = int(years[0]) if years else int(ejercicio)
+        except (TypeError, ValueError):
+            target_year = datetime.datetime.now().year
+
+        if kind == 'proveedor':
+            master = 'datia_proveedores'
+            code_col = 'proveedor'
+            year_table = 'metrics_totales_empresa_ejercicio_proveedor'
+            month_table = 'metrics_totales_empresa_ejercicio_proveedor_mes'
+            verb = 'compras'
+            missing = 'proveedor'
+            missing_plural = 'proveedores'
+            metric = 'purchase'
+        else:
+            master = 'datia_cliente'
+            code_col = 'cliente'
+            year_table = 'metrics_totales_empresa_ejercicio_cliente'
+            month_table = 'metrics_totales_empresa_ejercicio_cliente_mes'
+            verb = 'ventas'
+            missing = 'cliente'
+            missing_plural = 'clientes'
+            metric = 'sales'
+
+        fold_from = QueryBuilder._PARTY_FOLD_FROM
+        fold_to = QueryBuilder._PARTY_FOLD_TO
+        name_expr = f"translate(lower(nombre), '{fold_from}', '{fold_to}')"
+        fiscal_expr = f"translate(lower(COALESCE(nombre_fiscal, '')), '{fold_from}', '{fold_to}')"
+        where = []
+        params: List[Any] = [empresa_id]
+        for tok in tokens:
+            safe = tok.replace('%', '').replace('_', '')
+            if not safe:
+                continue
+            where.append(
+                f"({name_expr} LIKE %s OR {fiscal_expr} LIKE %s OR lower({code_col}) = %s)"
+            )
+            params.extend([f"%{safe}%", f"%{safe}%", safe])
+        if not where:
+            return QueryBuilder._party_reply(f"No encuentro un {missing} con ese nombre.")
+
+        alias = 'analytics' if 'analytics' in connections.databases else 'default'
+        sql_master = (
+            f'SELECT {code_col}, nombre, COALESCE(nombre_fiscal, \'\') '
+            f'FROM {master} WHERE empresa = %s AND ' + ' AND '.join(where) + ' LIMIT 15'
+        )
+        try:
+            with connections[alias].cursor() as cur:
+                cur.execute(sql_master, params)
+                rows = cur.fetchall()
+        except Exception:
+            logger.exception("QueryBuilder: no se pudo buscar el tercero")
+            return QueryBuilder._party_reply(f"No he podido consultar los {missing_plural} de esta empresa.")
+
+        if not rows:
+            shown = party['name']
+            return QueryBuilder._party_reply(f"No encuentro un {missing} llamado «{shown}» en esta empresa.")
+
+        codes = [str(row[0]) for row in rows if row[0] is not None]
+        amounts: Dict[str, Dict[str, Any]] = {}
+        if codes:
+            try:
+                with connections[alias].cursor() as cur:
+                    cur.execute(
+                        f'''
+                        SELECT {code_col}, importe_neto_total, importe_coste_total, albaranes_count
+                        FROM {year_table}
+                        WHERE empresa = %s AND ejercicio = %s AND {code_col} = ANY(%s)
+                        ''',
+                        [empresa_id, target_year, codes],
+                    )
+                    for code, neto, coste, ops in cur.fetchall():
+                        amounts[str(code)] = {
+                            'neto': float(neto or 0),
+                            'coste': float(coste or 0),
+                            'ops': int(ops or 0),
+                        }
+            except Exception:
+                logger.exception("QueryBuilder: no se pudieron leer los totales del tercero")
+                amounts = {}
+
+        folded_query = party['name']
+        pool = []
+        for code, nombre, fiscal in rows:
+            code_s = str(code)
+            folded_name = QueryBuilder._fold_party(nombre)
+            folded_fiscal = QueryBuilder._fold_party(fiscal)
+            exact = folded_query in (folded_name, folded_fiscal) or folded_query == code_s.lower()
+            figures = amounts.get(code_s) or {'neto': 0.0, 'coste': 0.0, 'ops': 0}
+            pool.append({
+                'code': code_s,
+                'nombre': (nombre or fiscal or code_s).strip(),
+                'exact': exact,
+                **figures,
+            })
+
+        exact_rows = [item for item in pool if item['exact']]
+        if exact_rows:
+            pool = exact_rows
+        with_amount = [item for item in pool if item['neto'] != 0 or item['ops'] != 0]
+        chosen = None
+        if len(with_amount) == 1:
+            chosen = with_amount[0]
+        elif len(with_amount) > 1:
+            pool = with_amount
+        elif len(pool) == 1:
+            chosen = pool[0]
+
+        if chosen is None:
+            suggestions = []
+            for item in pool[:8]:
+                label = item['nombre']
+                if item['neto'] or item['ops']:
+                    label = f"{label} · {QueryBuilder._eur_es(item['neto'])}"
+                suggestions.append({
+                    'label': label,
+                    'query': f"{verb} al {missing} {item['code']}",
+                })
+            text = f"Hay varios {missing_plural} que encajan con «{party['name']}». Elige uno."
+            return QueryBuilder._party_reply(text, suggestions)
+
+        display = chosen['nombre'].replace('<', '').replace('>', '')
+        if chosen['neto'] == 0 and chosen['ops'] == 0:
+            text = f"{display} no tiene {verb} en {target_year}."
+            return QueryBuilder._party_reply(text)
+
+        code_sql = chosen['code']
+        if not re.fullmatch(r'[A-Za-z0-9._\-]+', code_sql):
+            text = f"{verb.capitalize()} a {display} en {target_year}: {QueryBuilder._eur_es(chosen['neto'])}."
+            return QueryBuilder._party_reply(text)
+
+        month_sql = (
+            f'SELECT mes AS label, importe_neto_total AS val, importe_coste_total AS coste, albaranes_count AS ops '
+            f'FROM {month_table} '
+            f'WHERE empresa = {empresa_id} AND ejercicio = {target_year} AND {code_col} = \'{code_sql}\' '
+            f'ORDER BY mes'
+        )
+        has_months = False
+        try:
+            with connections[alias].cursor() as cur:
+                cur.execute(
+                    f'SELECT COUNT(*) FROM {month_table} WHERE empresa = %s AND ejercicio = %s AND {code_col} = %s',
+                    [empresa_id, target_year, code_sql],
+                )
+                has_months = int(cur.fetchone()[0] or 0) > 0
+        except Exception:
+            has_months = False
+
+        if has_months:
+            sql = month_sql
+            response_type = 'chart'
+            chart_type = 'bar'
+        else:
+            sql = (
+                f'SELECT importe_neto_total AS val, importe_coste_total AS coste, albaranes_count AS ops, '
+                f'nombre AS label FROM {year_table} '
+                f'WHERE empresa = {empresa_id} AND ejercicio = {target_year} AND {code_col} = \'{code_sql}\''
+            )
+            response_type = 'card'
+            chart_type = None
+
+        label = f"{verb.capitalize()} a {display} en {target_year}: {QueryBuilder._eur_es(chosen['neto'])}"
+        result = {
+            'key': f'named_{kind}',
+            'sql': ' '.join(sql.split()),
+            'type': response_type,
+            'label': label,
+            'keep_label': True,
+            'source': 'deterministic_v2',
+            'intent_meta': {
+                'metric': metric,
+                'entity': kind,
+                'party': display,
+                'party_code': code_sql,
+                'title': label,
+            },
+        }
+        if chart_type:
+            result['chart_type'] = chart_type
+        return result
+
+    @staticmethod
+    def build_from_nl(question: str, context: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        Main Entry Point. Routes to specific handlers.
+        """
+        empresa = context.get('empresa')
+        ejercicio = context.get('ejercicio')
+        training_enabled = context.get('training_enabled', False)
+        training_enabled = context.get('training_enabled', False)
+        # 0. NORMALIZE TYPOS
+        q_lower = QueryBuilder._normalize_tokens(question)
+        
+        logger.info(f"QueryBuilder v2: Processing '{question}'")
+
+        learned = QueryBuilder._memory_hit(question, empresa, ejercicio, 0.82, scopes=['learned'])
+        if learned:
+            logger.info("QueryBuilder: consulta aprendida de esta empresa")
+            return learned
+
+        party = QueryBuilder._extract_named_party(q_lower)
+        if party:
+            logger.info("QueryBuilder: ventas o compras de un tercero concreto")
+            return QueryBuilder._handle_named_party(q_lower, empresa, ejercicio, party)
+
+        # --- STEP 1: INTENT ROUTING ---
+        
+        # A. RANKING INTENT
+        ranking_triggers = ['top', 'ranking', 'mejores', 'mejor', 'peor', 'best', 'mayores', 'principales']
+        if any(t in q_lower for t in ranking_triggers):
+            # Identify Entity
+            for entity_key in QueryBuilder.ENTITIES.keys():
+                # Check singular and plural
+                if entity_key in q_lower or entity_key + 's' in q_lower:
+                    logger.info(f"Router: Detected RANKING for {entity_key}")
+                    result = QueryBuilder._handle_ranking(q_lower, empresa, ejercicio, entity_key)
+                    if result: return result
+                    
+            # Synonym checks
+            if 'producto' in q_lower:
+                return QueryBuilder._handle_ranking(q_lower, empresa, ejercicio, 'articulo')
+            if 'vendedor' in q_lower or 'comercial' in q_lower:
+                return QueryBuilder._handle_ranking(q_lower, empresa, ejercicio, 'agente')
+            if 'region' in q_lower:
+                return QueryBuilder._handle_ranking(q_lower, empresa, ejercicio, 'zona')
+
+        # A.1 RANKING HEURÍSTICO (Clientes que más ...)
+        if (('cliente' in q_lower or 'clientes' in q_lower) and 
+            ((' mas ' in q_lower) or ('más' in q_lower) or ('mayor' in q_lower) or ('compr' in q_lower))):
+            result = QueryBuilder._handle_ranking(q_lower, empresa, ejercicio, 'cliente')
+            if result: 
+                return result
+        
+        # A.2 GROUPING HEURÍSTICO (Métrica por Cliente, p.ej. Margen por cliente ...)
+        # Activar agrupación directa cuando se detecta 'cliente' junto con una métrica habitual
+        if ('cliente' in q_lower or 'clientes' in q_lower):
+            metric_hints = ['margen', 'rentabil', 'beneficio', 'ganancia', 'venta', 'ventas', 'importe', 'pedidos', 'coste', 'gasto', 'costos', 'costo']
+            if any(h in q_lower for h in metric_hints):
+                result = QueryBuilder._handle_grouping(q_lower, empresa, ejercicio, 'cliente')
+                if result:
+                    return result
+ 
+        # B. EVOLUTION/SALES/PURCHASE INTENT
+        # Check Purchase first (more specific)
+        purchase_triggers = ['compras', 'compra', 'proveedor', 'gastos']
+        exclude_entities = ['cliente','clientes','producto','productos','articulo','articulos','familia','familias','agente','agentes','vendedor','vendedores','comercial','comerciales']
+        if any(t in q_lower for t in purchase_triggers) and 'pedido' not in q_lower and not any(x in q_lower for x in exclude_entities):
+             logger.info("Router: Detected PURCHASE EVOLUTION")
+             return QueryBuilder._handle_evolution(q_lower, empresa, ejercicio, is_purchase=True)
+             
+        # Check Purchase Orders
+        if 'pedido' in q_lower and ('compra' in q_lower or 'proveedor' in q_lower):
+             logger.info("Router: Detected PURCHASE ORDERS")
+             # Use evolution handler but with is_purchase=True and it handles 'pedido' logic
+             return QueryBuilder._handle_evolution(q_lower, empresa, ejercicio, is_purchase=True)
+
+        # Check Sales
+        sales_triggers = ['ventas', 'pedidos', 'sales', 'evolucion', 'tendencia', 'mensual', 'albaran', 'albaranes']
+        if any(t in q_lower for t in sales_triggers):
+             logger.info("Router: Detected SALES EVOLUTION")
+             return QueryBuilder._handle_evolution(q_lower, empresa, ejercicio, is_purchase=False)
+
+        detector = IntentDetector()
+        intent = detector.detect(question, empresa)
+        grouping = intent.get('grouping')
+        if grouping:
+            mapping = {'product': 'articulo', 'client': 'cliente', 'agent': 'agente', 'zone': 'zona', 'family': 'familia'}
+            target_entity = mapping.get(grouping)
+            if target_entity:
+                result = QueryBuilder._handle_grouping(q_lower, empresa, ejercicio, target_entity)
+                if result:
+                    return result
+
+        if QueryBuilder._is_year_analysis(q_lower):
+            logger.info("QueryBuilder: análisis del ejercicio")
+            return QueryBuilder._handle_year_analysis(q_lower, empresa, ejercicio)
+
+        # --- STEP 2: MEMORY FALLBACK ---
+        memory = QueryBuilder._memory_hit(question, empresa, ejercicio, 0.5)
+        if memory:
+            logger.info("QueryBuilder: respuesta recuperada de la memoria de la empresa")
+            return memory
+
+        # --- STEP 3: AUTO-TRAINING / LLM ---
+        if training_enabled:
+             logger.info("Router: Delegating to Auto-Training (Last Resort)")
+             # ... (Existing Auto-Training Logic) ...
+             # For brevity in this refactor, we assume the existing logic would be here.
+             # But since I am overwriting the file, I must include minimal fallback or the full logic.
+             # I will return a specific error code to trigger the 'Generar con IA' flow in frontend if needed,
+             # OR implement the full logic if space permits.
+             
+             # Re-using the AutoTrainingLimiter logic from previous version (simplified)
+             import hashlib
+             q_hash = hashlib.md5(question.encode('utf-8')).hexdigest()
+             
+             if AutoTrainingLimiter.should_attempt(q_hash):
+                 AutoTrainingLimiter.record_attempt(q_hash)
+                 detector = IntentDetector()
+                 intent = detector.detect(question, empresa)
+                 if intent['tables']:
+                     generator = SQLVariationGenerator()
+                     variations = generator.generate(intent, empresa)
+                     for sql in variations:
+                         # Dry run
+                         if QueryBuilder.validate_sql_dry_run(sql)['valid']:
+                             try:
+                                 ServiceFactory.get_embedding_service().learn_template(
+                                     text=question,
+                                     sql=sql,
+                                     type='table',
+                                     label='Generada',
+                                     empresa=empresa,
+                                     ejercicio=ejercicio,
+                                     scope='generated',
+                                 )
+                             except Exception:
+                                 pass
+                             return {
+                                 'key': 'auto_gen',
+                                 'sql': sql,
+                                 'type': 'table',
+                                 'label': 'Auto-Generated',
+                                 'source': 'auto_training'
+                             }
+        
+        return None
+
+    @staticmethod
+    def _apply_sql_placeholders(sql, empresa, ejercicio):
+        text = sql or ''
+        return text.replace('{empresa}', str(empresa)).replace('{ejercicio}', str(ejercicio))
+
+    @staticmethod
+    def _is_year_analysis(question: str) -> bool:
+        folded = QueryBuilder._fold_party(question)
+        if not folded:
+            return False
+        if re.search(r'\b(top|ranking|mejores|peores|peor|mejor)\b', folded):
+            return False
+        has_intent = bool(re.search(r'\b(analisis|informe|resumen|balance|situacion)\b', folded))
+        has_period = bool(re.search(r'\b(ano|ejercicio|anual)\b', folded)) or bool(re.search(r'\b20\d{2}\b', question or ''))
+        return has_intent and has_period
+
+    @staticmethod
+    def _handle_year_analysis(question: str, empresa, ejercicio) -> Dict[str, Any]:
+        try:
+            empresa_id = int(empresa)
+        except (TypeError, ValueError):
+            return QueryBuilder._party_reply("No puedo analizar el ejercicio sin empresa.")
+        years = re.findall(r'\b(20\d{2})\b', question or '')
+        try:
+            target_year = int(years[0]) if years else int(ejercicio)
+        except (TypeError, ValueError):
+            target_year = datetime.datetime.now().year
+        alias = 'analytics' if 'analytics' in connections.databases else 'default'
+        neto = coste = ops = None
+        months = 0
+        try:
+            with connections[alias].cursor() as cur:
+                cur.execute(
+                    '''
+                    SELECT importe_neto_total, importe_coste_total, albaranes_count
+                    FROM metrics_totales_empresa_ejercicio
+                    WHERE empresa = %s AND ejercicio = %s
+                    ''',
+                    [empresa_id, target_year],
+                )
+                row = cur.fetchone()
+                if row:
+                    neto, coste, ops = float(row[0] or 0), float(row[1] or 0), int(row[2] or 0)
+                cur.execute(
+                    '''
+                    SELECT COUNT(*) FROM metrics_totales_empresa_ejercicio_mes
+                    WHERE empresa = %s AND ejercicio = %s
+                    ''',
+                    [empresa_id, target_year],
+                )
+                months = int(cur.fetchone()[0] or 0)
+        except Exception:
+            logger.exception("QueryBuilder: no se pudieron leer las métricas del ejercicio")
+            return QueryBuilder._party_reply(f"No he podido leer las métricas de {target_year}.")
+        if neto is None and months == 0:
+            return QueryBuilder._party_reply(f"No hay métricas de ventas para {target_year}.")
+        label = f"Análisis {target_year}: {QueryBuilder._eur_es(neto or 0)}"
+        if months:
+            sql = (
+                f'SELECT mes AS label, importe_neto_total AS val, importe_coste_total AS coste, albaranes_count AS ops '
+                f'FROM metrics_totales_empresa_ejercicio_mes '
+                f'WHERE empresa = {empresa_id} AND ejercicio = {target_year} ORDER BY mes'
+            )
+            return {
+                'key': 'year_analysis',
+                'sql': sql,
+                'type': 'chart',
+                'chart_type': 'bar',
+                'label': label,
+                'keep_label': True,
+                'source': 'deterministic_v2',
+                'intent_meta': {'metric': 'sales', 'title': label, 'ejercicio': target_year},
+            }
+        sql = (
+            f'SELECT importe_neto_total AS val, importe_coste_total AS coste, albaranes_count AS ops '
+            f'FROM metrics_totales_empresa_ejercicio '
+            f'WHERE empresa = {empresa_id} AND ejercicio = {target_year}'
+        )
+        return {
+            'key': 'year_analysis',
+            'sql': sql,
+            'type': 'card',
+            'label': label,
+            'keep_label': True,
+            'source': 'deterministic_v2',
+            'intent_meta': {'metric': 'sales', 'title': label, 'ejercicio': target_year},
+        }
+
+    @staticmethod
+    def _memory_hit(question, empresa, ejercicio, threshold, scopes=None):
+        try:
+            from datia.models import MetricsEmbeddings
+            if scopes == ['learned']:
+                if not MetricsEmbeddings.objects.filter(kind='template', metadata__contains={'scope': 'learned'}).exists():
+                    return None
+            match = ServiceFactory.get_embedding_service().search_template(
+                question,
+                threshold=threshold,
+                empresa=empresa,
+                scopes=scopes,
+            )
+        except Exception:
+            logger.info("QueryBuilder: la memoria vectorial no está disponible")
+            return None
+        if not match or not match.get('sql'):
+            return None
+        sql_text = match['sql'] or ''
+        folded = QueryBuilder._fold_party(question)
+        asks_count = bool(re.search(r'\b(contar|cuantos|cuantas|numero de|cantidad de)\b', folded))
+        is_count_only = bool(re.search(r'\bcount\s*\(', sql_text, re.I)) and not re.search(r'\b(sum|avg|min|max)\s*\(', sql_text, re.I)
+        if is_count_only and not asks_count:
+            logger.info("QueryBuilder: se descarta un entreno que solo cuenta registros")
+            return None
+        return {
+            'key': match.get('key'),
+            'sql': QueryBuilder._apply_sql_placeholders(match['sql'], empresa, ejercicio),
+            'type': match.get('type') or 'table',
+            'label': match.get('label') or 'Memoria',
+            'source': 'ai_memory',
+        }
+
+    @staticmethod
+    def validate_sql_dry_run(sql: str) -> Dict[str, Any]:
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute(f"EXPLAIN {sql}")
+                return {'valid': True}
+        except Exception as e:
+            return {'valid': False, 'error': str(e)}

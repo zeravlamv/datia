@@ -1,0 +1,385 @@
+{% load static i18n %}
+<div id="tab-actualidad-ratios" class="financial-theme">
+    <div class="dashboard-v2-container">
+        <div class="fin-grid-container">
+            <div class="fin-grid-item" data-id="ratios-core">
+                <div class="fin-card-simple">
+                    <div class="fin-card-header">
+                        <span class="fin-card-title">{% trans "Ratios Clave" %}</span>
+                        <i class="fas fa-grip-lines fin-drag-handle"></i>
+                    </div>
+                    <div class="fin-ratios-grid">
+                        <div class="fin-ratio-item">
+                            <div class="flip-card">
+                                <div class="flip-card-inner">
+                                    <div class="flip-card-front">
+                                        <div class="fin-kpi-label">{% trans "Liquidez" %}</div>
+                                        <div id="ratios-core-liquidez" class="fin-ratio-val"></div>
+                                        <button class="fin-ratio-lever" aria-label="{% trans 'Ver detalle del ratio' %}" tabindex="0">
+                                            {% trans "Detalle" %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="fin-ratio-item">
+                            <div class="flip-card">
+                                <div class="flip-card-inner">
+                                    <div class="flip-card-front">
+                                        <div class="fin-kpi-label">{% trans "Margen EBITDA" %}</div>
+                                        <div id="ratios-core-margen" class="fin-ratio-val"></div>
+                                        <button class="fin-ratio-lever" aria-label="{% trans 'Ver detalle del ratio' %}" tabindex="0">
+                                            {% trans "Detalle" %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="fin-ratio-item">
+                            <div class="flip-card">
+                                <div class="flip-card-inner">
+                                    <div class="flip-card-front">
+                                        <div class="fin-kpi-label">{% trans "Solvencia" %}</div>
+                                        <div id="ratios-core-solvencia" class="fin-ratio-val"></div>
+                                        <button class="fin-ratio-lever" aria-label="{% trans 'Ver detalle del ratio' %}" tabindex="0">
+                                            {% trans "Detalle" %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="fin-ratio-item">
+                            <div class="flip-card">
+                                <div class="flip-card-inner">
+                                    <div class="flip-card-front">
+                                        <div class="fin-kpi-label">{% trans "Endeudamiento" %}</div>
+                                        <div id="ratios-core-endeudamiento" class="fin-ratio-val"></div>
+                                        <button class="fin-ratio-lever" aria-label="{% trans 'Ver detalle del ratio' %}" tabindex="0">
+                                            {% trans "Detalle" %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fin-grid-item" data-id="ratios-overview">
+                <div class="fin-card-simple">
+                    <div class="fin-card-header">
+                        <span class="fin-card-title">{% trans "Mapa de Ratios" %}</span>
+                        <i class="fas fa-grip-lines fin-drag-handle"></i>
+                    </div>
+                    <div class="ratios-map">
+                        <div id="ratios-radar-chart" class="ratios-map-chart"></div>
+                        <div id="ratios-rentabilidad-chart" class="ratios-map-chart"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fin-grid-item" data-id="ratios-liquidez">
+                <div class="fin-card-simple">
+                    <div class="fin-card-header">
+                        <span class="fin-card-title">{% trans "Liquidez" %}</span>
+                        <i class="fas fa-grip-lines fin-drag-handle"></i>
+                    </div>
+                    <div class="fin-ratios-grid">
+                        <div class="fin-ratio-item">
+                            <div class="flip-card">
+                                <div class="flip-card-inner">
+                                    <div class="flip-card-front">
+                                        <div class="fin-kpi-label">{% trans "Liquidez Corriente" %}</div>
+                                        <div id="ratio-liquidez-corriente-val" class="fin-ratio-val"></div>
+                                        <button class="fin-ratio-lever" aria-label="{% trans 'Ver detalle del ratio' %}" tabindex="0">
+                                            {% trans "Detalle" %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="fin-ratio-item">
+                            <div class="flip-card">
+                                <div class="flip-card-inner">
+                                    <div class="flip-card-front">
+                                        <div class="fin-kpi-label">{% trans "Test Ácido" %}</div>
+                                        <div id="ratio-test-acido-val" class="fin-ratio-val"></div>
+                                        <button class="fin-ratio-lever" aria-label="{% trans 'Ver detalle del ratio' %}" tabindex="0">
+                                            {% trans "Detalle" %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="fin-ratio-item">
+                            <div class="flip-card">
+                                <div class="flip-card-inner">
+                                    <div class="flip-card-front">
+                                        <div class="fin-kpi-label">{% trans "Disponibilidad" %}</div>
+                                        <div id="ratio-disponibilidad-val" class="fin-ratio-val"></div>
+                                        <button class="fin-ratio-lever" aria-label="{% trans 'Ver detalle del ratio' %}" tabindex="0">
+                                            {% trans "Detalle" %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="fin-ratio-item">
+                            <div class="flip-card">
+                                <div class="flip-card-inner">
+                                    <div class="flip-card-front">
+                                        <div class="fin-kpi-label">{% trans "Fondo de Maniobra" %}</div>
+                                        <div id="ratio-fondo-maniobra-val" class="fin-ratio-val"></div>
+                                        <button class="fin-ratio-lever" aria-label="{% trans 'Ver detalle del ratio' %}" tabindex="0">
+                                            {% trans "Detalle" %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fin-grid-item" data-id="ratios-solvencia">
+                <div class="fin-card-simple">
+                    <div class="fin-card-header">
+                        <span class="fin-card-title">{% trans "Solvencia y estructura de capital" %}</span>
+                        <i class="fas fa-grip-lines fin-drag-handle"></i>
+                    </div>
+                    <div class="fin-ratios-grid">
+                        <div class="fin-ratio-item">
+                            <div class="flip-card">
+                                <div class="flip-card-inner">
+                                    <div class="flip-card-front">
+                                        <div class="fin-kpi-label">{% trans "Endeudamiento" %}</div>
+                                        <div id="ratio-endeudamiento-val" class="fin-ratio-val"></div>
+                                        <button class="fin-ratio-lever" aria-label="{% trans 'Ver detalle del ratio' %}" tabindex="0">
+                                            {% trans "Detalle" %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="fin-ratio-item">
+                            <div class="flip-card">
+                                <div class="flip-card-inner">
+                                    <div class="flip-card-front">
+                                        <div class="fin-kpi-label">{% trans "Autonomía" %}</div>
+                                        <div id="ratio-autonomia-val" class="fin-ratio-val"></div>
+                                        <button class="fin-ratio-lever" aria-label="{% trans 'Ver detalle del ratio' %}" tabindex="0">
+                                            {% trans "Detalle" %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="fin-ratio-item">
+                            <div class="flip-card">
+                                <div class="flip-card-inner">
+                                    <div class="flip-card-front">
+                                        <div class="fin-kpi-label">{% trans "Garantía" %}</div>
+                                        <div id="ratio-garantia-val" class="fin-ratio-val"></div>
+                                        <button class="fin-ratio-lever" aria-label="{% trans 'Ver detalle del ratio' %}" tabindex="0">
+                                            {% trans "Detalle" %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="fin-ratio-item">
+                            <div class="flip-card">
+                                <div class="flip-card-inner">
+                                    <div class="flip-card-front">
+                                        <div class="fin-kpi-label">{% trans "Calidad de la Deuda" %}</div>
+                                        <div id="ratio-calidad-deuda-val" class="fin-ratio-val"></div>
+                                        <button class="fin-ratio-lever" aria-label="{% trans 'Ver detalle del ratio' %}" tabindex="0">
+                                            {% trans "Detalle" %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fin-grid-item" data-id="ratios-gestion">
+                <div class="fin-card-simple">
+                    <div class="fin-card-header">
+                        <span class="fin-card-title">{% trans "Gestión y eficiencia operativa" %}</span>
+                        <i class="fas fa-grip-lines fin-drag-handle"></i>
+                    </div>
+                    <div class="fin-ratios-grid">
+                        <div class="fin-ratio-item">
+                            <div class="flip-card">
+                                <div class="flip-card-inner">
+                                    <div class="flip-card-front">
+                                        <div class="fin-kpi-label">{% trans "Rotación de Activos" %}</div>
+                                        <div id="ratio-rotacion-activos-val" class="fin-ratio-val"></div>
+                                        <button class="fin-ratio-lever" aria-label="{% trans 'Ver detalle del ratio' %}" tabindex="0">
+                                            {% trans "Detalle" %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="fin-ratio-item">
+                            <div class="flip-card">
+                                <div class="flip-card-inner">
+                                    <div class="flip-card-front">
+                                        <div class="fin-kpi-label">{% trans "Rotación de Stock" %}</div>
+                                        <div id="ratio-rotacion-stock-val" class="fin-ratio-val"></div>
+                                        <button class="fin-ratio-lever" aria-label="{% trans 'Ver detalle del ratio' %}" tabindex="0">
+                                            {% trans "Detalle" %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="fin-ratio-item">
+                            <div class="flip-card">
+                                <div class="flip-card-inner">
+                                    <div class="flip-card-front">
+                                        <div class="fin-kpi-label">{% trans "Periodo de Cobro" %}</div>
+                                        <div id="ratio-periodo-cobro-val" class="fin-ratio-val"></div>
+                                        <button class="fin-ratio-lever" aria-label="{% trans 'Ver detalle del ratio' %}" tabindex="0">
+                                            {% trans "Detalle" %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="fin-ratio-item">
+                            <div class="flip-card">
+                                <div class="flip-card-inner">
+                                    <div class="flip-card-front">
+                                        <div class="fin-kpi-label">{% trans "Periodo de Pago" %}</div>
+                                        <div id="ratio-periodo-pago-val" class="fin-ratio-val"></div>
+                                        <button class="fin-ratio-lever" aria-label="{% trans 'Ver detalle del ratio' %}" tabindex="0">
+                                            {% trans "Detalle" %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fin-grid-item" data-id="ratios-rentabilidad">
+                <div class="fin-card-simple">
+                    <div class="fin-card-header">
+                        <span class="fin-card-title">{% trans "Rentabilidad" %}</span>
+                        <i class="fas fa-grip-lines fin-drag-handle"></i>
+                    </div>
+                    <div class="fin-ratios-grid">
+                        <div class="fin-ratio-item">
+                            <div class="flip-card">
+                                <div class="flip-card-inner">
+                                    <div class="flip-card-front">
+                                        <div class="fin-kpi-label">{% trans "Margen Bruto" %}</div>
+                                        <div id="ratio-margen-bruto-val" class="fin-ratio-val"></div>
+                                        <button class="fin-ratio-lever" aria-label="{% trans 'Ver detalle del ratio' %}" tabindex="0">
+                                            {% trans "Detalle" %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="fin-ratio-item">
+                            <div class="flip-card">
+                                <div class="flip-card-inner">
+                                    <div class="flip-card-front">
+                                        <div class="fin-kpi-label">{% trans "Margen Neto" %}</div>
+                                        <div id="ratio-margen-neto-val" class="fin-ratio-val"></div>
+                                        <button class="fin-ratio-lever" aria-label="{% trans 'Ver detalle del ratio' %}" tabindex="0">
+                                            {% trans "Detalle" %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="fin-ratio-item">
+                            <div class="flip-card">
+                                <div class="flip-card-inner">
+                                    <div class="flip-card-front">
+                                        <div class="fin-kpi-label">{% trans "ROA (ROI)" %}</div>
+                                        <div id="ratio-roa-val" class="fin-ratio-val"></div>
+                                        <button class="fin-ratio-lever" aria-label="{% trans 'Ver detalle del ratio' %}" tabindex="0">
+                                            {% trans "Detalle" %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="fin-ratio-item">
+                            <div class="flip-card">
+                                <div class="flip-card-inner">
+                                    <div class="flip-card-front">
+                                        <div class="fin-kpi-label">{% trans "ROE" %}</div>
+                                        <div id="ratio-roe-val" class="fin-ratio-val"></div>
+                                        <button class="fin-ratio-lever" aria-label="{% trans 'Ver detalle del ratio' %}" tabindex="0">
+                                            {% trans "Detalle" %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fin-grid-item" data-id="ratios-cobertura">
+                <div class="fin-card-simple">
+                    <div class="fin-card-header">
+                        <span class="fin-card-title">{% trans "Cobertura y riesgo" %}</span>
+                        <i class="fas fa-grip-lines fin-drag-handle"></i>
+                    </div>
+                    <div class="fin-ratios-grid">
+                        <div class="fin-ratio-item">
+                            <div class="flip-card">
+                                <div class="flip-card-inner">
+                                    <div class="flip-card-front">
+                                        <div class="fin-kpi-label">{% trans "Cobertura de Intereses" %}</div>
+                                        <div id="ratio-cobertura-interes-val" class="fin-ratio-val"></div>
+                                        <button class="fin-ratio-lever" aria-label="{% trans 'Ver detalle del ratio' %}" tabindex="0">
+                                            {% trans "Detalle" %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="fin-ratio-item">
+                            <div class="flip-card">
+                                <div class="flip-card-inner">
+                                    <div class="flip-card-front">
+                                        <div class="fin-kpi-label">{% trans "Cobertura de Deuda" %}</div>
+                                        <div id="ratio-cobertura-deuda-val" class="fin-ratio-val"></div>
+                                        <button class="fin-ratio-lever" aria-label="{% trans 'Ver detalle del ratio' %}" tabindex="0">
+                                            {% trans "Detalle" %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="fin-ratio-item">
+                            <div class="flip-card">
+                                <div class="flip-card-inner">
+                                    <div class="flip-card-front">
+                                        <div class="fin-kpi-label">{% trans "Margen EBITDA" %}</div>
+                                        <div id="ratio-margen-ebitda-val" class="fin-ratio-val"></div>
+                                        <button class="fin-ratio-lever" aria-label="{% trans 'Ver detalle del ratio' %}" tabindex="0">
+                                            {% trans "Detalle" %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>

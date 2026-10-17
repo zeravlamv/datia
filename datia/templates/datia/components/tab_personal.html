@@ -1,0 +1,14 @@
+{% load static %}
+{% load i18n %}
+<div id="tab-personal" class="tab-panel" style="display:none;">
+    <link rel="stylesheet" href="{% static 'css/tab_personal.css' %}">
+    <div class="personal-tab-header">
+        <div class="personal-title-row">
+            <h2 id="personal-tab-title">{% trans "Pestaña Personal" %}</h2>
+        </div>
+        <p class="personal-subtitle">{% trans "Añade widgets desde Actualidad usando la estrella ★ y ordénalos aquí por drag & drop." %}</p>
+    </div>
+    <div id="personal-widget-list" class="personal-widget-list">
+        <!-- Items renderizados por JS -->
+    </div>
+</div>

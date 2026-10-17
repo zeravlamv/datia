@@ -1,0 +1,130 @@
+{% load static %}
+{% load i18n %}
+<div class="fc-wrapper">
+    <!-- Progress Tabs Navigation -->
+    <div class="fc-tabs">
+        <div class="fc-tab active" data-index="0">
+            <div class="fc-tab-progress">
+                <div class="fc-tab-bar"></div>
+            </div>
+            <span class="fc-tab-label">{% trans "01 Datos agregados" %}</span>
+        </div>
+        <div class="fc-tab" data-index="1">
+            <div class="fc-tab-progress">
+                <div class="fc-tab-bar"></div>
+            </div>
+            <span class="fc-tab-label">{% trans "02 Recopilar información" %}</span>
+        </div>
+        <div class="fc-tab" data-index="2">
+            <div class="fc-tab-progress">
+                <div class="fc-tab-bar"></div>
+            </div>
+            <span class="fc-tab-label">{% trans "03 Establecer estándares" %}</span>
+        </div>
+        <div class="fc-tab" data-index="3">
+            <div class="fc-tab-progress">
+                <div class="fc-tab-bar"></div>
+            </div>
+            <span class="fc-tab-label">{% trans "04 Impulsar la acción" %}</span>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="fc-content-area">
+        <!-- Content for Tab 1 -->
+        <div class="fc-slide active" data-index="0">
+            <div class="fc-text-col">
+                <h2 class="fc-title">{% trans "Datos Unificados" %}</h2>
+                <div class="fc-subtitle">
+                    {% blocktrans %}Descubre cómo <span class="fc-highlight">centralizar tu verdad</span>.<br>
+                    Toda tu información en un solo lugar.{% endblocktrans %}
+                </div>
+                <!-- Mock Chart Component -->
+                <div class="fc-mock-chart">
+                    <div class="fc-chart-bars">
+                        <div class="fc-bar" style="height: 40%; animation-delay: 0.1s;"></div>
+                        <div class="fc-bar" style="height: 70%; animation-delay: 0.2s;"></div>
+                        <div class="fc-bar highlight" style="height: 100%; animation-delay: 0.3s;"></div>
+                        <div class="fc-bar" style="height: 60%; animation-delay: 0.4s;"></div>
+                        <div class="fc-bar" style="height: 30%; animation-delay: 0.5s;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="fc-visual-col">
+                <div class="fc-glass-card">
+                    <div class="fc-metric-row">
+                        <span>{% trans "Fuentes Conectadas" %}</span>
+                        <span class="fc-metric-val">12+</span>
+                    </div>
+                    <div class="fc-metric-row">
+                        <span>{% trans "Filas Procesadas" %}</span>
+                        <span class="fc-metric-val">1.5M</span>
+                    </div>
+                    <div class="fc-metric-row">
+                        <span>{% trans "Integridad" %}</span>
+                        <span class="fc-metric-val success">100%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content for Tab 2 -->
+        <div class="fc-slide" data-index="1">
+            <div class="fc-text-col">
+                <h2 class="fc-title">{% trans "Inteligencia Vectorial" %}</h2>
+                <div class="fc-subtitle">
+                    {% blocktrans %}Transforma datos en <span class="fc-highlight">conocimiento puro</span>.<br>
+                    Búsqueda semántica instantánea.{% endblocktrans %}
+                </div>
+                <div class="fc-mock-terminal">
+                    <div class="fc-term-line">> {% trans "Inicializando RAG pipeline..." %}</div>
+                    <div class="fc-term-line">> {% trans "Vectorizando 450 documentos..." %}</div>
+                    <div class="fc-term-line success">> {% trans "Embeddings generados en 120ms" %}</div>
+                </div>
+            </div>
+            <div class="fc-visual-col center-content">
+                <div class="fc-pulsing-orb"></div>
+            </div>
+        </div>
+
+        <!-- Content for Tab 3 -->
+        <div class="fc-slide" data-index="2">
+            <div class="fc-text-col">
+                <h2 class="fc-title">{% trans "Control Total" %}</h2>
+                <div class="fc-subtitle">
+                    {% blocktrans %}Define tus propias <span class="fc-highlight">reglas de negocio</span>.<br>
+                    Estándares que escalan contigo.{% endblocktrans %}
+                </div>
+                <div class="fc-rules-list">
+                    <div class="fc-rule-item">✔️ {% trans "Validación automática de NIFs" %}</div>
+                    <div class="fc-rule-item">✔️ {% trans "Coherencia de ejercicios fiscales" %}</div>
+                    <div class="fc-rule-item">✔️ {% trans "Control de duplicados en tiempo real" %}</div>
+                </div>
+            </div>
+            <div class="fc-visual-col">
+                <div class="fc-shield-icon">
+                    <svg width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content for Tab 4 -->
+        <div class="fc-slide" data-index="3">
+            <div class="fc-text-col">
+                <h2 class="fc-title">{% trans "Toma de Decisiones" %}</h2>
+                <div class="fc-subtitle">
+                    {% blocktrans %}Pasa del análisis a la <span class="fc-highlight">acción inmediata</span>.<br>
+                    Insights que mueven tu negocio.{% endblocktrans %}
+                </div>
+            </div>
+            <div class="fc-visual-col">
+                <div class="fc-action-card">
+                    <div class="fc-btn-mock">{% trans "Generar Informe" %}</div>
+                    <div class="fc-btn-mock primary">{% trans "Exportar a SAGE" %}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

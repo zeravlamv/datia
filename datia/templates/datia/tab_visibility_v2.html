@@ -1,0 +1,50 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static datia_extras %}
+
+{% block content %}
+<div id="content-main">
+    <form id="user-select-form" method="get" style="margin-bottom: 20px;">
+        <label for="user" style="font-size: 14px; font-weight: bold;">{% trans "Seleccionar usuario" %}:</label>
+        <select name="user" id="user" onchange="this.form.submit()" style="padding: 5px; margin-left: 10px;">
+            <option value="">— {% trans "Elegir" %} —</option>
+            {% for u in users %}
+            <option value="{{ u.id }}" {% if selected_user and selected_user.id==u.id %}selected{% endif %}>{{ u.username }}</option>
+            {% endfor %}
+        </select>
+    </form>
+
+    {% if selected_user %}
+    <div class="module">
+        <form id="visibility-form">
+            {% csrf_token %}
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 2px solid #eee;">
+                        <th style="text-align: left; padding: 10px;">{% trans "Pestaña / Sub‑pestaña" %}</th>
+                        <th style="padding: 10px;">{% trans "Visible" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tab in tab_ids %}
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 10px;">{{ tab }}</td>
+                        <td style="padding: 10px;">
+                            <input type="checkbox" name="visible_tabs" value="{{ tab }}" {% if pref|get_item:tab !=False %}checked{% endif %}>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="submit-row" style="margin-top: 20px;">
+                <input type="button" value="{% trans 'Guardar cambios' %}" class="default" onclick="saveVisibility()">
+            </div>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<script src="{% static 'js/dashboard/tab_visibility.js' %}"></script>
+{% endblock %}

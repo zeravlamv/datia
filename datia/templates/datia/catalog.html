@@ -1,0 +1,2891 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo de Sistema - Datia Analytics</title>
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    <style>
+        :root {
+            --accent: #a855f7;
+            --bg-dark: #09090b;
+            --bg-card: #18181b;
+            --text: #e4e4e7;
+            --text-muted: #a1a1aa;
+        }
+
+        body {
+            background: var(--bg-dark);
+            color: var(--text);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .catalog-header {
+            background: rgba(24, 24, 27, 0.95);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            position: sticky;
+            top: 0;
+            backdrop-filter: blur(10px);
+            z-index: 100;
+        }
+
+        .catalog-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin: 0 0 0.5rem 0;
+        }
+
+        .catalog-subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .version-badge {
+            background: #22c55e;
+            color: #000;
+            font-size: 0.8rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-left: 1rem;
+            vertical-align: middle;
+        }
+
+        .update-badge {
+            background: #f59e0b;
+            color: #000;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+            text-transform: uppercase;
+        }
+
+        .catalog-nav {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem 2rem;
+            background: rgba(24, 24, 27, 0.6);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            overflow-x: auto;
+        }
+
+        .nav-btn {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            font-size: 0.9rem;
+        }
+
+        .nav-btn:hover,
+        .nav-btn.active {
+            background: rgba(168, 85, 247, 0.2);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .catalog-content {
+            width: 90% !important;
+            max-width: 95% !important;
+            margin: 0 auto !important;
+            padding: 2rem 0;
+            position: relative;
+        }
+
+        .section {
+            display: none;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .endpoint-card,
+        .service-card,
+        .model-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.2s;
+        }
+
+        .endpoint-card:hover,
+        .service-card:hover,
+        .model-card:hover {
+            border-color: rgba(168, 85, 247, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .endpoint-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .method-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .method-get {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .method-post {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+        }
+
+        .method-delete {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .endpoint-path {
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            color: var(--accent);
+        }
+
+        .endpoint-desc {
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+        }
+
+        .params-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 0.5rem;
+        }
+
+        .params-table th {
+            text-align: left;
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .params-table td {
+            padding: 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.85rem;
+        }
+
+        .param-name {
+            font-family: 'Courier New', monospace;
+            color: #ec4899;
+        }
+
+        .search-box {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto 2rem auto;
+            padding: 1rem;
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 1rem;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .back-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 2rem;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            box-shadow: 0 10px 30px rgba(168, 85, 247, 0.3);
+            transition: all 0.2s;
+        }
+
+        .back-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(168, 85, 247, 0.4);
+        }
+
+        .warning-box {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid #ef4444;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .feature-box {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 4px solid #3b82f6;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .warning-title {
+            color: #ef4444;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .feature-title {
+            color: #3b82f6;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .issue-code {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            padding: 0.1rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-family: 'Courier New', monospace;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .feature-code {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+            padding: 0.1rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-family: 'Courier New', monospace;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .issue-pattern {
+            background: rgba(168, 85, 247, 0.2);
+            color: var(--accent);
+            padding: 0.1rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+        }
+
+        /* Patterns Specific Styles */
+        .patterns-container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 2rem;
+            height: calc(100vh - 350px);
+            min-height: 500px;
+        }
+
+        .patterns-list {
+            background: rgba(24, 24, 27, 0.4);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            overflow-y: auto;
+            border-radius: 12px;
+        }
+
+        .pattern-item {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 0.5rem;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+        }
+
+        .pattern-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+        }
+
+        .pattern-item.active {
+            background: rgba(168, 85, 247, 0.1);
+            border-color: rgba(168, 85, 247, 0.3);
+            color: var(--accent);
+        }
+
+        .editor-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .pattern-editor {
+            flex-grow: 1;
+            background: rgba(24, 24, 27, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            color: var(--text);
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            resize: none;
+            backdrop-filter: blur(5px);
+            transition: border-color 0.2s;
+        }
+
+        .pattern-editor:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .patterns-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .btn-save {
+            padding: 0.75rem 2rem;
+            background: var(--accent);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-save:hover:not(:disabled) {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+        }
+
+        .btn-save:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            background: var(--bg-card);
+            border: 1px solid var(--accent);
+            color: var(--text);
+            z-index: 1000;
+            display: none;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translate(-50%, 100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translate(-50%, 0);
+                opacity: 1;
+            }
+        }
+
+        /* Issues/Features Management Styles */
+        .management-panel {
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            display: none;
+            backdrop-filter: blur(10px);
+        }
+
+        .management-panel.active {
+            display: block;
+        }
+
+        .form-grid {
+            display: grid;
+            gap: 1.2rem;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        .form-grid input,
+        .form-grid textarea,
+        .form-grid select {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 0.8rem;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-grid input:focus,
+        .form-grid textarea:focus,
+        .form-grid select:focus {
+            border-color: var(--accent);
+        }
+
+        .btn-delete {
+            background: none;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            font-size: 1.2rem;
+            margin-left: auto;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+
+        .btn-delete:hover {
+            opacity: 1;
+        }
+
+        /* Dark Selects */
+        .dark-select,
+        .dark-select option {
+            background-color: #18181b !important;
+            color: #e4e4e7 !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="catalog-header">
+        <h1 class="catalog-title">📚 Catálogo del Sistema <span class="version-badge">v1.3</span><span class="update-badge">UPDATED 26/01/2026</span></h1>
+        <p class="catalog-subtitle">Índice vivo de documentación técnica y de negocio de Datia Analytics v2</p>
+    </div>
+
+    <nav class="catalog-nav">
+        <button class="nav-btn active" onclick="showSection('overview', this)">Overview</button>
+        <button class="nav-btn" onclick="showSection('api', this)">API Endpoints</button>
+        <button class="nav-btn" onclick="showSection('services', this)">Servicios</button>
+        <button class="nav-btn" onclick="showSection('models', this)">Modelos</button>
+        <button class="nav-btn" onclick="showSection('frontend', this)">Frontend</button>
+        <button class="nav-btn" onclick="showSection('patterns', this)">Patrones</button>
+        <button class="nav-btn" onclick="showSection('issues', this)">Problemas</button>
+        <button class="nav-btn" onclick="showSection('features', this)">Funcionalidades</button>
+        <button class="nav-btn" onclick="showSection('knowledge', this)" style="border-color: #f59e0b; color: #f59e0b;">Base de Conocimiento</button>
+        <a class="nav-btn" href="{% url 'catalog_guide_ia' %}">Guía Técnica IA</a>
+        <a class="nav-btn" href="{% url 'landing_cliente' %}" target="_blank">Landing Cliente</a>
+        <a class="nav-btn" href="{% url 'resumen_comercial' %}" target="_blank">Resumen Comercial</a>
+    </nav>
+
+    <div class="catalog-content">
+        <input type="text" class="search-box" placeholder="🔍 Buscar endpoint, servicio, modelo..." id="searchBox" onkeyup="searchCatalog()">
+
+        <!-- OVERVIEW SECTION -->
+        <div id="overview" class="section active">
+            <h2>🎯 Arquitectura General</h2>
+            <div class="endpoint-card">
+                <h3>Flujo de Datos</h3>
+                <p>Frontend (HTML/JS) → Django Ninja API → Services → Models (ORM) → Databases</p>
+                <ul style="margin-top: 1rem; color: var(--text-muted);">
+                    <li><strong>PostgreSQL</strong>: Usuarios, métricas, datos analíticos, contextos semánticos</li>
+                    <li><strong>MSSQL</strong>: ERP origen (solo lectura)</li>
+                </ul>
+            </div>
+
+            <div class="endpoint-card" style="margin-top: 1rem;">
+                <h3 style="color: var(--accent); margin-bottom: 0.5rem;">🧭 Mapa de Documentación Oficial</h3>
+                <ul style="list-style: disc; padding-left: 1.2rem; color: var(--text-muted); font-size: 0.9rem;">
+                    <li><strong>Catálogo del Sistema</strong> (<code>/catalog/</code>): Índice vivo para equipo técnico y de implantación. Navegación por APIs, servicios, modelos, patrones, problemas y funcionalidades.</li>
+                    <li><strong>White Paper Técnico-Financiero</strong> (<code>/whitepaper/</code>): Documento para inversores y dirección. Resume arquitectura, modelo de negocio, métricas clave y roadmap.</li>
+                    <li><strong>Presentación Cliente</strong> (<code>docs/DATIA_Presentacion_Cliente.md</code>): Narrativa comercial para nuevos clientes (problemas que resuelve, módulos y beneficios).</li>
+                    <li><strong>Resumen Comercial</strong> (<code>static/docs/datia_resumen_comercial.txt</code>): Versión ultra-resumida para comunicaciones rápidas y one-pagers.</li>
+                    <li><strong>Contexto del Proyecto</strong> (<code>/project-context/</code>): Manual técnico vivo a partir de <code>PROJECT_CONTEXT.md</code>, con arquitectura detallada, reglas de oro y cambios de sesión.</li>
+                    <li><strong>Análisis Integral Técnico</strong> (<code>docs/analisis_datia.txt</code>): Referencia completa para auditorías técnicas y visión AI-First de la plataforma.</li>
+                    <li><strong>Patrones</strong> (<code>datia/patterns/*.md</code>): Especificaciones canónicas de módulos, flujos críticos, sincronización y políticas técnicas.</li>
+                </ul>
+            </div>
+
+            <div class="endpoint-card" style="margin-top: 1rem;">
+                <h3 style="color: var(--accent); margin-bottom: 0.5rem;">📝 Cambios de sesión (Resumen Enero 2026)</h3>
+                <ul style="list-style: disc; padding-left: 1.2rem; color: var(--text-muted); font-size: 0.9rem;">
+                    <li><strong>12/01 – Financiera e IA Estratégica</strong>: Rediseño del análisis estratégico en Financiera (Intensidad, Severidad Z, Impacto) y separación estricta HTML/CSS/JS en tarjetas de análisis. Nuevo endpoint de balance plano <code>/api/financial/balance/table</code>.</li>
+                    <li><strong>13–17/01 – Móvil, Compras y Visibilidad</strong>: Correcciones de carga de Compras y Financiera en móvil, separación de estilos en <code>mobile_builder.css</code> y normalización de visibilidad de pestañas y subpestañas (incluyendo <code>sub-evolucion</code>).</li>
+                    <li><strong>19–23/01 – Catálogo, IA y Documentación</strong>: Automatización de generación del catálogo (<code>generate_catalog_data.py</code>, <code>update_catalog_html.py</code>), refuerzos en <code>QueryBuilder</code> y actualización de <code>docs/analisis_datia.txt</code> al modo AI-First.</li>
+                    <li><strong>24–26/01 – Presupuestos e IA Financiera</strong>: Refundación de la comparativa de Presupuestos (layout sin scroll horizontal), ampliación del contexto IA financiera (incluye Presupuestos y Tesorería) y despliegue de modelos locales avanzados para informes CFO.</li>
+                </ul>
+                <p style="margin-top: 0.75rem; color: var(--text-muted); font-size: 0.85rem;">
+                    El detalle completo de cada intervención está documentado en <strong>PROJECT_CONTEXT.md</strong> y accesible desde <code>/project-context/</code> (sección "Actualización de sesión").
+                </p>
+            </div>
+
+            <h2 style="margin-top: 2rem;">📄 Documentación para Inversores</h2>
+            <div class="endpoint-card" style="background: rgba(59, 130, 246, 0.05); border-color: rgba(59, 130, 246, 0.3);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h3 style="color: #3b82f6; margin-bottom: 0.5rem;">White Paper Técnico-Financiero</h3>
+                        <p style="margin: 0;">Documento completo con arquitectura técnica, modelo de negocio, métricas
+                            de rendimiento y roadmap para presentar a inversores y dirección.</p>
+                    </div>
+                    <a href="{% url 'whitepaper' %}" target="_blank" style="padding: 1rem 2rem; background: #3b82f6; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; white-space: nowrap; transition: all 0.3s ease; display: inline-block;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(59, 130, 246, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                        Ver White Paper →
+                    </a>
+                </div>
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <ul style="list-style: none; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; color: var(--text-muted); font-size: 0.9rem;">
+                        <li>✅ Executive Summary</li>
+                        <li>✅ Arquitectura Técnica</li>
+                        <li>✅ Stack Tecnológico</li>
+                        <li>✅ Modelo de Datos</li>
+                        <li>✅ Ventajas Competitivas</li>
+                        <li>✅ Roadmap y Escalabilidad</li>
+                    </ul>
+                    <p style="margin-top: 1rem; color: var(--text-muted); font-size: 0.85rem;">
+                        Documentación complementaria:
+                        <strong>Presentación Cliente</strong> (<code>docs/DATIA_Presentacion_Cliente.md</code>) y
+                        <strong>Resumen Comercial</strong> (<code>static/docs/datia_resumen_comercial.txt</code>), alineados con este Whitepaper y el catálogo técnico.
+                    </p>
+                </div>
+            </div>
+
+            <h2 style="margin-top: 2rem;">🧠 Contexto Técnico</h2>
+            <div class="endpoint-card" style="background: rgba(168, 85, 247, 0.05); border-color: rgba(168, 85, 247, 0.3);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h3 style="color: #a855f7; margin-bottom: 0.5rem;">Manual de Operaciones & Arquitectura</h3>
+                        <p style="margin: 0;">Manual técnico vivo generado a partir de <code>PROJECT_CONTEXT.md</code>:
+                            arquitectura detallada, flujos de datos, reglas de oro y diario de cambios.</p>
+                    </div>
+                    <a href="{% url 'project_context' %}" style="padding: 1rem 2rem; background: #a855f7; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; white-space: nowrap; transition: all 0.3s ease; display: inline-block;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(168, 85, 247, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                        Ver Contexto Project →
+                    </a>
+                </div>
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <ul style="list-style: none; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; color: var(--text-muted); font-size: 0.9rem;">
+                        <li>✅ Diagramas Mermaid</li>
+                        <li>✅ Stack Tecnológico (Backend, ETL, IA local y móvil)</li>
+                        <li>✅ Protocolos de Desarrollo y despliegue</li>
+                        <li>✅ Mapa Funcionalidades</li>
+                        <li>✅ Dependencias entre módulos y servicios</li>
+                        <li>✅ Reglas de Oro (límites de tamaño, separación HTML/CSS/JS, UX)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="endpoint-card" style="background: rgba(168, 85, 247, 0.05); border-color: rgba(168, 85, 247, 0.3); margin-top: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h3 style="color: var(--accent); margin-bottom: 0.5rem;">Sincronización Incremental (Resumen Ejecutivo)</h3>
+                        <p style="margin: 0; color: var(--text-muted);">
+                            Copia solo documentos modificados desde MSSQL (7 días por defecto) y recalcula métricas en Postgres.
+                        </p>
+                    </div>
+                    <button class="nav-btn" onclick="showSection('patterns', this)" style="white-space: nowrap;">Ver patrón completo →</button>
+                </div>
+                <ul style="list-style: disc; padding-left: 1.2rem; color: var(--text-muted); font-size: 0.9rem; margin-top: 0.75rem;">
+                    <li>Ventana incremental: 7 días (cutoff por checkpoint last_fecha).</li>
+                    <li>Checkpoint: datia_sync_checkpoints (empresa, ejercicio, tipo, last_fecha).</li>
+                    <li>Cabeceras: INSERT… ON CONFLICT DO UPDATE; Líneas: DELETE + COPY por documento.</li>
+                    <li>Agregación local a metrics_* (ventas y compras) desde datiadb_*.</li>
+                    <li>Endpoints: /api/etl/incremental/{sales|purchases|financial}; Commands: datia_sync_incremental_*.</li>
+                    <li>Parámetros clave: empresa, ejercicio, days_back, fast_bulk, sync_type.</li>
+                    <li>Garantía: solo documentos con fecha ≥ cutoff; métricas coherentes e idempotentes.</li>
+                </ul>
+            </div>
+
+            <h2>Patrones de Conocimiento</h2>
+            <div class="endpoint-card">
+                <h3>Definiciones del Sistema</h3>
+                <p>El comportamiento de Datia se rige por archivos de patrones (`.md`) que definen flujos críticos:</p>
+                <ul style="margin-top: 1rem; color: var(--text-muted);">
+                    <li><strong>Auto-Entreno</strong>: Define el ciclo de vida de la inteligencia de negocio (Postgres →
+                        Semántica → Sincronización → Mapeo de Contexto).</li>
+                    <li><strong>Catálogo</strong>: Define las reglas de documentación y mantenimiento de este sistema.
+                    </li>
+                    <li><strong>Datia WOW</strong>: Principios de diseño de la nueva interfaz premium (NF-001).</li>
+                    <li><strong>Actualización</strong>: Cada cambio en un patrón requiere una revisión del catálogo
+                        técnico para mantener la coherencia.</li>
+                </ul>
+            </div>
+
+            <div class="endpoint-card">
+                <h3>Patrón Financiera</h3>
+                <p>Define el módulo ejecutivo y analítico de finanzas: KPIs de ingresos, gastos y EBITDA, gráfico mensual combinado bajo el resumen, P&L y detalle mensual, informe trimestral con comparativa interanual y exportación.</p>
+                <ul style="margin-top: 1rem; color: var(--text-muted);">
+                    <li><strong>Separación</strong>: HTML, JS y CSS estricta, i18n con gettext.</li>
+                    <li><strong>Datos</strong>: MSSQL en modo consulta, lógica y entrenamiento en Postgres.</li>
+                    <li><strong>Responsivo</strong>: Gráficos ECharts en SVG para impresión y digital.</li>
+                </ul>
+            </div>
+        </div>
+
+    <!-- API SECTION -->
+    <div id="api" class="section">
+        <h2>🔌 API Endpoints Exhaustivo (Auto-Generated)</h2>
+
+        <div class="endpoint-card">
+            <h3>Arquitectura de la API</h3>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">
+                La API de Datia se expone bajo <code>/api/</code> mediante <strong>Django Ninja</strong> y se organiza en routers por dominio.
+                El acceso se realiza siempre sobre sesión autenticada de Django (cookies + CSRF).
+            </p>
+            <ul style="margin-top: 0.75rem; color: var(--text-muted); font-size: 0.9rem;">
+                <li><strong>Base</strong>: <code>/api/</code> – Instancia única de <code>NinjaAPI</code> definida en <code>datia/api/api.py</code>.</li>
+                <li><strong>Subrutas principales</strong>: <code>/datia</code>, <code>/etl</code>, <code>/patterns</code>, <code>/issues</code>, <code>/features</code>, <code>/template</code>, <code>/system</code>, <code>/mobile</code>, <code>/financial</code>, <code>/inventory</code>, <code>/ai</code>, <code>/config</code>, <code>/auto-training</code>.</li>
+                <li><strong>Estilo</strong>: JSON sobre HTTP (REST simple); sin versionado en URL (versión lógica 2.0.0 en la instancia de Ninja).</li>
+                <li><strong>Autenticación</strong>: Sesión Django; vistas críticas decoradas con <code>@login_required</code> y protección CSRF activa.</li>
+                <li><strong>Ámbito</strong>: Entorno on-premise controlado; no se exponen endpoints públicos sin autenticación salvo casos explícitos documentados.</li>
+            </ul>
+        </div>
+
+        <div class="endpoint-card">
+            <h3>Contratos JSON y Manejo de Errores</h3>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">
+                Los endpoints utilizan dos patrones principales de contrato JSON: esquemas tipados de Ninja y respuestas manuales con
+                campos <code>status</code> y <code>message</code>.
+            </p>
+            <ul style="margin-top: 0.75rem; color: var(--text-muted); font-size: 0.9rem;">
+                <li><strong>Esquemas Ninja</strong>: Endpoints como <code>/api/features/</code> y <code>/api/issues/</code> devuelven listas de objetos
+                    tipados (<code>FeatureSchema</code>, <code>IssueSchema</code>) con campos <code>id</code>, <code>title</code>, <code>description</code>, <code>status</code>, etc.</li>
+                <li><strong>Patrón status/message</strong>: Endpoints de sistema (por ejemplo, cambio de contraseña o contexto semántico) responden con
+                    <code>{"status": "success" | "error", "message": "..."}</code> y códigos HTTP adecuados (200, 400, 401, 500).</li>
+                <li><strong>Validación de entrada</strong>: Se comprueban campos obligatorios y tipos (por ejemplo, <em>empresa</em> debe ser numérica entera)
+                    devolviendo <code>status="error"</code> en caso de violación.</li>
+                <li><strong>Errores IA</strong>: El router de IA devuelve estructuras enriquecidas (<code>type</code>, <code>text</code>, <code>details</code>) para
+                    representar ambigüedad, timeouts o problemas de generación de SQL.</li>
+            </ul>
+        </div>
+
+        <div class="endpoint-card">
+            <h3>Seguridad y Restricciones</h3>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">
+                La capa de seguridad combina autenticación de sesión, control de origen (CSRF) y políticas estrictas sobre qué datos
+                pueden consultarse desde la IA y las herramientas de introspección.
+            </p>
+            <ul style="margin-top: 0.75rem; color: var(--text-muted); font-size: 0.9rem;">
+                <li><strong>CSRF y proxies</strong>: <code>CSRF_TRUSTED_ORIGINS</code> y <code>SECURE_PROXY_SSL_HEADER</code> configurados para acceso seguro
+                    desde túneles (<em>ngrok</em>, <em>Cloudflare</em>, etc.) sin desactivar protección CSRF.</li>
+                <li><strong>Permisos</strong>: Endpoints sensibles (por ejemplo, <code>/api/config/global</code>) requieren usuario de staff; el acceso a empresas
+                    se filtra mediante <code>UserEmpresaPermission</code>.</li>
+                <li><strong>Restricción IA</strong>: El generador SQL de IA sólo puede consultar tablas permitidas (<code>DatiaDB_*</code> y dominios autorizados);
+                    cualquier violación produce una respuesta de alerta de seguridad en lugar de ejecutar la consulta.</li>
+                <li><strong>Operaciones destructivas</strong>: Endpoints como el <em>factory reset</em> semántico están deshabilitados por defecto y devuelven
+                    código HTTP 410 con mensaje de error, evitando borrados accidentales.</li>
+                <li><strong>Normalización de IDs</strong>: Identificadores como <em>empresa</em> se normalizan a entero para garantizar consistencia y evitar
+                    ataques por inyección de parámetros.</li>
+            </ul>
+        </div>
+
+<h3 style='margin-top: 2rem; color: var(--accent);'>ai_endpoints.py</h3>
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/report/generate</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>generate_report</strong>: Generates an AI Strategic Report on demand.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/report/save</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>save_report</strong>: Sin descripción.</p>
+                    </div>
+                    <h3 style='margin-top: 2rem; color: var(--accent);'>api.py</h3><h3 style='margin-top: 2rem; color: var(--accent);'>config_endpoints.py</h3>
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/global</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_global_config</strong>: Returns the current Global Configuration.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/global</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>update_global_config</strong>: Updates the Global Configuration.<br>Requires staff permission.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/user</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_user_config</strong>: Returns the effective configuration for the current user.<br>Merges GlobalConfig with UserPreference.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/user</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>update_user_config</strong>: Updates the user's preferences (specifically visible_tabs).</p>
+                    </div>
+                    <h3 style='margin-top: 2rem; color: var(--accent);'>dashboard_stats.py</h3>
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/dashboard/stats</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_dashboard_stats</strong>: Returns aggregated statistics for the Auto-Training Dashboard.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/dashboard/network</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_network_graph</strong>: Returns Node-Link data for visualization.</p>
+                    </div>
+                    <h3 style='margin-top: 2rem; color: var(--accent);'>endpoints.py</h3>
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/filters</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_filters</strong>: Returns available Empresas and Ejercicios for selectors.<br>Filters empresas based on user permissions if defined.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/widgets/snapshot</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_snapshot</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/widgets/{key}</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_widget_data</strong>: Generic Widget Data Endpoint.<br>Routes to specific logic based on key.<br>Enforces RBAC via WidgetConfig (Placeholder).</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/ai/models</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>list_ai_models</strong>: Returns available Ollama models.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/knowledge</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>list_knowledge</strong>: Lists all AI Knowledge templates.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/knowledge/save</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>save_knowledge</strong>: Creates or Updates a Knowledge Item using JSON Body.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-delete">DELETE</span>
+                            <span class="endpoint-path">/knowledge/{id}</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>delete_knowledge</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/qa</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>qa_query</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/ai/feedback</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>submit_feedback</strong>: Handles RLHF with JSON Body.<br>vote: 1 (Good), -1 (Bad).</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/ai/learn</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>learn_query</strong>: Explicitly saves a learned query to the Vector DB via JSON Body.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/ai/history</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_history</strong>: Returns saved queries for the current empresa/ejercicio.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-delete">DELETE</span>
+                            <span class="endpoint-path">/ai/history/{query_id}</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>delete_history</strong>: Deletes a saved query from history.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/ai/history/{query_id}/refresh</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>refresh_history</strong>: Recalculates a saved query with fresh data.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/features/</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>list_features</strong>: Lists all tracked features from features.json</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/features/save</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>save_features</strong>: Saves features list back to features.json</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/sync/trigger</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>trigger_sync</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/sync/status</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_sync_status</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/datasource/{datasource_id}/reindex</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>reindex_datasource</strong>: Regenerates synthetic queries for a specific datasource.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/orders/reindex</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>reindex_orders</strong>: Specific endpoint to reindex 'Pedidos' table.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/config/erp</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_erp_config</strong>: Returns the configured ERP name.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/config/erp</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>save_erp_config</strong>: Saves the ERP name.</p>
+                    </div>
+                    <h3 style='margin-top: 2rem; color: var(--accent);'>endpoints_evolucion.py</h3>
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/evolution</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_financial_evolution</strong>: Evolución financiera desde Postgres (datia_financial_acumulados).<br>Filtro por empresa y rango de años. group_by: 'month' o 'year'.</p>
+                    </div>
+                    <h3 style='margin-top: 2rem; color: var(--accent);'>etl_endpoints.py</h3>
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/sync</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>trigger_sync</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/incremental/sales</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>incremental_sales</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/incremental/purchases</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>incremental_purchases</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/incremental/financial</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>incremental_financial</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/incremental/cartera</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>incremental_cartera</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/incremental/stocks</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>incremental_stocks</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/status/{job_id}</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>check_sync_status</strong>: Returns the status of a specific sync job.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/check/raw_sales_presence</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>check_raw_sales_presence</strong>: Sin descripción.</p>
+                    </div>
+                    <h3 style='margin-top: 2rem; color: var(--accent);'>features.py</h3>
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>list_features</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/save</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>save_features</strong>: Sin descripción.</p>
+                    </div>
+                    <h3 style='margin-top: 2rem; color: var(--accent);'>financial_endpoints.py</h3>
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/snapshot</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_financial_snapshot</strong>: Returns high-level financial KPIs (Ingresos, Gastos, Resultado, Ratios).</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/pl</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_pl_report</strong>: Returns detailed P&L (Cuenta de Resultados).</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/analysis</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_financial_analysis</strong>: Returns advanced strategic analysis (Trends, Anomalies, Recommendations).</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/pl-detail</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_pl_detail</strong>: Returns detailed P&L comparing current month vs previous month, grouped by level.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/quarterly</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_quarterly</strong>: Returns quarterly financial report with comparison vs previous year.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/monthly_kpis</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_monthly_kpis</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/departments</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_financial_departments</strong>: Returns available 'departamentos' (PGC areas) for filtering.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/balance/summary</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_balance_summary</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/balance/tree</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_balance_tree</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/balance/table</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_balance_table</strong>: Returns flat Balance table: code, description, level, amount.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/ratio/drilldown</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_ratio_drilldown</strong>: Returns drilldown (numerator/denominator accounts) and senior analysis for a ratio.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/quarterly/export</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>export_quarterly</strong>: Exports quarterly report data. Fallback to CSV if Excel/PDF not available.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/accounts/tree</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_accounts_tree</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/accounts/detail</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_account_detail</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/preferences/layout</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>save_dashboard_layout</strong>: Saves user dashboard layout preferences.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/preferences/layout</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_dashboard_layout</strong>: Retrieves user dashboard layout preferences.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/preferences/ui</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>save_ui_preferences</strong>: Saves user UI preferences such as selected logo and accent color<br>inside dashboard_layout['ui_prefs'] to avoid DB migrations.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/preferences/ui</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_ui_preferences</strong>: Retrieves user UI preferences (selected_logo, accent_color)<br>from dashboard_layout['ui_prefs'].</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/sync</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>sync_financials</strong>: Triggers manual sync of financial data.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/treasury</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_treasury_snapshot</strong>: Returns treasury analysis (Cash, Aging, Working Capital).</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/treasury/forecast</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_treasury_forecast</strong>: Returns cash flow forecast (inflows, outflows, projected balance and liquidity ratio).<br>Allows scenario tuning via parameters.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/treasury/forecast/export</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>export_treasury_forecast</strong>: Exports treasury forecast to CSV or a simple printable HTML (PDF via browser print).</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/anatomy/utility</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_utility_anatomy</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/anatomy/forecast</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_utility_forecast</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/budgets</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_budgets</strong>: Returns Budget Grid.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/budgets/save</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>save_budget</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/budgets/generate</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>generate_budget</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/budgets/exists</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>budgets_exists</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/budgets/generate/stream</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>generate_budget_stream</strong>: Sin descripción.</p>
+                    </div>
+                    <h3 style='margin-top: 2rem; color: var(--accent);'>introspection_endpoints.py</h3><h3 style='margin-top: 2rem; color: var(--accent);'>inventory_endpoints.py</h3>
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/filters</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_filters</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/snapshot</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>snapshot</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/distribution</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>distribution</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/evolution</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>evolution</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/variation</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>variation</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/period_saldo</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>period_saldo</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/by_warehouse</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>by_warehouse</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/master</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>master</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/expiring</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>expiring</strong>: Sin descripción.</p>
+                    </div>
+                    <h3 style='margin-top: 2rem; color: var(--accent);'>issues.py</h3>
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>list_issues</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/save</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>save_issues</strong>: Sin descripción.</p>
+                    </div>
+                    <h3 style='margin-top: 2rem; color: var(--accent);'>mobile_endpoints.py</h3>
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/config</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_mobile_config</strong>: Get mobile configuration for a specific company.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/config</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>save_mobile_config</strong>: Save or update mobile configuration.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/ejercicios</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>list_ejercicios</strong>: Return all available ejercicios for a given empresa (from pre-aggregated metrics).</p>
+                    </div>
+                    <h3 style='margin-top: 2rem; color: var(--accent);'>patterns.py</h3>
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>list_patterns</strong>: Lists all markdown files in the patterns directory.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/save</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>save_pattern</strong>: Saves/Updates the content of a pattern file.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/{filename}</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_pattern</strong>: Reads the content of a specific pattern file.</p>
+                    </div>
+                    <h3 style='margin-top: 2rem; color: var(--accent);'>predictive_endpoints.py</h3>
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/eda</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_eda</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/forecast</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_forecast</strong>: Sin descripción.</p>
+                    </div>
+                    <h3 style='margin-top: 2rem; color: var(--accent);'>relationship_endpoints.py</h3><h3 style='margin-top: 2rem; color: var(--accent);'>semantic_endpoints.py</h3><h3 style='margin-top: 2rem; color: var(--accent);'>system_endpoints.py</h3>
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/metrics</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>get_system_metrics</strong>: Returns real-time system resources and calculated adaptive config.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/config</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>update_system_config</strong>: Updates the performance preset (auto, eco, turbo).</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/mobile_server/start</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>api_mobile_server_start</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/mobile_server/stop</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>api_mobile_server_stop</strong>: Sin descripción.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint-path">/mobile_server/status</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>api_mobile_server_status</strong>: Sin descripción.</p>
+                    </div>
+                    <h3 style='margin-top: 2rem; color: var(--accent);'>template_endpoints.py</h3>
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/export</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>export_template</strong>: Exports a SaaS Pack to a JSON file and returns it for download.</p>
+                    </div>
+                    
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint-path">/import</span>
+                        </div>
+                        <p class="endpoint-desc"><strong>import_template</strong>: Imports a SaaS Pack from an uploaded JSON file.<br>wipe: "true" to clear existing config before import.</p>
+                    </div>
+                    <h3 style='margin-top: 2rem; color: var(--accent);'>user_endpoints.py</h3>
+    </div>
+
+    <!-- SERVICES SECTION -->
+    <div id="services" class="section">
+        <h2>🏗️ Backend Services Deep-Dive (Auto-Generated)</h2>
+
+                <div class="service-card">
+                    <h3 style="color: var(--accent); margin-bottom: 0.5rem;">IAService</h3>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">ai_service.py</div>
+                    <p>Local AI Service Facade.<br>Delegates logic to Router, Handlers, and Formatter.</p>
+                    <div style="margin-top: 1rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                        <strong>Métodos:</strong>
+                        <ul style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">
+                <li>generate_answer</li><li>generate_strategic_report</li></ul></div></div>
+                <div class="service-card">
+                    <h3 style="color: var(--accent); margin-bottom: 0.5rem;">AnalysisService</h3>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">analysis_service.py</div>
+                    <p>Service responsible for advanced data analysis:<br>- Anomaly Detection (Z-Score / IQR)<br>- Trend Analysis & Forecasting (Linear Regression)<br>- Strategic Segmentation (Pareto ABC)</p>
+                    <div style="margin-top: 1rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                        <strong>Métodos:</strong>
+                        <ul style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">
+                <li>detect_anomalies</li><li>calculate_trend</li><li>segment_pareto</li><li>generate_recommendations</li></ul></div></div>
+                <div class="service-card">
+                    <h3 style="color: var(--accent); margin-bottom: 0.5rem;">AutoTrainingService</h3>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">auto_training_service.py</div>
+                    <p>Service responsible for 'Auto Training' (Data Synchronization).<br>It migrates data from remote MSSQL to local Postgres 'datia_{table}'<br>based on the semantic definition (DataFields).</p>
+                    <div style="margin-top: 1rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                        <strong>Métodos:</strong>
+                        <ul style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">
+                <li>get_postgres_table_name</li><li>sync_datasource_generator</li></ul></div></div>
+                <div class="service-card">
+                    <h3 style="color: var(--accent); margin-bottom: 0.5rem;">CacheService</h3>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">cache_service.py</div>
+                    <p>Generic Cache Wrapper.</p>
+                    <div style="margin-top: 1rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                        <strong>Métodos:</strong>
+                        <ul style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">
+                <li>get</li><li>set</li><li>delete</li></ul></div></div>
+                <div class="service-card">
+                    <h3 style="color: var(--accent); margin-bottom: 0.5rem;">QueryCacheService</h3>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">cache_service.py</div>
+                    <p>Service to cache generated SQL queries based on user questions and context.<br>TTL: 24 hours (86400 seconds)</p>
+                    <div style="margin-top: 1rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                        <strong>Métodos:</strong>
+                        <ul style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">
+                <li>get</li><li>set</li><li>invalidate</li></ul></div></div>
+                <div class="service-card">
+                    <h3 style="color: var(--accent); margin-bottom: 0.5rem;">EmbeddingService</h3>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">embedding_service.py</div>
+                    <p>Manages vector generation (Local SentenceTransformers) and retrieval for RAG.<br>Strictly for Postgres 'metrics_*' tables.</p>
+                    <div style="margin-top: 1rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                        <strong>Métodos:</strong>
+                        <ul style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">
+                <li>embed_text</li><li>index_templates</li><li>add_embedding</li><li>search_template</li><li>find_similar_examples</li><li>... y 4 más</li></ul></div></div>
+                <div class="service-card">
+                    <h3 style="color: var(--accent); margin-bottom: 0.5rem;">ETLService</h3>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">etl_service.py</div>
+                    <p>Core ETL Engine for Datia.<br>Handles dynamic MSSQL table detection and normalization.<br>Strictly follows variants from DATIA_prompt.md.</p>
+                    <div style="margin-top: 1rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                        <strong>Métodos:</strong>
+                        <ul style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">
+                <li>get_connection</li><li>table_exists</li><li>get_table_candidates</li><li>get_column_mapping</li><li>pick_best_table</li><li>... y 29 más</li></ul></div></div>
+                <div class="service-card">
+                    <h3 style="color: var(--accent); margin-bottom: 0.5rem;">FinancialService</h3>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">financial_service.py</div>
+                    <p>Business Logic for Financial Reporting.<br>Calculates Ratios, P&L, and Balance Sheet.</p>
+                    <div style="margin-top: 1rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                        <strong>Métodos:</strong>
+                        <ul style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">
+                <li>get_snapshot</li><li>get_pl_detail</li><li>get_pl_report</li><li>get_advanced_analysis</li><li>get_monthly_kpis</li><li>... y 18 más</li></ul></div></div>
+                <div class="service-card">
+                    <h3 style="color: var(--accent); margin-bottom: 0.5rem;">OllamaService</h3>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">ollama_service.py</div>
+                    <p>Service to interact with local Ollama instance (default port 11434).<br>Enhanced with System Monitoring integration.</p>
+                    <div style="margin-top: 1rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                        <strong>Métodos:</strong>
+                        <ul style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">
+                <li>check_connection</li><li>generate_text</li><li>list_models</li><li>generate_field_descriptions</li><li>generate_sql_query</li><li>... y 1 más</li></ul></div></div>
+                <div class="service-card">
+                    <h3 style="color: var(--accent); margin-bottom: 0.5rem;">PredictiveService</h3>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">predictive_service.py</div>
+                    <p>Sin descripción</p>
+                    <div style="margin-top: 1rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                        <strong>Métodos:</strong>
+                        <ul style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">
+                <li>get_eda</li><li>get_forecast</li></ul></div></div>
+                <div class="service-card">
+                    <h3 style="color: var(--accent); margin-bottom: 0.5rem;">QueryBuilder</h3>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">query_builder.py</div>
+                    <p>Next-Gen Query Builder for Datia AI (Refactored v2).<br><br>Architecture:<br>1. Intent Detection (Router)<br>2. Specialized Handlers (Ranking, Evolution, Comparison) with Schema Awareness<br>3. Memory/Auto-Training Fallback</p>
+                    <div style="margin-top: 1rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                        <strong>Métodos:</strong>
+                        <ul style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">
+                <li>build_from_nl</li><li>validate_sql_dry_run</li></ul></div></div>
+                <div class="service-card">
+                    <h3 style="color: var(--accent); margin-bottom: 0.5rem;">SQLExampleGenerator</h3>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">sql_generator.py</div>
+                    <p>Generates SQL training examples for migrated tables</p>
+                    <div style="margin-top: 1rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                        <strong>Métodos:</strong>
+                        <ul style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">
+                <li>generate_for_table</li><li>generate_single_query</li><li>build_prompt</li><li>parse_response</li><li>save_to_knowledge_base</li></ul></div></div>
+                <div class="service-card">
+                    <h3 style="color: var(--accent); margin-bottom: 0.5rem;">DSLQueryExecutor</h3>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">services/ai/dsl_query.py</div>
+                    <p>Ejecutor de consultas IA basadas en un DSL seguro compilado a Django ORM, trabajando solo sobre métricas agregadas en Postgres (sin tocar tablas crudas históricas).</p>
+                    <div style="margin-top: 1rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                        <strong>Fuentes válidas (source):</strong>
+                        <ul style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">
+                            <li><code>metrics_mensual</code>: métricas mensuales (ingresos, margen, etc.).</li>
+                            <li><code>metrics_clientes</code>: métricas agregadas por cliente.</li>
+                            <li><code>metrics_articulos</code>: métricas agregadas por artículo.</li>
+                            <li><code>financial_acumulados</code>: acumulados contables por cuenta/periodo.</li>
+                        </ul>
+                        <strong>Ejemplos de consultas soportadas:</strong>
+                        <ul style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">
+                            <li><em>Ventas mensuales del año</em> → source=<code>metrics_mensual</code>, group_by=[<code>'mes'</code>], agregación sobre <code>importe_neto_total</code>.</li>
+                            <li><em>Top clientes por importe neto</em> → source=<code>metrics_clientes</code>, group_by=[<code>'cliente'</code>], SUM sobre <code>importe_neto_total</code>, order_by desc.</li>
+                            <li><em>Evolución del margen por artículo</em> → source=<code>metrics_articulos</code>, group_by=[<code>'articulo'</code>], time.group=<code>'month'</code>.</li>
+                            <li><em>Ingresos totales por trimestre</em> → source=<code>metrics_mensual</code> o <code>financial_acumulados</code>, time.group=<code>'quarter'</code>.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="service-card">
+                    <h3 style="color: var(--accent); margin-bottom: 0.5rem;">SyntheticSQLGenerator</h3>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">synthetic_generator.py</div>
+                    <p>Generates deterministic, syntactically valid SQL queries based on table schema.<br>Validates queries against the database using EXPLAIN.</p>
+                    <div style="margin-top: 1rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                        <strong>Métodos:</strong>
+                        <ul style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">
+                <li>generate_batch</li><li>save_batch</li></ul></div></div>
+                <div class="service-card">
+                    <h3 style="color: var(--accent); margin-bottom: 0.5rem;">SystemMonitorService</h3>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">system_monitor.py</div>
+                    <p>Monitors system resources (CPU, RAM, Disk) to provide adaptive performance tuning.</p>
+                    <div style="margin-top: 1rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                        <strong>Métodos:</strong>
+                        <ul style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">
+                <li>get_system_metrics</li><li>get_adaptive_config</li></ul></div></div>
+                <div class="service-card">
+                    <h3 style="color: var(--accent); margin-bottom: 0.5rem;">TotalsService</h3>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">totals_service.py</div>
+                    <p>Sin descripción</p>
+                    <div style="margin-top: 1rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                        <strong>Métodos:</strong>
+                        <ul style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">
+                <li>process_row</li><li>aggregate_from_local</li><li>aggregate_purchases_from_local</li></ul></div></div>
+                <div class="service-card">
+                    <h3 style="color: var(--accent); margin-bottom: 0.5rem;">UtilityAnatomyService</h3>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">utility_anatomy_service.py</div>
+                    <p>Sin descripción</p>
+                    <div style="margin-top: 1rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                        <strong>Métodos:</strong>
+                        <ul style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">
+                <li>get_anatomy</li><li>get_forecast</li></ul></div></div>
+    </div>
+
+    <!-- MODELS SECTION -->
+    <div id="models" class="section">
+        <h2>🗄️ Modelos de Datos (Arquitectura Analytics) (Auto-Generated)</h2>
+
+                    <div class="model-card">
+                        <h3 style="color: #22c55e; margin-bottom: 0.5rem;">MetricsLLMConsultas</h3>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">ai.py</div>
+                        <p>Sin descripción</p>
+                    </div>
+                    
+                    <div class="model-card">
+                        <h3 style="color: #22c55e; margin-bottom: 0.5rem;">MetricsEmbeddings</h3>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">ai.py</div>
+                        <p>Sin descripción</p>
+                    </div>
+                    
+                    <div class="model-card">
+                        <h3 style="color: #22c55e; margin-bottom: 0.5rem;">MetricsFeedback</h3>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">ai.py</div>
+                        <p>Stores User Feedback (RLHF) to auto-adjust RAG results.</p>
+                    </div>
+                    
+                    <div class="model-card">
+                        <h3 style="color: #22c55e; margin-bottom: 0.5rem;">MetricsSavedQuery</h3>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">ai.py</div>
+                        <p>Stores 'Pinned' or 'Saved' queries for dashboard widgets.</p>
+                    </div>
+                    
+                    <div class="model-card">
+                        <h3 style="color: #22c55e; margin-bottom: 0.5rem;">WidgetConfig</h3>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">dashboard.py</div>
+                        <p>Sin descripción</p>
+                    </div>
+                    
+                    <div class="model-card">
+                        <h3 style="color: #22c55e; margin-bottom: 0.5rem;">WidgetState</h3>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">dashboard.py</div>
+                        <p>Sin descripción</p>
+                    </div>
+                    
+                    <div class="model-card">
+                        <h3 style="color: #22c55e; margin-bottom: 0.5rem;">Empresa</h3>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">master.py</div>
+                        <p>Sin descripción</p>
+                    </div>
+                    
+                    <div class="model-card">
+                        <h3 style="color: #22c55e; margin-bottom: 0.5rem;">GlobalConfig</h3>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">master.py</div>
+                        <p>Singleton model to store system-wide configuration.<br>Managed by 'Implantadores' via the frontend settings or Admin.</p>
+                    </div>
+                    
+                    <div class="model-card">
+                        <h3 style="color: #22c55e; margin-bottom: 0.5rem;">MobileConfig</h3>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">mobile.py</div>
+                        <p>Configuration for the Mobile View of Actualidad.<br>One per Tenant (Empresa).</p>
+                    </div>
+                    
+                    <div class="model-card">
+                        <h3 style="color: #22c55e; margin-bottom: 0.5rem;">UserEmpresaPermission</h3>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">permissions.py</div>
+                        <p>Relaciona usuarios con las empresas a las que tienen acceso.<br>Si no hay permisos definidos para un usuario, tiene acceso a todas.<br>Si hay permisos, solo puede acceder a empresas autorizadas.</p>
+                    </div>
+                    
+                    <div class="model-card">
+                        <h3 style="color: #22c55e; margin-bottom: 0.5rem;">UserPreference</h3>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">preferences.py</div>
+                        <p>stores extended user preferences.<br>OneToOne with Django User.</p>
+                    </div>
+                    
+                    <div class="model-card">
+                        <h3 style="color: #22c55e; margin-bottom: 0.5rem;">RawModelBase</h3>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">raw.py</div>
+                        <p>Sin descripción</p>
+                    </div>
+                    
+                    <div class="model-card">
+                        <h3 style="color: #22c55e; margin-bottom: 0.5rem;">BusinessContext</h3>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">semantic.py</div>
+                        <p>Almacena el conocimiento estático y de negocio de la empresa.<br>Ej: 'Descripción de la empresa', 'Estrategia de mercado'.<br>Este contexto se inyectará en el System Prompt de la IA.</p>
+                    </div>
+                    
+                    <div class="model-card">
+                        <h3 style="color: #22c55e; margin-bottom: 0.5rem;">DataSource</h3>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">semantic.py</div>
+                        <p>Define una fuente de datos (Tabla del ERP) que queremos sincronizar o mapear.</p>
+                    </div>
+                    
+                    <div class="model-card">
+                        <h3 style="color: #22c55e; margin-bottom: 0.5rem;">DataField</h3>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">semantic.py</div>
+                        <p>Define un campo específico dentro de una fuente de datos, con sus metadatos semánticos.</p>
+                    </div>
+                    
+                    <div class="model-card">
+                        <h3 style="color: #22c55e; margin-bottom: 0.5rem;">DataRelation</h3>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">semantic.py</div>
+                        <p>Define una relación (JOIN) entre dos tablas para que la IA sepa como cruzarlas.<br>Ej: Pedidos.ClienteID -> Clientes.ID</p>
+                    </div>
+                    
+                    <div class="model-card">
+                        <h3 style="color: #22c55e; margin-bottom: 0.5rem;">StandardField</h3>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">semantic.py</div>
+                        <p>NF-011: Global Repository of Standard Fields (Business Glossary).<br>Used to auto-enrich introspection results.</p>
+                    </div>
+                    
+                    <div class="model-card">
+                        <h3 style="color: #22c55e; margin-bottom: 0.5rem;">MetricsTotalesBase</h3>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">totales.py</div>
+                        <p>Sin descripción</p>
+                    </div>
+                    
+    </div>
+
+    <!-- FRONTEND SECTION -->
+    <div id="frontend" class="section">
+        <h2>🎨 Frontend Engine</h2>
+        <!-- Frontend content unchanged -->
+        <div class="endpoint-card">
+            <h3>🛠️ Core Foundation (`core.js`)</h3>
+            <p class="endpoint-desc">Script principal que orquesta el ciclo de vida de la aplicación SPA, gestión de
+                estado y UI global.</p>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1.5rem;">
+                <div>
+                    <h4 style="color: var(--accent); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+                        🏁 Inicialización</h4>
+                    <ul style="list-style: none; padding: 0; color: var(--text-muted); font-size: 0.9rem;">
+                        <li style="margin-bottom: 0.8rem;">
+                            <code style="color: #ec4899;">init()</code><br>
+                            Bootstrap del sistema. Recupera <code>empresa/ejercicio</code> de URL/LocalStorage,
+                            inicializa temas y carga módulos diferidos.
+                        </li>
+                        <li style="margin-bottom: 0.8rem;">
+                            <code style="color: #ec4899;">updateSystemDate()</code><br>
+                            Renderiza la fecha actual en la cabecera (Formato: "Lunes, 16...").
+                        </li>
+                    </ul>
+
+                    <h4 style="color: var(--accent); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; margin-top: 1.5rem;">
+                        ⚙️ Configuración</h4>
+                    <ul style="list-style: none; padding: 0; color: var(--text-muted); font-size: 0.9rem;">
+                        <li style="margin-bottom: 0.8rem;">
+                            <code style="color: #ec4899;">initSettings()</code><br>
+                            Restaura preferencias visuales (Logos, Temas) desde LocalStorage.
+                        </li>
+                        <li style="margin-bottom: 0.8rem;">
+                            <code style="color: #ec4899;">selectDatiaLogo(btn, src)</code><br>
+                            Cambia el logo de la aplicación en tiempo real (Header, Tabs, Favicon) y persiste la
+                            elección.
+                        </li>
+                        <li style="margin-bottom: 0.8rem;">
+                            <code style="color: #ec4899;">uploadClientLogo(input)</code><br>
+                            Procesa subida de logo cliente, convierte a Base64 y almacena localmente.
+                        </li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 style="color: var(--accent); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+                        📑 Navegación & Tabs</h4>
+                    <ul style="list-style: none; padding: 0; color: var(--text-muted); font-size: 0.9rem;">
+                        <li style="margin-bottom: 0.8rem;">
+                            <code style="color: #ec4899;">switchTab(tabId)</code><br>
+                            Gestión de clases <code>.active</code> para navegación SPA sin recarga.
+                        </li>
+                        <li style="margin-bottom: 0.8rem;">
+                            <code style="color: #ec4899;">initTabs()</code><br>
+                            Configura listeners. <strong>Doble Click</strong> en pestaña la fija como inicial (Pin
+                            📌).
+                        </li>
+                    </ul>
+
+                    <h4 style="color: var(--accent); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; margin-top: 1.5rem;">
+                        🔄 Estado & Sync</h4>
+                    <ul style="list-style: none; padding: 0; color: var(--text-muted); font-size: 0.9rem;">
+                        <li style="margin-bottom: 0.8rem;">
+                            <code style="color: #ec4899;">applyFilters()</code><br>
+                            Guarda selección de Empresa/Ejercicio y fuerza recarga (Backend Reload) para actualizar
+                            contextos.
+                        </li>
+                        <li style="margin-bottom: 0.8rem;">
+                            <code style="color: #ec4899;">openSyncModal()</code><br>
+                            Inicia ETL (MSSQL->Postgres). Consume <strong>Stream de eventos</strong> para barra de
+                            progreso real-time.
+                        </li>
+                        <li style="margin-bottom: 0.8rem;">
+                            <code style="color: #ec4899;">restoreLayout()</code><br>
+                            Restaura el orden de widgets del dashboard financiero desde <code>GET /api/financial/preferences/layout</code>.
+                        </li>
+                        <li style="margin-bottom: 0.8rem;">
+                            <code style="color: #ec4899;">saveLayout()</code><br>
+                            Persiste el orden de widgets del dashboard financiero en <code>POST /api/financial/preferences/layout</code>.
+                        </li>
+                    </ul>
+
+                    <h4 style="color: var(--accent); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; margin-top: 1.5rem;">
+                        🧰 Utilidades</h4>
+                    <ul style="list-style: none; padding: 0; color: var(--text-muted); font-size: 0.9rem;">
+                        <li style="margin-bottom: 0.8rem;">
+                            <code style="color: #ec4899;">fmtMoney.format(val)</code><br>
+                            Formateador monetario seguro (ES-ES). Maneja <code>null</code> como "0,00 €".
+                        </li>
+                        <li style="margin-bottom: 0.8rem;">
+                            <code style="color: #ec4899;">showToast(msg)</code><br>
+                            Notificaciones flotantes no bloqueantes.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <!-- ... -->
+    </div>
+
+    <!-- PATTERNS SECTION -->
+    <div id="patterns" class="section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h2>📋 Patrones de Conocimiento</h2>
+            <div id="currentFileName" style="color: var(--accent); font-weight: 600;">Selecciona un patrón</div>
+        </div>
+
+        <div class="patterns-container">
+            <div class="patterns-list" id="patternsList">
+                <!-- Search Box for Patterns -->
+                <input type="text" id="patternSearchBox" placeholder="🔍 Buscar en patrones..." onkeyup="searchPatterns()" style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: var(--text); margin-bottom: 1rem; font-size: 0.9rem;">
+                <!-- Loaded via JS -->
+                <div style="padding: 1rem; color: var(--text-muted); font-style: italic;">Cargando patrones...</div>
+            </div>
+            <div class="editor-container">
+                <textarea class="pattern-editor" id="patternEditor" placeholder="El contenido del patrón aparecerá aquí..." spellcheck="false"></textarea>
+                <div class="patterns-actions">
+                    <span id="saveStatus" style="color: var(--text-muted); font-size: 0.85rem; align-self: center; margin-right: 1rem;"></span>
+                    <button class="btn-save" id="btnSave" onclick="saveCurrentPattern()" disabled>Guardar
+                        Cambios</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ISSUES SECTION -->
+    <div id="issues" class="section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h2>⚠️ Problemas Identificados</h2>
+            <div style="display: flex; gap: 10px;">
+                <button class="nav-btn active" id="btnViewOpen" onclick="switchIssuesView('open')" style="padding: 0.5rem 1rem; font-size: 0.8em;">🔥 Pendientes</button>
+                <button class="nav-btn" id="btnViewResolved" onclick="switchIssuesView('resolved')" style="padding: 0.5rem 1rem; font-size: 0.8em;">🗑️ Histórico</button>
+
+                <!-- New Actions -->
+                <button class="nav-btn" id="btnEmptyTrash" onclick="emptyTrash()" style="padding: 0.5rem 1rem; font-size: 0.8em; color: #ef4444; border-color: #ef4444; display: none;">
+                    ☠️ Vaciar Papelera
+                </button>
+
+                <button class="btn-save" style="background: var(--accent); color: white;" onclick="openNewIssue()">+
+                    Nuevo</button>
+            </div>
+        </div>
+
+        <div id="issuesListContainer">
+            <!-- Dynamic issues load here -->
+        </div>
+
+        <div id="issuesAdmin" class="management-panel">
+            <h3>Añadir / Editar Problema</h3>
+            <div class="form-grid">
+                <input type="text" id="issueId" placeholder="ID (ej: ISS-003)">
+                <input type="text" id="issueTitle" placeholder="Título del Problema">
+                <textarea id="issueDesc" placeholder="Descripción detallada..."></textarea>
+                <select id="issuePattern" class="dark-select">
+                    <option value="NNP">Sin Patrón (NNP)</option>
+                    <!-- Patterns will be loaded here -->
+                </select>
+                <textarea id="issueSolution" placeholder="Propuesta de Solución"></textarea>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-save" id="btnIssueAction" onclick="addIssue()" style="flex: 1;">Añadir a la
+                        Lista</button>
+                    <button class="btn-save" id="btnCancelEdit" onclick="clearIssueForm()" style="flex: 0.4; background: rgba(255,255,255,0.1); display: none;">Cancelar</button>
+                </div>
+            </div>
+
+            <div style="text-align: right; margin-top: 1rem;">
+                <button class="btn-save" onclick="saveAllIssues()">Guardar Todo en Backend</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FEATURES SECTION -->
+    <div id="features" class="section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h2>🚀 Nuevas Funcionalidades</h2>
+            <div style="display: flex; gap: 10px;">
+                <button class="nav-btn active" id="btnViewFeaturesPending" onclick="switchFeaturesView('pending')" style="padding: 0.5rem 1rem; font-size: 0.8em;">🕒 Pendientes</button>
+                <button class="nav-btn" id="btnViewFeaturesDone" onclick="switchFeaturesView('done')" style="padding: 0.5rem 1rem; font-size: 0.8em;">✅ Completadas</button>
+
+                <button class="btn-save" style="background: #3b82f6; color: white;" onclick="openNewFeature()">+
+                    Nueva</button>
+            </div>
+        </div>
+
+        <div id="featuresListContainer">
+            <!-- Dynamic features load here -->
+        </div>
+
+        <div id="featuresAdmin" class="management-panel">
+            <h3>Añadir / Editar Funcionalidad</h3>
+            <div class="form-grid">
+
+                <input type="text" id="featureId" placeholder="ID (ej: NF-001)">
+                <input type="text" id="featureTitle" placeholder="Título de la Funcionalidad">
+                <textarea id="featureDesc" placeholder="Descripción detallada..."></textarea>
+                <select id="featurePattern" class="dark-select">
+                    <option value="New">Nuevo Patrón (Especificar en descripción)</option>
+                    <!-- Patterns will be loaded here -->
+                </select>
+                <select id="featurePriority" class="dark-select">
+                    <option value="medium">Prioridad Media</option>
+                    <option value="high">Prioridad Alta</option>
+                    <option value="low">Prioridad Baja</option>
+                </select>
+                <select id="featureMode" class="dark-select">
+                    <option value="refine">Mejorar / Refinar Instrucciones</option>
+                    <option value="from_scratch">⚡ Hacer desde Cero (Rewrite)</option>
+                </select>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-save" id="btnFeatureAction" onclick="addFeature()" style="flex: 1; background: #3b82f6;">Añadir</button>
+                    <button class="btn-save" id="btnCancelFeatureEdit" onclick="clearFeatureForm()" style="flex: 0.4; background: rgba(255,255,255,0.1); display: none;">Cancelar</button>
+                </div>
+            </div>
+
+            <div style="text-align: right; margin-top: 1rem;">
+                <button class="btn-save" style="background: #3b82f6;" onclick="saveAllFeatures()">Guardar
+                    Funcionalidades</button>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- KNOWLEDGE SECTION (NF-002) -->
+    <div id="knowledge" class="section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h2>Base de Conocimiento (AI Training)</h2>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-save" style="background: #f59e0b; color: black; font-weight:bold;" onclick="openNewKnowledge()">+ Nueva Entrada</button>
+            </div>
+        </div>
+
+        <div id="knowledgeListContainer">
+            <!-- Dynamic knowledge load here -->
+        </div>
+
+        <div id="knowledgeAdmin" class="management-panel" style="border-color: #f59e0b;">
+            <h3 style="color: #f59e0b;">Añadir / Editar Conocimiento</h3>
+            <div class="form-grid">
+                <input type="hidden" id="knowId">
+                <input type="text" id="knowText" placeholder="Pregunta / Descripción (Texto a Vectorizar)" style="grid-column: 1 / -1;">
+                <textarea id="knowSql" placeholder="SQL Generado (SELECT ...)" style="grid-column: 1 / -1; height: 150px; font-family: monospace;"></textarea>
+
+                <div style="display: flex; gap: 10px; grid-column: 1 / -1;">
+                    <input type="text" id="knowScope" placeholder="Ámbito (global, empresa_id...)" value="global" style="flex: 1;">
+                    <input type="text" id="knowLabel" placeholder="Etiqueta / Label (opcional)" style="flex: 1;">
+                </div>
+
+                <div style="display: flex; gap: 10px; grid-column: 1 / -1; margin-top: 1rem;">
+                    <button class="btn-save" id="btnKnowAction" onclick="saveKnowledgeEntry()" style="flex: 1; background: #f59e0b; color: black;">Guardar en Vector DB</button>
+                    <button class="btn-save" id="btnCancelKnow" onclick="clearKnowForm()" style="flex: 0.4; background: rgba(255,255,255,0.1); display: none;">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    </div>
+
+    <div id="toast" style="position: fixed; bottom: 20px; right: 20px; background: var(--accent); color: #fff; padding: 1rem 2rem; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transform: translateY(100px); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 10000; font-weight: 600;">
+    </div>
+
+    <script>
+        function showToast(message, isError = false) {
+            const t = document.getElementById('toast');
+            t.textContent = message;
+            t.style.backgroundColor = isError ? '#ef4444' : 'var(--accent)';
+            t.style.transform = 'translateY(0)';
+            setTimeout(() => {
+                t.style.transform = 'translateY(100px)';
+            }, 3000);
+        }
+
+        function showSection(sectionId, btn) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+
+            // Show selected
+            document.getElementById(sectionId).classList.add('active');
+            if (btn) btn.classList.add('active');
+
+            // Dynamic Load
+            if (sectionId === 'patterns') loadPatternsList();
+            if (sectionId === 'issues') loadIssuesData();
+            if (sectionId === 'features') loadFeaturesData();
+        }
+
+        function searchCatalog() {
+            const query = document.getElementById('searchBox').value.toLowerCase();
+            const cards = document.querySelectorAll('.endpoint-card, .service-card, .model-card');
+
+            cards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                card.style.display = text.includes(query) ? 'block' : 'none';
+            });
+        }
+
+        // --- Patterns Logic ---
+        let currentPattern = null;
+
+        async function loadPatternsList() {
+            try {
+                const response = await fetch('/api/patterns/');
+                const files = await response.json();
+                const list = document.getElementById('patternsList');
+
+                // Store files globally for search
+                window.allPatternFiles = files;
+
+                // Preserve search box
+                const searchBox = document.getElementById('patternSearchBox');
+                list.innerHTML = '';
+                if (searchBox) {
+                    list.appendChild(searchBox);
+                }
+
+                // Populate Dropdowns for Issues and Features
+                updatePatternDropdowns(files);
+
+                files.forEach(file => {
+                    const div = document.createElement('div');
+                    div.className = 'pattern-item';
+                    div.textContent = file;
+                    div.setAttribute('data-filename', file);
+                    div.onclick = () => loadPatternContent(file);
+                    list.appendChild(div);
+                });
+            } catch (error) {
+                console.error('Error loading patterns:', error);
+            }
+        }
+
+        function searchPatterns() {
+            const query = document.getElementById('patternSearchBox').value.toLowerCase();
+            const items = document.querySelectorAll('.pattern-item');
+
+            items.forEach(item => {
+                const filename = item.getAttribute('data-filename') || item.textContent;
+                const matches = filename.toLowerCase().includes(query);
+                item.style.display = matches ? 'block' : 'none';
+            });
+        }
+
+        function updatePatternDropdowns(files) {
+            // Issues
+            const selectI = document.getElementById('issuePattern');
+            if (selectI) {
+                // Preserve value
+                const val = selectI.value;
+                selectI.innerHTML = '<option value="NNP">Sin Patrón (NNP)</option>';
+                files.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p; opt.textContent = p; selectI.appendChild(opt);
+                });
+                if (val) selectI.value = val;
+            }
+
+            // Features
+            const selectF = document.getElementById('featurePattern');
+            if (selectF) {
+                // Ensure we capture the value if it was set programmatically (like in editFeature)
+                const currentVal = selectF.getAttribute('data-value') || selectF.value;
+
+                selectF.innerHTML = '<option value="New">Nuevo Patrón (Especificar)</option>';
+                files.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p; opt.textContent = p; selectF.appendChild(opt);
+                });
+
+                // Restore value
+                if (currentVal && Array.from(selectF.options).some(o => o.value === currentVal)) {
+                    selectF.value = currentVal;
+                } else if (currentVal === 'New' || currentVal) {
+                    // If value exists but not in list (e.g. "New"), force it or handle it
+                    selectF.value = currentVal;
+                }
+            }
+        }
+
+        async function loadPatternContent(filename) {
+            try {
+                document.querySelectorAll('.pattern-item').forEach(item => {
+                    item.classList.toggle('active', item.textContent === filename);
+                });
+                document.getElementById('currentFileName').textContent = filename;
+                document.getElementById('patternEditor').value = 'Cargando...';
+                document.getElementById('btnSave').disabled = true;
+
+                const response = await fetch(`/api/patterns/${filename}`);
+                const data = await response.json();
+
+                document.getElementById('patternEditor').value = data.content;
+                document.getElementById('btnSave').disabled = false;
+                currentPattern = filename;
+            } catch (error) {
+                console.error('Error loading pattern content:', error);
+            }
+        }
+
+        async function saveCurrentPattern() {
+            if (!currentPattern) return;
+
+            const btn = document.getElementById('btnSave');
+            const status = document.getElementById('saveStatus');
+            const content = document.getElementById('patternEditor').value;
+
+            btn.disabled = true;
+            status.textContent = 'Guardando...';
+
+            try {
+                const response = await fetch('/api/patterns/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: currentPattern, content: content })
+                });
+
+                const result = await response.json();
+                if (result.status === 'success') {
+                    status.textContent = '¡Guardado correctamente!';
+                    setTimeout(() => status.textContent = '', 3000);
+                } else {
+                    status.textContent = 'Error al guardar: ' + result.message;
+                }
+            } catch (error) {
+                status.textContent = 'Error de conexión';
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // --- Issues Logic ---
+        let allIssues = [];
+        let currentIssuesView = 'open'; // 'open' | 'resolved'
+
+        async function loadIssuesData() {
+            try {
+                const response = await fetch('/api/issues/');
+                allIssues = await response.json();
+                renderIssues();
+            } catch (error) {
+                console.error('Error loading issues:', error);
+            }
+        }
+
+        function switchIssuesView(view) {
+            currentIssuesView = view;
+            document.getElementById('btnViewOpen').classList.toggle('active', view === 'open');
+            document.getElementById('btnViewResolved').classList.toggle('active', view === 'resolved');
+
+            const emptyBtn = document.getElementById('btnEmptyTrash');
+            if (emptyBtn) emptyBtn.style.display = view === 'resolved' ? 'block' : 'none';
+
+            renderIssues();
+        }
+
+        function renderIssues() {
+            const container = document.getElementById('issuesListContainer');
+            container.innerHTML = '';
+
+            let visibleIssues = allIssues.filter(i => {
+                const status = i.status || 'open';
+                return status === currentIssuesView;
+            });
+
+            // SORTING: Descending (Newest first)
+            visibleIssues.sort((a, b) => {
+                const dateA = currentIssuesView === 'open' ? (a.created_at || "1970-01-01") : (a.resolved_at || "1970-01-01");
+                const dateB = currentIssuesView === 'open' ? (b.created_at || "1970-01-01") : (b.resolved_at || "1970-01-01");
+
+                // If dates are equal (or missing), fallback to ID descending
+                if (dateA === dateB) {
+                    return b.id.localeCompare(a.id);
+                }
+                return new Date(dateB) - new Date(dateA);
+            });
+
+            if (visibleIssues.length === 0) {
+                container.innerHTML = `<div style="text-align:center; color: var(--text-muted); padding: 2rem;">
+                    ${currentIssuesView === 'open' ? '✨ Todo limpio. No hay problemas pendientes.' : '📭 La papelera está vacía.'}
+                </div>`;
+                return;
+            }
+
+            visibleIssues.forEach((issue) => {
+                const originalIndex = allIssues.indexOf(issue); // Keep ref to original main array
+                const box = document.createElement('div');
+                box.className = 'warning-box';
+                box.style.cursor = 'pointer';
+                box.style.opacity = currentIssuesView === 'resolved' ? '0.7' : '1';
+
+                if (currentIssuesView === 'open') {
+                    box.onclick = (e) => {
+                        if (e.target.tagName !== 'BUTTON') editIssue(originalIndex);
+                    };
+                }
+
+                const actionBtn = currentIssuesView === 'open'
+                    ? `<button onclick="resolveIssue(${originalIndex})" class="btn-delete" title="Marcar Resuelto">✓</button>`
+                    : `
+                        <button onclick="restoreIssue(${originalIndex})" class="btn-delete" style="color: #34d399; margin-left: 10px; font-size: 0.9em; font-weight: bold;" title="Restaurar">↺ Restaurar</button>
+                        <button onclick="deletePermanently(${originalIndex})" class="btn-delete" style="color: #ef4444; margin-left: 5px; font-size: 0.9em; font-weight: bold;" title="Eliminar Definitivamente">× Eliminar</button>
+                      `;
+
+                // Date Display Logic
+                let dateDisplay = '';
+                if (currentIssuesView === 'resolved' && issue.resolved_at) {
+                    dateDisplay = `<span style="font-size: 0.8em; color: #34d399; margin-left: 10px;">(Resuelto: ${new Date(issue.resolved_at).toLocaleString()})</span>`;
+                } else if (currentIssuesView === 'open') {
+                    if (issue.created_at) {
+                        dateDisplay = `<span style="font-size: 0.8em; color: var(--text-muted); margin-left: 10px;">(Reportado: ${new Date(issue.created_at).toLocaleDateString()})</span>`;
+                    } else {
+                        // Fallback for old issues without created_at
+                        dateDisplay = `<span style="font-size: 0.8em; color: rgba(255,255,255,0.2); margin-left: 10px;">(Fecha desc.)</span>`;
+                    }
+                }
+
+                box.innerHTML = `
+                    <div class="warning-title">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1;">
+                            <span class="issue-code">${issue.id}</span>
+                            <span class="issue-pattern">${issue.pattern}</span>
+                            <span>${issue.title}</span>
+                            ${dateDisplay}
+                        </div>
+                        ${actionBtn}
+                    </div>
+                    <p>${issue.description}</p>
+                    <p><strong>Solución:</strong> ${issue.solution}</p>
+                `;
+                container.appendChild(box);
+            });
+        }
+
+        function openNewIssue() {
+            clearIssueForm();
+            document.getElementById('issuesAdmin').classList.add('active');
+            loadPatternsList(); // Refresh dropdowns
+
+            // Generate ID
+            let maxId = 0;
+            allIssues.forEach(i => {
+                const match = i.id.match(/^ISS-(\d+)$/);
+                if (match) {
+                    const num = parseInt(match[1], 10);
+                    if (num > maxId) maxId = num;
+                }
+            });
+            document.getElementById('issueId').value = `ISS-${String(maxId + 1).padStart(3, '0')}`;
+            document.getElementById('issueTitle').focus();
+            document.getElementById('issuesAdmin').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function editIssue(index) {
+            const issue = allIssues[index];
+            document.getElementById('issuesAdmin').classList.add('active');
+            loadPatternsList();
+
+            document.getElementById('issueId').value = issue.id;
+            document.getElementById('issueId').readOnly = true;
+            document.getElementById('issueTitle').value = issue.title;
+            document.getElementById('issueDesc').value = issue.description;
+            document.getElementById('issuePattern').value = issue.pattern;
+            document.getElementById('issueSolution').value = issue.solution;
+
+            document.getElementById('btnIssueAction').textContent = 'Actualizar en Lista';
+            document.getElementById('btnCancelEdit').style.display = 'block';
+            document.querySelector('#issuesAdmin .form-grid').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function clearIssueForm() {
+            document.getElementById('issueId').value = '';
+            document.getElementById('issueId').readOnly = false;
+            document.getElementById('issueTitle').value = '';
+            document.getElementById('issueDesc').value = '';
+            document.getElementById('issueSolution').value = '';
+            document.getElementById('btnIssueAction').textContent = 'Añadir a la Lista';
+            document.getElementById('btnCancelEdit').style.display = 'none';
+        }
+
+        async function addIssue() {
+            const id = document.getElementById('issueId').value;
+            const title = document.getElementById('issueTitle').value;
+            if (!id || !title) { if (typeof showToast === 'function') showToast('⚠️ ID y Título obligatorios'); return; }
+
+            const description = document.getElementById('issueDesc').value;
+            const pattern = document.getElementById('issuePattern').value;
+            const solution = document.getElementById('issueSolution').value;
+
+            // Detect existing issue index
+            const existingIndex = allIssues.findIndex(i => i.id === id);
+
+            if (existingIndex >= 0) {
+                // Keep created_at if exists
+                const existing = allIssues[existingIndex];
+                allIssues[existingIndex] = {
+                    id, title, description, pattern, solution,
+                    status: existing.status,
+                    created_at: existing.created_at || new Date().toISOString()
+                };
+            } else {
+                allIssues.push({
+                    id, title, description, pattern, solution,
+                    status: 'open',
+                    created_at: new Date().toISOString()
+                });
+            }
+
+            renderIssues();
+            clearIssueForm();
+            await saveAllIssues(); // Save changes to backend immediately
+            showToast('Lista actualizada y guardada.');
+        }
+
+        async function resolveIssue(index) {
+            allIssues[index].status = 'resolved';
+            allIssues[index].resolved_at = new Date().toISOString();
+            renderIssues();
+            await saveAllIssues(true);
+            showToast('Problema resuelto');
+        }
+
+        async function saveAllIssues(silent = false) {
+            const payload = allIssues.map(i => ({
+                id: i.id,
+                title: i.title,
+                description: i.description || "",
+                pattern: i.pattern || "",
+                solution: i.solution || "",
+                status: i.status || "open",
+                created_at: i.created_at || null,
+                resolved_at: i.resolved_at || null
+            }));
+
+            try {
+                const response = await fetch('/api/issues/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    if (!silent) showToast('Problemas guardados correctamente');
+                } else {
+                    if (!silent) showToast('Error al guardar', true);
+                }
+            } catch (error) {
+                if (!silent) showToast('Error de red', true);
+            }
+        }
+
+        async function deletePermanently(index) {
+            // Eliminar sin confirmación (auto-delete de papelera)
+            if (typeof showToast === 'function') showToast('🗑️ Eliminando definitivamente...');
+            const id = allIssues[index].id; // Get the ID from the issue at the given index
+            fetch(`/api/catalog/issue/${id}`, { method: 'DELETE' })
+                .then(r => r.json())
+                .then(() => location.reload())
+                .catch(e => {
+                    console.error('Error deleting issue permanently:', e);
+                    if (typeof showToast === 'function') showToast('❌ Error al eliminar definitivamente', true);
+                });
+        }
+
+        async function restoreIssue(index) {
+            allIssues[index].status = 'open';
+            renderIssues();
+            await saveAllIssues(true);
+        }
+
+        async function emptyTrash() {
+            // Vaciar papelera sin confirmación
+            if (typeof showToast === 'function') showToast('🗑️ Vaciando papelera...');
+            fetch('/api/catalog/issues/purge-trash', { method: 'POST' })
+                .then(r => r.json())
+                .then(() => location.reload())
+                .catch(e => {
+                    console.error('Error emptying trash:', e);
+                    if (typeof showToast === 'function') showToast('❌ Error al vaciar papelera', true);
+                });
+        }
+
+        // --- Features Logic ---
+        let allFeatures = [];
+        let currentFeaturesView = 'pending'; // 'pending' | 'done'
+
+        async function loadFeaturesData() {
+            try {
+                const response = await fetch('/api/features/');
+                if (!response.ok) throw new Error('Network response was not ok');
+                allFeatures = await response.json();
+                renderFeatures();
+            } catch (error) {
+                console.error('Error loading features:', error);
+                // Fallback for UI
+                document.getElementById('featuresListContainer').innerHTML = `<div style="color:red; text-align:center;">Error cargando funcionalidades: ${error.message}</div>`;
+            }
+        }
+
+        function switchFeaturesView(view) {
+            currentFeaturesView = view;
+            document.getElementById('btnViewFeaturesPending').classList.toggle('active', view === 'pending');
+            document.getElementById('btnViewFeaturesDone').classList.toggle('active', view === 'done');
+            renderFeatures();
+        }
+
+        function renderFeatures() {
+            const container = document.getElementById('featuresListContainer');
+            container.innerHTML = '';
+
+            const visible = allFeatures.filter(f => {
+                const status = f.status || 'pending';
+                // Map 'in_progress' to pending for viewing simplicity or handle separately
+                if (currentFeaturesView === 'pending') return status !== 'done';
+                return status === 'done';
+            });
+
+            if (visible.length === 0) {
+                container.innerHTML = `<div style="text-align:center; color: var(--text-muted); padding: 2rem;">
+                    ${currentFeaturesView === 'pending' ? '🚀 Todo listo. No hay nuevas funcionalidades pendientes.' : '📭 No hay funcionalidades completadas.'}
+                </div>`;
+                return;
+            }
+
+            visible.forEach(feature => {
+                const originalIndex = allFeatures.indexOf(feature);
+                const box = document.createElement('div');
+                box.className = 'feature-box';
+                box.style.cursor = 'pointer';
+
+                const editBtn = `<button onclick="editFeature(${originalIndex})" class="btn-delete" style="color: #f59e0b; margin-right: 5px;" title="Editar">✎</button>`;
+
+                const actionBtn = currentFeaturesView === 'pending'
+                    ? `<div style="display:flex; align-items:center;">
+                        ${editBtn}
+                        <button onclick="completeFeature(${originalIndex})" class="btn-delete" style="color: #3b82f6;" title="Marcar HECHO">✅</button>
+                       </div>`
+                    : `<div style="display:flex; align-items:center; margin-left: auto; gap: 10px;">
+                            <span style="font-size: 0.8em; color: #34d399;">Completado: ${feature.completed_at ? new Date(feature.completed_at).toLocaleDateString() : 'N/A'}</span>
+                            <button onclick="resetFeature(${originalIndex})" class="btn-delete" style="color: #ef4444; border: 1px solid #ef4444; border-radius: 4px; padding: 0 4px; font-size: 0.8em;" title="Reiniciar Trabajo">↻ Reiniciar</button>
+                       </div>`;
+
+                const modeBadge = feature.execution_mode === 'from_scratch'
+                    ? `<span style="font-size:0.7em; background:#ef4444; color:white; padding:2px 6px; border-radius:4px; margin-right:5px;">⚡ CERO</span>`
+                    : `<span style="font-size:0.7em; background:#8b5cf6; color:white; padding:2px 6px; border-radius:4px; margin-right:5px;">✨ REFINAR</span>`;
+
+                box.innerHTML = `
+                    <div class="feature-title">
+                        <span class="feature-code">${feature.id}</span>
+                        ${modeBadge}
+                        <span class="issue-pattern" style="border-color: #3b82f6;">${feature.pattern}</span>
+                        ${feature.title}
+                        ${actionBtn}
+                    </div>
+                    <p>${feature.description}</p>
+                    <p style="font-size: 0.85em; color: var(--text-muted);">Prioridad: <strong>${feature.priority.toUpperCase()}</strong></p>
+                `;
+                container.appendChild(box);
+            });
+        }
+
+        function openNewFeature() {
+            clearFeatureForm();
+            document.getElementById('featuresAdmin').classList.add('active');
+            loadPatternsList(); // Refresh dropdown
+
+            // Generate NF-XXX
+            let maxId = 0;
+            allFeatures.forEach(f => {
+                const match = f.id.match(/^NF-(\d+)$/);
+                if (match) {
+                    const num = parseInt(match[1], 10);
+                    if (num > maxId) maxId = num;
+                }
+            });
+            document.getElementById('featureId').value = `NF-${String(maxId + 1).padStart(3, '0')}`;
+            document.getElementById('featureTitle').focus();
+            document.getElementById('featuresAdmin').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function editFeature(index) {
+            const f = allFeatures[index];
+            document.getElementById('featuresAdmin').classList.add('active');
+            loadPatternsList();
+
+            document.getElementById('featureId').value = f.id;
+            document.getElementById('featureId').readOnly = true;
+            document.getElementById('featureTitle').value = f.title;
+            document.getElementById('featureDesc').value = f.description;
+
+            // Set value and attribute for robust loading
+            const patSelect = document.getElementById('featurePattern');
+            patSelect.value = f.pattern;
+            patSelect.setAttribute('data-value', f.pattern);
+
+            patSelect.setAttribute('data-value', f.pattern);
+
+            document.getElementById('featurePriority').value = f.priority;
+            document.getElementById('featureMode').value = f.execution_mode || 'refine';
+
+            document.getElementById('btnFeatureAction').textContent = 'Actualizar Funcionalidad';
+            document.getElementById('btnCancelFeatureEdit').style.display = 'block';
+            document.querySelector('#featuresAdmin').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function clearFeatureForm() {
+            document.getElementById('featureId').value = '';
+            document.getElementById('featureId').readOnly = false;
+            document.getElementById('featureTitle').value = '';
+            document.getElementById('featureDesc').value = '';
+            document.getElementById('featureMode').value = 'refine';
+            document.getElementById('btnFeatureAction').textContent = 'Añadir';
+            document.getElementById('btnCancelFeatureEdit').style.display = 'none';
+        }
+
+        async function addFeature() {
+            const id = document.getElementById('featureId').value;
+            const title = document.getElementById('featureTitle').value;
+            if (!id || !title) { if (typeof showToast === 'function') showToast('⚠️ ID y Título obligatorios'); return; }
+
+            const description = document.getElementById('featureDesc').value;
+            const pattern = document.getElementById('featurePattern').value;
+            const priority = document.getElementById('featurePriority').value;
+            const mode = document.getElementById('featureMode').value;
+
+            const idx = allFeatures.findIndex(f => f.id === id);
+            if (idx >= 0) {
+                allFeatures[idx] = { ...allFeatures[idx], title, description, pattern, priority, execution_mode: mode };
+            } else {
+                allFeatures.push({ id, title, description, pattern, priority, execution_mode: mode, status: 'pending', created_at: new Date().toISOString() });
+            }
+
+            renderFeatures();
+            clearFeatureForm();
+            await saveAllFeatures();
+            showToast('Funcionalidad guardada correctamente.');
+        }
+
+        async function completeFeature(index) {
+            allFeatures[index].status = 'done';
+            allFeatures[index].completed_at = new Date().toISOString();
+            renderFeatures();
+            await saveAllFeatures(true);
+            showToast('Funcionalidad completada 🚀');
+        }
+
+        async function resetFeature(index) {
+            // Reiniciar sin confirmación
+            if (typeof showToast === 'function') showToast('🔄 Reiniciando funcionalidad...');
+            allFeatures[index].status = 'pending';
+            allFeatures[index].completed_at = null;
+            renderFeatures();
+            await saveAllFeatures(true);
+            showToast('Funcionalidad reiniciada ↻');
+        }
+
+        async function saveAllFeatures(silent = false) {
+            try {
+                const response = await fetch('/api/features/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(allFeatures)
+                });
+                if (response.ok) {
+                    if (!silent) showToast('Funcionalidades guardadas');
+                } else {
+                    if (!silent) showToast('Error al guardar', true);
+                }
+            } catch (e) {
+                if (!silent) showToast('Error de red', true);
+            }
+        }
+
+        // Initialize
+        showSection('overview', document.querySelector('.nav-btn.active'));
+
+        // --- Knowledge Logic (NF-002) ---
+        let allKnowledge = [];
+
+        async function loadKnowledgeData() {
+            try {
+                const response = await fetch('/api/datia/knowledge');
+                if (!response.ok) throw new Error('API Response not ok: ' + response.status);
+
+                const data = await response.json();
+                if (Array.isArray(data)) {
+                    allKnowledge = data;
+                } else {
+                    console.error('Expected array but got:', data);
+                    allKnowledge = [];
+                }
+                renderKnowledge();
+            } catch (error) {
+                console.error('Error loading knowledge:', error);
+                document.getElementById('knowledgeListContainer').innerHTML = `<div style="color:red; padding:2rem; text-align:center;">Error cargando datos: ${error.message}</div>`;
+            }
+        }
+
+        function renderKnowledge() {
+            const container = document.getElementById('knowledgeListContainer');
+            container.innerHTML = '';
+
+            if (allKnowledge.length === 0) {
+                container.innerHTML = `<div style="text-align:center; color: var(--text-muted); padding: 2rem;">📭 La Base de Conocimiento está vacía.</div>`;
+                return;
+            }
+
+            allKnowledge.forEach(item => {
+                const box = document.createElement('div');
+                box.className = 'feature-box';
+
+                const isQa = item.kind === 'qa';
+                const borderColor = isQa ? '#10b981' : '#f59e0b'; // Green for Auto/QA, Amber for Manual
+                const badge = isQa
+                    ? `<span style="font-size:0.7em; background:${borderColor}; color:black; padding:2px 6px; border-radius:4px; margin-right:5px; font-weight:bold;">🤖 AUTO</span>`
+                    : `<span style="font-size:0.7em; background:${borderColor}; color:black; padding:2px 6px; border-radius:4px; margin-right:5px; font-weight:bold;">👤 MANUAL</span>`;
+
+                box.style.borderLeft = `4px solid ${borderColor}`;
+
+                box.innerHTML = `
+                     <div class="feature-title" style="margin-bottom: 0.5rem; display:flex; justify-content:space-between; align-items:center;">
+                         <div>
+                            ${badge}
+                            <span style="color: ${borderColor};">🏷️ ${item.label || item.text.substring(0, 40)}...</span>
+                         </div>
+                         <div style="display:flex; gap:10px;">
+                             <button onclick="editKnowledge(${item.id})" class="btn-delete" style="color: ${borderColor};">✎</button>
+                             <button onclick="deleteKnowledge(${item.id})" class="btn-delete">×</button>
+                         </div>
+                     </div>
+                     <p style="font-size: 0.9em; color: #d4d4d8;">${item.text}</p>
+                     <p style="font-family: monospace; background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 4px; font-size: 0.8em; color: #a1a1aa; overflow-x: auto;">
+                        ${item.sql || '<i style="color: grey;">(Vector Puro)</i>'}
+                     </p>
+                     <div style="margin-top:0.5rem; font-size: 0.75em; color: #52525b; display:flex; gap: 1rem;">
+                        <span>🔑 ${item.key}</span>
+                        <span>🌍 ${item.scope}</span>
+                        <span>🕒 ${new Date(item.updated_at).toLocaleString()}</span>
+                     </div>
+                `;
+                container.appendChild(box);
+            });
+        }
+
+
+        function openNewKnowledge() {
+            clearKnowForm();
+            document.getElementById('knowledgeAdmin').classList.add('active');
+            document.getElementById('knowledgeAdmin').scrollIntoView({ behavior: 'smooth' });
+            document.getElementById('knowText').focus();
+        }
+
+        function editKnowledge(id) {
+            const item = allKnowledge.find(k => k.id === id);
+            if (!item) return;
+
+            document.getElementById('knowledgeAdmin').classList.add('active');
+            document.getElementById('knowId').value = item.id;
+            document.getElementById('knowText').value = item.text;
+            document.getElementById('knowSql').value = item.sql;
+            document.getElementById('knowScope').value = item.scope;
+            document.getElementById('knowLabel').value = item.label;
+
+            document.getElementById('btnKnowAction').textContent = 'Actualizar Vector';
+            document.getElementById('btnCancelKnow').style.display = 'block';
+            document.getElementById('knowledgeAdmin').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function clearKnowForm() {
+            document.getElementById('knowId').value = '';
+            document.getElementById('knowId').readOnly = false;
+            document.getElementById('knowText').value = '';
+            document.getElementById('knowSql').value = '';
+            document.getElementById('knowScope').value = 'global';
+            document.getElementById('knowLabel').value = '';
+            document.getElementById('btnKnowAction').textContent = 'Guardar en Vector DB';
+            document.getElementById('btnCancelKnow').style.display = 'none';
+        }
+
+        async function saveKnowledgeEntry() {
+            const id = document.getElementById('knowId').value;
+            const text = document.getElementById('knowText').value;
+            const sql = document.getElementById('knowSql').value;
+            const scope = document.getElementById('knowScope').value;
+            const label = document.getElementById('knowLabel').value;
+
+            if (!text || !sql) { if (typeof showToast === 'function') showToast('⚠️ Descripción y SQL requeridos'); return; }
+
+            const payload = {
+                text: text,
+                sql: sql,
+                scope: scope,
+                label: label
+            };
+            if (id) payload.id = parseInt(id);
+
+            try {
+                const res = await fetch('/api/datia/knowledge/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const json = await res.json();
+
+                if (json.error) {
+                    if (typeof showToast === 'function') showToast('❌ Error: ' + json.error);
+                } else {
+                    showToast('Conocimiento guardado y vectorizado');
+                    clearKnowForm();
+                    loadKnowledgeData();
+                }
+            } catch (e) {
+                console.error(e);
+                if (typeof showToast === 'function') showToast('❌ Error de red');
+            }
+        }
+
+        async function deleteKnowledge(id) {
+            // Eliminar sin confirmación
+            if (typeof showToast === 'function') showToast('🗑️ Eliminando conocimiento...');
+            fetch(`/api/datia/knowledge/${id}`, { method: 'DELETE' })
+                .then(() => location.reload())
+                .catch((e) => {
+                    console.error('Error deleting knowledge:', e);
+                    if (typeof showToast === 'function') showToast('❌ Error al eliminar');
+                });
+        }
+
+        // Hook into showSection to load data
+        const originalShowSection = window.showSection;
+        window.showSection = function (sectionId, btn) {
+            originalShowSection(sectionId, btn); // Call original defined in previous block? 
+            // Wait, original showSection is defined implicitly inline or earlier? 
+            // Actually, looking at file, `showSection` function IS NOT visible in the snippet I read?
+            // Ah, wait. I read 1000-1382. 
+            // `showSection` was likely defined in HEAD or earlier top script?
+            // I will assuming it exists. 
+            // BUT, I can just override the onclicks or add a listener.
+            // Simplest: Check sectionId here.
+            if (sectionId === 'knowledge') loadKnowledgeData();
+            if (sectionId === 'features') loadFeaturesData();
+        };
+    </script>
+    <section id="nf-docker" style="margin: 40px 0;">
+        <h2 style="color: var(--accent);">NF‑Docker: Contenerización Segura de Datia</h2>
+        <p style="color:#a1a1aa; font-size:0.95rem;">Nueva funcionalidad para habilitar despliegues en Docker de forma segura y reproducible, sin afectar el funcionamiento actual.</p>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit,minmax(280px,1fr)); gap:16px;">
+            <div style="background: var(--card); border:1px solid var(--card-border); border-radius:12px; padding:16px;">
+                <h3 style="color:#fff; margin:0 0 8px 0;">Requisitos Previos</h3>
+                <ul style="color:#d4d4d8; font-size:0.95rem;">
+                    <li>Docker Desktop 29+ (Windows) con daemon activo</li>
+                    <li>Acceso a repositorio y variables de entorno (SECRET_KEY, DATIA_ANALYTICS_URL, MSSQL_*)</li>
+                    <li>Proxy/Firewall para publicación controlada de puertos 8000/8001</li>
+                </ul>
+            </div>
+            <div style="background: var(--card); border:1px solid var(--card-border); border-radius:12px; padding:16px;">
+                <h3 style="color:#fff; margin:0 0 8px 0;">Configuraciones Recomendadas</h3>
+                <ul style="color:#d4d4d8; font-size:0.95rem;">
+                    <li>Usuario no‑root, no‑new‑privileges, cap_drop: ALL</li>
+                    <li>Sistema de ficheros de solo lectura; logs en volumen dedicado</li>
+                    <li>Red bridge privada; publicación externa solo vía reverse proxy</li>
+                    <li>Variables de entorno seguras; sin valores por defecto inseguros</li>
+                </ul>
+            </div>
+            <div style="background: var(--card); border:1px solid var(--card-border); border-radius:12px; padding:16px;">
+                <h3 style="color:#fff; margin:0 0 8px 0;">Pasos de Implementación</h3>
+                <ol style="color:#d4d4d8; font-size:0.95rem;">
+                    <li>Construir imagen: <code>docker build -t datia-web:secure .</code></li>
+                    <li>Escanear CVEs: <code>docker scout cves datia-web:secure</code> o <code>trivy image</code></li>
+                    <li>Configurar proxy/ACL y DNS; definir ALLOWED_HOSTS y CSRF_TRUSTED_ORIGINS</li>
+                    <li>Despliegue controlado con <code>docker-compose</code> en red privada</li>
+                </ol>
+            </div>
+            <div style="background: var(--card); border:1px solid var(--card-border); border-radius:12px; padding:16px;">
+                <h3 style="color:#fff; margin:0 0 8px 0;">Mejores Prácticas</h3>
+                <ul style="color:#d4d4d8; font-size:0.95rem;">
+                    <li>Versionar por digest y fijar versiones de dependencias</li>
+                    <li>CI con escaneo semanal de imágenes y del repo (Trivy/Scout)</li>
+                    <li>Healthchecks internos, sin exponer endpoints de salud a Internet</li>
+                    <li>Logs a stdout o volumen; rotación gestionada por el host</li>
+                </ul>
+            </div>
+        </div>
+        <div style="margin-top:20px; background: var(--card); border:1px solid var(--card-border); border-radius:12px; padding:16px;">
+            <h3 style="color:#fff; margin:0 0 8px 0;">Ejemplo Dockerfile</h3>
+            <pre style="background:#0b0b0e; color:#e4e4e7; padding:12px; border-radius:8px; overflow:auto; font-size:0.85rem;">FROM python:3.12-slim
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+RUN adduser --disabled-password --gecos "" datia
+WORKDIR /app
+COPY requirements.txt /app/requirements.txt
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential gcc unixodbc-dev libpq-dev && \
+    pip install --no-cache-dir -r /app/requirements.txt && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+COPY . /app
+RUN chown -R datia:datia /app
+USER datia
+ENV DJANGO_SETTINGS_MODULE=config.settings
+ENV DATIA_LOG_FILE=/app/logs/datia.log
+CMD ["python","manage.py","serveboth"]</pre>
+        </div>
+        <div style="margin-top:20px; background: var(--card); border:1px solid var(--card-border); border-radius:12px; padding:16px;">
+            <h3 style="color:#fff; margin:0 0 8px 0;">Comandos Esenciales</h3>
+            <ul style="color:#d4d4d8; font-size:0.95rem;">
+                <li><code>docker build -t datia-web:secure .</code></li>
+                <li><code>docker compose up -d</code> (despliegue controlado; requiere proxy)</li>
+                <li><code>docker scout cves datia-web:secure</code> / <code>trivy image datia-web:secure</code></li>
+                <li><code>docker/docker-bench-security</code> para auditoría CIS del host</li>
+            </ul>
+        </div>
+        <div style="margin-top:20px; background: var(--card); border:1px solid var(--card-border); border-radius:12px; padding:16px;">
+            <h3 style="color:#fff; margin:0 0 8px 0;">Integración con Entorno Actual</h3>
+            <p style="color:#d4d4d8; font-size:0.95rem;">Compatibilidad con el servidor dual (8000/8001) y configuración por entorno. Variables de entorno exigidas: SECRET_KEY, DATIA_ANALYTICS_URL, MSSQL_*. Logging configurable vía DATIA_LOG_FILE para cumplir con FS de solo lectura.</p>
+        </div>
+        <div style="margin-top:20px; background: var(--card); border:1px solid var(--card-border); border-radius:12px; padding:16px;">
+            <h3 style="color:#fff; margin:0 0 8px 0;">Consideraciones de Seguridad</h3>
+            <ul style="color:#d4d4d8; font-size:0.95rem;">
+                <li>Usuario no‑root, sin privilegios adicionales; rootfs read‑only</li>
+                <li>Puertos 8000/8001 detrás de reverse proxy y ACLs</li>
+                <li>ALLOWED_HOSTS y CSRF_TRUSTED_ORIGINS ajustados a dominios reales</li>
+                <li>Escaneo de CVEs continuo y rotación de secrets</li>
+            </ul>
+        </div>
+        <div style="margin-top:20px; background: var(--card); border:1px solid var(--card-border); border-radius:12px; padding:16px;">
+            <h3 style="color:#fff; margin:0 0 8px 0;">Referencias Cruzadas</h3>
+            <ul style="color:#d4d4d8; font-size:0.95rem;">
+                <li>CLI: manage.py runserver / serveboth (Servidor dual 8000/8001)</li>
+                <li>API: /api/system/mobile_server (control del servidor móvil)</li>
+                <li>Seguridad: Auditoría CIS Docker, Trivy/Docker Scout</li>
+            </ul>
+        </div>
+        <div style="margin-top:20px; background: var(--card); border:1px solid var(--card-border); border-radius:12px; padding:16px;">
+            <h3 style="color:#fff; margin:0 0 8px 0;">Historial de Cambios</h3>
+            <ul style="color:#d4d4d8; font-size:0.95rem;">
+                <li>2026‑01‑21: Alta inicial NF‑Docker; Dockerfile, docker‑compose, .dockerignore y parametrización de logs</li>
+                <li>2026‑01‑21: Documentación de seguridad y escaneos CVE; integración con servidor dual</li>
+            </ul>
+        </div>
+    </section>
+</body>
+
+</html>

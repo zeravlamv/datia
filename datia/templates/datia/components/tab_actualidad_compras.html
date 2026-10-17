@@ -1,0 +1,623 @@
+{% load i18n %}
+
+
+<!-- Status Bar (Flip All, Sync Badge) -->
+<div class="actualidad-status-bar" style="display:flex; justify-content:flex-end; padding-bottom:10px; align-items: center; gap: 15px;">
+
+    <!-- Flip All Button -->
+    <button onclick="toggleAllCards()" class="sub-nav-btn" title="{% trans " Girar todas las tarjetas" %}" style="background:none; border:none; color:#a1a1aa; cursor:pointer; padding:5px; transition:all 0.2s; display: flex; align-items: center; gap: 5px;">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+            </path>
+        </svg>
+        <span style="font-size: 0.85rem; font-weight: 600;">{% trans "Detalles" %}</span>
+    </button>
+
+    <span id="compras-pending-badge" style="cursor:pointer; display:none; color:#f59e0b; font-weight:bold; font-size:0.85rem; align-items:center; gap:5px;" title="Datos desactualizados">
+        ⚠️ Pendiente actualizar
+    </span>
+</div>
+
+<!-- Snapshot Grid (3x3) -->
+<div class="grid-cols-3">
+    <!-- ROW 1: COMPRAS (NETO) -->
+    <!-- 1D -->
+    <div class="flip-card">
+        <div class="flip-card-inner">
+            <div class="flip-card-front card-v2">
+                <div class="v2-kpi-header">
+                    <div class="v2-kpi-title">{% trans "Compras (1 Día)" %} <span id="lbl-date-compra-1d" class="text-xs text-neutral"></span></div>
+                    <button class="flip-btn" onclick="toggleFlipCard(this)"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg></button>
+                </div>
+                <div class="v2-kpi-value" id="val-compras-1d" style="height:150px;"></div>
+                <div class="v2-comp-container">
+                    <span class="v2-comp-val" id="prev-compras-1d">--</span>
+                    <span class="v2-comp-pct" id="pct-compras-1d">--</span>
+                </div>
+            </div>
+            <div class="flip-card-back">
+                <div style="position:absolute; top:10px; right:10px;">
+                    <button class="flip-btn" onclick="toggleFlipCard(this)">✖</button>
+                </div>
+
+                <div style="text-align: left; width: 100%; padding: 0 10px; overflow-y: auto; max-height: 100%;">
+                    <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Tabla:</strong> CabeceraPedidoProveedor</p>
+                    <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Campo:</strong> ImporteNeto</p>
+                    <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Previo:</strong> Mismo día (Año anterior)</p>
+                    <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Variación:</strong> ((Act - Prev) / Prev) * 100</p>
+                    <p style="font-size:0.7rem; color:#a1a1aa; margin-bottom: 5px;">Actualizado: <span class="calc-time">Hace 5 min</span></p>
+                    <div style="margin-top: 5px; border-top: 1px solid #3f3f46; padding-top: 5px;">
+                        <label style="margin-right: 5px; font-size:0.75rem;">Estilo:</label>
+                        <select onchange="changeWidgetStyle('1d', 'compras', this.value)" style="background:#27272a; color:white; border:1px solid #3f3f46; border-radius:4px; font-size:0.75rem; padding: 2px;">
+                            <option value="gauge" selected>Medidor</option>
+                            <option value="text">Texto</option>
+                            <option value="sparkline">Tendencia</option>
+                            <option value="neon">Neón</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 7D -->
+    <div class="flip-card">
+        <div class="flip-card-inner">
+            <div class="flip-card-front card-v2">
+                <div class="v2-kpi-header">
+                    <div class="v2-kpi-title">{% trans "Compras (7 Días)" %} <span id="lbl-date-compra-7d" class="text-xs text-neutral"></span></div>
+                    <button class="flip-btn" onclick="toggleFlipCard(this)"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg></button>
+                </div>
+                <div class="v2-kpi-value" id="val-compras-7d" style="height:150px;"></div>
+                <div class="v2-comp-container">
+                    <span class="v2-comp-val" id="prev-compras-7d">--</span>
+                    <span class="v2-comp-pct" id="pct-compras-7d">--</span>
+                </div>
+            </div>
+            <div class="flip-card-back">
+                <div style="position:absolute; top:10px; right:10px;">
+                    <button class="flip-btn" onclick="toggleFlipCard(this)">✖</button>
+                </div>
+
+                <div style="text-align: left; width: 100%; padding: 0 10px; overflow-y: auto; max-height: 100%;">
+                    <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Tabla:</strong> CabeceraPedidoProveedor</p>
+                    <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Campo:</strong> ImporteNeto (7 Días)</p>
+                    <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Previo:</strong> 7 Días (Año anterior)</p>
+                    <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Variación:</strong> ((Act - Prev) / Prev) * 100</p>
+                    <p style="font-size:0.7rem; color:#a1a1aa; margin-bottom: 5px;">Actualizado: <span class="calc-time">Hace 5 min</span></p>
+                    <div style="margin-top: 5px; border-top: 1px solid #3f3f46; padding-top: 5px;">
+                        <label style="margin-right: 5px; font-size:0.75rem;">Estilo:</label>
+                        <select onchange="changeWidgetStyle('7d', 'compras', this.value)" style="background:#27272a; color:white; border:1px solid #3f3f46; border-radius:4px; font-size:0.75rem; padding: 2px;">
+                            <option value="gauge" selected>Medidor</option>
+                            <option value="text">Texto</option>
+                            <option value="sparkline">Tendencia</option>
+                            <option value="neon">Neón</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 30D -->
+    <div class="flip-card">
+        <div class="flip-card-inner">
+            <div class="flip-card-front card-v2">
+                <div class="v2-kpi-header">
+                    <div class="v2-kpi-title">{% trans "Compras (30 Días)" %} <span id="lbl-date-compra-30d" class="text-xs text-neutral"></span></div>
+                    <button class="flip-btn" onclick="toggleFlipCard(this)"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg></button>
+                </div>
+                <div class="v2-kpi-value" id="val-compras-30d" style="height:150px;"></div>
+                <div class="v2-comp-container">
+                    <span class="v2-comp-val" id="prev-compras-30d">--</span>
+                    <span class="v2-comp-pct" id="pct-compras-30d">--</span>
+                </div>
+            </div>
+            <div class="flip-card-back">
+                <div style="position:absolute; top:10px; right:10px;">
+                    <button class="flip-btn" onclick="toggleFlipCard(this)">✖</button>
+                </div>
+
+                <div style="text-align: left; width: 100%; padding: 0 10px; overflow-y: auto; max-height: 100%;">
+                    <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Tabla:</strong> CabeceraPedidoProveedor</p>
+                    <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Campo:</strong> ImporteNeto (30 Días)</p>
+                    <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Previo:</strong> 30 Días (Año anterior)</p>
+                    <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Variación:</strong> ((Act - Prev) / Prev) * 100</p>
+                    <p style="font-size:0.7rem; color:#a1a1aa; margin-bottom: 5px;">Actualizado: <span class="calc-time">Hace 5 min</span></p>
+                    <div style="margin-top: 5px; border-top: 1px solid #3f3f46; padding-top: 5px;">
+                        <label style="margin-right: 5px; font-size:0.75rem;">Estilo:</label>
+                        <select onchange="changeWidgetStyle('30d', 'compras', this.value)" style="background:#27272a; color:white; border:1px solid #3f3f46; border-radius:4px; font-size:0.75rem; padding: 2px;">
+                            <option value="gauge" selected>Medidor</option>
+                            <option value="text">Texto</option>
+                            <option value="sparkline">Tendencia</option>
+                            <option value="neon">Neón</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROW 2: TICKET MEDIO (COMPRA) -->
+    <!-- 1D -->
+    <div class="flip-card">
+        <div class="flip-card-inner">
+            <div class="flip-card-front card-v2 matrix-card">
+                <div class="v2-kpi-header">
+                    <div class="v2-kpi-title">{% trans "Ticket Medio (1 Día)" %}</div>
+                    <button class="flip-btn" onclick="toggleFlipCard(this)"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg></button>
+                </div>
+                <div class="v2-kpi-value text-pos" id="val-ticket-compra-1d">--</div>
+                <div class="v2-comp-container">
+                    <span class="v2-comp-val" id="prev-ticket-compra-1d">--</span>
+                    <span class="v2-comp-pct" id="pct-ticket-compra-1d">--</span>
+                </div>
+            </div>
+            <div class="flip-card-back">
+                <div style="position:absolute; top:10px; right:10px;">
+                    <button class="flip-btn" onclick="toggleFlipCard(this)">✖</button>
+                </div>
+
+                <div style="text-align: left; width: 100%; padding: 0 10px; overflow-y: auto; max-height: 100%;">
+                    <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Campo:</strong> Neto / Ops</p>
+                    <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Previo:</strong> Ticket Año anterior</p>
+                    <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Variación:</strong> Diferencia %</p>
+                    <p style="font-size:0.7rem; color:#a1a1aa; margin-bottom: 5px;">Actualizado: <span class="calc-time">Hace 5 min</span></p>
+                    <div style="margin-top: 5px; border-top: 1px solid #3f3f46; padding-top: 5px;">
+                        <label style="margin-right: 5px; font-size:0.75rem;">Estilo:</label>
+                        <select onchange="changeWidgetStyle('1d', 'ticket-compra', this.value)" style="background:#27272a; color:white; border:1px solid #3f3f46; border-radius:4px; font-size:0.75rem; padding: 2px;">
+                            <option value="text" selected>Texto</option>
+                            <option value="gauge">Medidor</option>
+                            <option value="sparkline">Tendencia</option>
+                            <option value="neon">Neón</option>
+                            <option value="liquid">Liquid</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 7D -->
+    <div class="flip-card">
+        <div class="flip-card-inner">
+            <div class="flip-card-front card-v2 matrix-card">
+                <div class="v2-kpi-header">
+                    <div class="v2-kpi-title">{% trans "Ticket Medio (7 Días)" %}</div>
+                    <button class="flip-btn" onclick="toggleFlipCard(this)"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg></button>
+                </div>
+                <div class="v2-kpi-value text-pos" id="val-ticket-compra-7d">--</div>
+                <div class="v2-comp-container">
+                    <span class="v2-comp-val" id="prev-ticket-compra-7d">--</span>
+                    <span class="v2-comp-pct" id="pct-ticket-compra-7d">--</span>
+                </div>
+            </div>
+            <div class="flip-card-back">
+                <div style="position:absolute; top:10px; right:10px;">
+                    <button class="flip-btn" onclick="toggleFlipCard(this)">✖</button>
+                </div>
+
+                <div style="text-align: left; width: 100%; padding: 0 10px; overflow-y: auto; max-height: 100%;">
+                    <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Campo:</strong> Neto / Ops (7 Días)</p>
+                    <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Previo:</strong> Ticket Año anterior</p>
+                    <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Variación:</strong> Diferencia %</p>
+                    <p style="font-size:0.7rem; color:#a1a1aa; margin-bottom: 5px;">Actualizado: <span class="calc-time">Hace 5 min</span></p>
+                    <div style="margin-top: 5px; border-top: 1px solid #3f3f46; padding-top: 5px;">
+                        <label style="margin-right: 5px; font-size:0.75rem;">Estilo:</label>
+                        <select onchange="changeWidgetStyle('7d', 'ticket-compra', this.value)" style="background:#27272a; color:white; border:1px solid #3f3f46; border-radius:4px; font-size:0.75rem; padding: 2px;">
+                            <option value="text" selected>Texto</option>
+                            <option value="gauge">Medidor</option>
+                            <option value="sparkline">Tendencia</option>
+                            <option value="neon">Neón</option>
+                            <option value="liquid">Liquid</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 30D -->
+    <div class="flip-card">
+        <div class="flip-card-inner">
+            <div class="flip-card-front card-v2 matrix-card">
+                <div class="v2-kpi-header">
+                    <div class="v2-kpi-title">{% trans "Ticket Medio (30 Días)" %}</div>
+                    <button class="flip-btn" onclick="toggleFlipCard(this)"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg></button>
+                </div>
+                <div class="v2-kpi-value text-pos" id="val-ticket-compra-30d">--</div>
+                <div class="v2-comp-container">
+                    <span class="v2-comp-val" id="prev-ticket-compra-30d">--</span>
+                    <span class="v2-comp-pct" id="pct-ticket-compra-30d">--</span>
+                </div>
+            </div>
+            <div class="flip-card-back">
+                <div style="position:absolute; top:10px; right:10px;">
+                    <button class="flip-btn" onclick="toggleFlipCard(this)">✖</button>
+                </div>
+
+                <div style="text-align: left; width: 100%; padding: 0 10px; overflow-y: auto; max-height: 100%;">
+                    <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Campo:</strong> Neto / Ops (30 Días)</p>
+                    <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Previo:</strong> Ticket Año anterior</p>
+                    <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Variación:</strong> Diferencia %</p>
+                    <p style="font-size:0.7rem; color:#a1a1aa; margin-bottom: 5px;">Actualizado: <span class="calc-time">Hace 5 min</span></p>
+                    <div style="margin-top: 5px; border-top: 1px solid #3f3f46; padding-top: 5px;">
+                        <label style="margin-right: 5px; font-size:0.75rem;">Estilo:</label>
+                        <select onchange="changeWidgetStyle('30d', 'ticket-compra', this.value)" style="background:#27272a; color:white; border:1px solid #3f3f46; border-radius:4px; font-size:0.75rem; padding: 2px;">
+                            <option value="text" selected>Texto</option>
+                            <option value="gauge">Medidor</option>
+                            <option value="sparkline">Tendencia</option>
+                            <option value="neon">Neón</option>
+                            <option value="liquid">Liquid</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROW 3: OPERACIONES (Vs MARGIN IN SALES) -->
+    <!-- 1D -->
+    <div class="flip-card">
+        <div class="flip-card-inner">
+            <div class="flip-card-front card-v2 matrix-card">
+                <div class="v2-kpi-header">
+                    <div class="v2-kpi-title">{% trans "Operaciones (1 Día)" %}</div>
+                    <button class="flip-btn" onclick="toggleFlipCard(this)"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg></button>
+                </div>
+                <div class="v2-kpi-value text-pos" id="val-ops-compra-1d">--</div> <!-- Placeholder ID -->
+                <div class="v2-comp-container">
+                    <span class="v2-comp-val" id="prev-ops-1d">--</span>
+                </div>
+            </div>
+            <div class="flip-card-back">
+                <div style="position:absolute; top:10px; right:10px;">
+                    <button class="flip-btn" onclick="toggleFlipCard(this)">✖</button>
+                </div>
+
+                <div style="text-align: left; width: 100%; padding: 0 10px; overflow-y: auto; max-height: 100%;">
+                    <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Campo:</strong> Albaranes/Pedidos</p>
+                    <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Previo:</strong> Ops Año anterior</p>
+                    <p style="font-size:0.7rem; color:#a1a1aa; margin-bottom: 5px;">Actualizado: <span class="calc-time">Hace 5 min</span></p>
+                    <div style="margin-top: 5px; border-top: 1px solid #3f3f46; padding-top: 5px;">
+                        <label style="margin-right: 5px; font-size:0.75rem;">Estilo:</label>
+                        <select onchange="changeWidgetStyle('1d', 'ops-compra', this.value)" style="background:#27272a; color:white; border:1px solid #3f3f46; border-radius:4px; font-size:0.75rem; padding: 2px;">
+                            <option value="text" selected>Texto</option>
+                            <option value="gauge">Medidor</option>
+                            <option value="sparkline">Tendencia</option>
+                            <option value="neon">Neón</option>
+                            <option value="liquid">Liquid</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 7D -->
+    <div class="flip-card">
+        <div class="flip-card-inner">
+            <div class="flip-card-front card-v2 matrix-card">
+                <div class="v2-kpi-header">
+                    <div class="v2-kpi-title">{% trans "Operaciones (7 Días)" %}</div>
+                    <button class="flip-btn" onclick="toggleFlipCard(this)"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg></button>
+                </div>
+                <div class="v2-kpi-value text-pos" id="val-ops-compra-7d">--</div>
+                <div class="v2-comp-container">
+                    <span class="v2-comp-val" id="prev-ops-7d">--</span>
+                </div>
+            </div>
+            <div class="flip-card-back">
+                <div style="padding:10px;">
+                    <p class="text-xs"><strong>Count</strong> Albaranes 7 Días</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 30D -->
+    <div class="flip-card">
+        <div class="flip-card-inner">
+            <div class="flip-card-front card-v2 matrix-card">
+                <div class="v2-kpi-header">
+                    <div class="v2-kpi-title">{% trans "Operaciones (30 Días)" %}</div>
+                    <button class="flip-btn" onclick="toggleFlipCard(this)"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg></button>
+                </div>
+                <div class="v2-kpi-value text-pos" id="val-ops-compra-30d">--</div>
+                <div class="v2-comp-container">
+                    <span class="v2-comp-val" id="prev-ops-30d">--</span>
+                </div>
+            </div>
+            <div class="flip-card-back">
+                <div style="padding:10px;">
+                    <p class="text-xs"><strong>Count</strong> Albaranes 30 Días</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 4 YEAR KPIs -->
+<div class="grid-cols-4">
+    <!-- NETO -->
+    <div class="flip-card">
+        <div class="flip-card-inner">
+            <div class="flip-card-front card-v2">
+                <div class="v2-kpi-header">
+                    <div class="v2-kpi-title">{% trans "Compras (Total)" %}</div>
+                    <button class="flip-btn" onclick="toggleFlipCard(this)"><svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg></button>
+                </div>
+                <div class="v2-kpi-value" id="val-compras-year">...</div>
+                <div class="kpi-sub text-pos">Total Ejercicio</div>
+            </div>
+            <div class="flip-card-back">
+                <div style="position:absolute; top:10px; right:10px;">
+                    <button class="flip-btn" onclick="toggleFlipCard(this)">✖</button>
+                </div>
+                <div style="text-align: left; width: 100%; padding: 0 10px; overflow-y: auto; max-height: 100%;">
+                    <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Tabla:</strong> CabeceraPedidos</p>
+                    <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Campo:</strong> ImporteNeto</p>
+                    <p style="font-size:0.7rem; color:#a1a1aa; margin-bottom: 5px;">Actualizado: <span class="calc-time">Hace 5 min</span></p>
+                    <div style="margin-top: 5px; border-top: 1px solid #3f3f46; padding-top: 5px;">
+                        <label style="margin-right: 5px; font-size:0.75rem;">Estilo:</label>
+                        <select onchange="changeWidgetStyle('year', 'compras', this.value)" style="background:#27272a; color:white; border:1px solid #3f3f46; border-radius:4px; font-size:0.75rem; padding: 2px;">
+                            <option value="text" selected>Texto</option>
+                            <option value="gauge">Medidor</option>
+                            <option value="neon">Neón</option>
+                            <option value="liquid">Liquid</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- TICKET -->
+    <div class="flip-card">
+        <div class="flip-card-inner">
+            <div class="flip-card-front card-v2">
+                <div class="v2-kpi-header">
+                    <div class="v2-kpi-title">{% trans "Ticket Medio" %}</div>
+                    <button class="flip-btn" onclick="toggleFlipCard(this)"><svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg></button>
+                </div>
+                <div class="v2-kpi-value" id="val-ticket-compra-year">...</div>
+                <div class="kpi-sub text-pos">Media Anual</div>
+            </div>
+            <div class="flip-card-back">
+                <div style="position:absolute; top:10px; right:10px;">
+                    <button class="flip-btn" onclick="toggleFlipCard(this)">✖</button>
+                </div>
+                <div style="text-align: left; width: 100%; padding: 0 10px; overflow-y: auto; max-height: 100%;">
+                    <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Campo:</strong> Ticket Promedio</p>
+                    <p style="font-size:0.7rem; color:#a1a1aa; margin-bottom: 5px;">Actualizado: <span class="calc-time">Hace 5 min</span></p>
+                    <div style="margin-top: 5px; border-top: 1px solid #3f3f46; padding-top: 5px;">
+                        <label style="margin-right: 5px; font-size:0.75rem;">Estilo:</label>
+                        <select onchange="changeWidgetStyle('year', 'ticket-compra', this.value)" style="background:#27272a; color:white; border:1px solid #3f3f46; border-radius:4px; font-size:0.75rem; padding: 2px;">
+                            <option value="text" selected>Texto</option>
+                            <option value="gauge">Medidor</option>
+                            <option value="neon">Neón</option>
+                            <option value="liquid">Liquid</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- OPS -->
+    <div class="flip-card">
+        <div class="flip-card-inner">
+            <div class="flip-card-front card-v2">
+                <div class="v2-kpi-header">
+                    <div class="v2-kpi-title">{% trans "Operaciones" %}</div>
+                    <button class="flip-btn" onclick="toggleFlipCard(this)"><svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg></button>
+                </div>
+                <div class="v2-kpi-value" id="val-ops-compra-year">...</div>
+                <div class="kpi-sub text-pos">Nº Pedidos/Albaranes</div>
+            </div>
+            <div class="flip-card-back">
+                <div style="position:absolute; top:10px; right:10px;">
+                    <button class="flip-btn" onclick="toggleFlipCard(this)">✖</button>
+                </div>
+                <div style="text-align: left; width: 100%; padding: 0 10px; overflow-y: auto; max-height: 100%;">
+                    <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Campo:</strong> Conteo Documentos</p>
+                    <p style="font-size:0.7rem; color:#a1a1aa; margin-bottom: 5px;">Actualizado: <span class="calc-time">Hace 5 min</span></p>
+                    <div style="margin-top: 5px; border-top: 1px solid #3f3f46; padding-top: 5px;">
+                        <label style="margin-right: 5px; font-size:0.75rem;">Estilo:</label>
+                        <select onchange="changeWidgetStyle('year', 'ops-compra', this.value)" style="background:#27272a; color:white; border:1px solid #3f3f46; border-radius:4px; font-size:0.75rem; padding: 2px;">
+                            <option value="text" selected>Texto</option>
+                            <option value="gauge">Medidor</option>
+                            <option value="neon">Neón</option>
+                            <option value="liquid">Liquid</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ENTITIES (PROVEEDORES) -->
+    <div class="flip-card">
+        <div class="flip-card-inner">
+            <div class="flip-card-front card-v2">
+                <div class="v2-kpi-header">
+                    <div class="v2-kpi-title">{% trans "Proveedores" %}</div>
+                    <button class="flip-btn" onclick="toggleFlipCard(this)"><svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg></button>
+                </div>
+                <div class="v2-kpi-value" id="val-kpi-proveedores">...</div>
+                <div class="kpi-sub text-pos">Activos</div>
+            </div>
+            <div class="flip-card-back">
+                <div style="padding:10px;">
+                    <p class="text-xs">Proveedores con compras este año</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ACTIVITY & TOPS -->
+<div class="flip-card chart-container">
+    <div class="flip-card-inner">
+        <!-- FRONT -->
+        <div class="flip-card-front card-v2">
+            <div class="v2-kpi-header">
+                <h2>{% trans "Evolución Compras Mensual" %}</h2>
+                <button class="flip-btn" onclick="toggleFlipCard(this)" title="Ver Origen">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </button>
+            </div>
+            <div id="chart-activity-compras" style="width: 100%; height: 400px;"></div>
+        </div>
+        <!-- BACK -->
+        <div class="flip-card-back">
+            <div style="position:absolute; top:10px; right:10px;">
+                <button class="flip-btn" onclick="toggleFlipCard(this)">✖</button>
+            </div>
+            <h4 style="margin-bottom:5px; margin-top:5px; color:var(--accent); font-size: 0.9rem;">Origen del Dato</h4>
+            <div style="text-align: left; width: 100%; padding: 0 10px; overflow-y: auto; max-height: 100%;">
+                <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Tabla:</strong> CabeceraPedidoProveedor</p>
+                <p style="font-size:0.75rem; margin-bottom:2px;"><strong>Criterio:</strong> Suma de Compras Netas por Mes</p>
+                <p style="font-size:0.7rem; color:#a1a1aa; margin-bottom: 5px;">Actualizado: <span class="calc-time">Hace 5 min</span></p>
+                <div style="margin-top: 5px; border-top: 1px solid #3f3f46; padding-top: 5px;">
+                    <label style="margin-right: 5px; font-size:0.75rem;">Gráfico:</label>
+                    <select onchange="updateChartStyle('activity-compras', this.value)" style="background:#27272a; color:white; border:1px solid #3f3f46; border-radius:4px; font-size:0.85rem; padding: 4px; cursor: pointer; appearance: auto; position: relative; z-index: 50;">
+                        <option value="bar" selected>Barras</option>
+                        <option value="line">Línea</option>
+                        <option value="area">Área</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Grid: Top Lists -->
+<div class="grid-dashboard-bottom">
+    <!-- Top Zonas -->
+    <div class="flip-card">
+        <div class="flip-card-inner">
+            <!-- FRONT -->
+            <div class="flip-card-front card-v2">
+                <div class="v2-kpi-header">
+                    <h2>{% trans "Top Zonas (Provincias)" %}</h2>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <select style="background: rgba(39,39,42,0.5); color: #fff; border: 1px solid #3f3f46; border-radius: 6px; padding: 4px;" onchange="updateLimitCompras('zonas-compra', this.value)">
+                            <option value="5">Top 5</option>
+                            <option value="10">Top 10</option>
+                            <option value="20">Top 20</option>
+                        </select>
+                        <button class="flip-btn" onclick="toggleFlipCard(this)" title="Ver Origen">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div id="chart-top-zonas-compra"></div>
+            </div>
+            <!-- BACK -->
+            <div class="flip-card-back">
+                <div style="position:absolute; top:10px; right:10px;">
+                    <button class="flip-btn" onclick="toggleFlipCard(this)">✖</button>
+                </div>
+                <div style="text-align: left; width: 100%; padding: 0 10px; overflow-y: auto; max-height: 100%;">
+                    <p style="font-size:0.75rem; margin-bottom:5px;"><strong>Tabla:</strong> CabeceraPedidoProveedor</p>
+                    <p style="font-size:0.75rem; margin-bottom:5px;"><strong>Campo:</strong> CodigoPostal / Provincia</p>
+                    <p style="font-size:0.7rem; color:#a1a1aa;">Actualizado: <span class="calc-time">Hace 5 min</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Proveedores -->
+    <div class="flip-card">
+        <div class="flip-card-inner">
+            <!-- FRONT -->
+            <div class="flip-card-front card-v2">
+                <div class="v2-kpi-header">
+                    <h2>{% trans "Top Proveedores" %}</h2>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <select style="background: rgba(39,39,42,0.5); color: #fff; border: 1px solid #3f3f46; border-radius: 6px; padding: 4px;" onchange="updateLimitCompras('proveedores', this.value)">
+                            <option value="5">Top 5</option>
+                            <option value="10">Top 10</option>
+                            <option value="20">Top 20</option>
+                        </select>
+                        <button class="flip-btn" onclick="toggleFlipCard(this)" title="Ver Origen">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div id="chart-top-proveedores"></div>
+            </div>
+            <!-- BACK -->
+            <div class="flip-card-back">
+                <div style="position:absolute; top:10px; right:10px;">
+                    <button class="flip-btn" onclick="toggleFlipCard(this)">✖</button>
+                </div>
+                <div style="text-align: left; width: 100%; padding: 0 10px; overflow-y: auto; max-height: 100%;">
+                    <p style="font-size:0.75rem; margin-bottom:5px;"><strong>Tabla:</strong> CabeceraPedidoProveedor</p>
+                    <p style="font-size:0.75rem; margin-bottom:5px;"><strong>Criterio:</strong> Suma de Compras por Proveedor</p>
+                    <p style="font-size:0.7rem; color:#a1a1aa;">Actualizado: <span class="calc-time">Hace 5 min</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Articulos -->
+    <div class="flip-card">
+        <div class="flip-card-inner">
+            <!-- FRONT -->
+            <div class="flip-card-front card-v2">
+                <div class="v2-kpi-header">
+                    <h2>{% trans "Top Artículos" %}</h2>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <select style="background: rgba(39,39,42,0.5); color: #fff; border: 1px solid #3f3f46; border-radius: 6px; padding: 4px;" onchange="updateLimitCompras('articulos-compra', this.value)">
+                            <option value="5">Top 5</option>
+                            <option value="10">Top 10</option>
+                            <option value="20">Top 20</option>
+                        </select>
+                        <button class="flip-btn" onclick="toggleFlipCard(this)" title="Ver Origen">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div id="chart-top-articulos-compra"></div>
+            </div>
+            <!-- BACK -->
+            <div class="flip-card-back">
+                <div style="position:absolute; top:10px; right:10px;">
+                    <button class="flip-btn" onclick="toggleFlipCard(this)">✖</button>
+                </div>
+                <div style="text-align: left; width: 100%; padding: 0 10px; overflow-y: auto; max-height: 100%;">
+                    <p style="font-size:0.75rem; margin-bottom:5px;"><strong>Tabla:</strong> LineasPedidoProveedor</p>
+                    <p style="font-size:0.75rem; margin-bottom:5px;"><strong>Criterio:</strong> Suma de Importe por Artículo</p>
+                    <p style="font-size:0.7rem; color:#a1a1aa;">Actualizado: <span class="calc-time">Hace 5 min</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

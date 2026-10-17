@@ -1,0 +1,115 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Datia - Iniciar Sesión</title>
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: var(--background);
+            color: var(--text);
+            overflow: hidden;
+        }
+
+        .login-card {
+            background: rgba(24, 24, 27, 0.4);
+            /* card color with opacity */
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            padding: 2.5rem;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .login-logo {
+            width: 92px;
+            height: 92px;
+            border-radius: 50%;
+            margin-bottom: 1.5rem;
+            object-fit: contain;
+            /* border: 2px solid var(--accent); REMOVED */
+            /* padding: 4px; REMOVED */
+            /* background: var(--card); REMOVED */
+        }
+
+        .login-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            color: var(--text);
+        }
+
+        .form-control {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text);
+            margin-bottom: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+        }
+
+        .form-control:focus {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--accent);
+            color: var(--text);
+            box-shadow: 0 0 0 4px var(--accent-glow);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+            border: none;
+            color: white;
+            font-weight: 600;
+            margin-top: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--accent-glow);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-card">
+        <img id="login-logo" src="{% static 'logo_analytics.png' %}" alt="Datia Logo" class="login-logo">
+        <div id="login-title" class="login-title">Bienvenido a Datia</div>
+
+        <form method="post">
+            {% csrf_token %}
+            {% if error %}
+            <div class="alert alert-danger"
+                style="background: rgba(220,38,38,0.2); border: 1px solid #ef4444; color: #fca5a5; font-size: 0.9rem;">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <input type="text" name="username" class="form-control" placeholder="Usuario" required autofocus>
+            <input type="password" name="password" class="form-control" placeholder="Contraseña" required>
+
+            <button type="submit" class="btn-login">Entrar</button>
+        </form>
+    </div>
+    <script src="{% static 'js/auth/login_branding.js' %}"></script>
+</body>
+
+</html>

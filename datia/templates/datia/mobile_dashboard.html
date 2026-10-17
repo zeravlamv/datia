@@ -1,0 +1,65 @@
+{% load static %}
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Datia Mobile</title>
+    <link rel="stylesheet" href="{% static 'css/mobile.css' %}?v={{ cache_bust }}">
+</head>
+
+<body>
+    <div id="datia-mobile" data-app-lang="{{ APP_LANG }}" data-empresa="{{ empresa }}" data-ejercicio="{{ ejercicio }}">
+        <header class="dm-header">
+            <div class="dm-header-left">
+                <img id="mobile-logo" class="dm-logo" src="{% static 'logo_analytics.png' %}?v={{ cache_bust }}" alt="Logo">
+                <div class="dm-logo-actions only-desktop">
+                    <button id="btn-logo-config" class="dm-btn">{% trans "Configurar logo móvil" %}</button>
+                    <button id="btn-logo-client-toggle" class="dm-btn">{% trans "Alternar logo de empresa" %}</button>
+                </div>
+            </div>
+            <div class="dm-header-right">
+                <select id="sel-mobile-empresa" class="dm-select">
+                    {% for e in empresas %}
+                    <option value="{{ e.codigo }}" {% if e.codigo == empresa %}selected{% endif %}>{{ e.nombre }}</option>
+                    {% endfor %}
+                </select>
+                <select id="sel-mobile-ejercicio" class="dm-select">
+                    {% for ej in ejercicios %}
+                    <option value="{{ ej }}" {% if ej == ejercicio %}selected{% endif %}>{{ ej }}</option>
+                    {% endfor %}
+                </select>
+                <a href="{% url 'logout' %}" class="dm-btn dm-logout" aria-label="{% trans 'Salir' %}">⎋</a>
+            </div>
+        </header>
+
+        <section id="dm-logo-config" class="dm-logo-config only-desktop" style="display:none;">
+            <div class="dm-config-row">
+                <label class="dm-label">{% trans "URL del logo móvil" %}</label>
+                <input id="inp-mobile-logo-url" class="dm-input" type="url" placeholder="https://...">
+                <button id="btn-save-mobile-logo" class="dm-btn dm-primary">{% trans "Guardar" %}</button>
+            </div>
+            <small class="dm-help">{% trans "Se guarda por empresa y solo en tu navegador." %}</small>
+        </section>
+
+        <main class="dm-content">
+            <div id="dm-runtime" class="dm-runtime">
+                <div class="dm-empty">
+                    <div class="dm-empty-icon">📱</div>
+                    <h3>{% trans "Vista móvil en desarrollo" %}</h3>
+                    <p>{% trans "Selecciona empresa y ejercicio; el contenido se adaptará." %}</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        window.APP_LANG = "{{ APP_LANG }}";
+    </script>
+    <script src="{% static 'js/mobile_app.js' %}?v={{ cache_bust }}"></script>
+</body>
+
+</html>

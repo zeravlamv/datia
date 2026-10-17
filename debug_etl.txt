@@ -1,0 +1,627 @@
+[2026-03-03T17:03:20.106186] Validation Report empresa=1 years=[2026, 2025, 2024]
+[2026-03-03T17:08:59.816319] START sync_dynamic_tables_generator. Company=1, TableIDs=None, SyncData=True
+[2026-03-03T17:08:59.823716] Auto-selecting tables for empresa_id=1
+[2026-03-03T17:12:17.520513] START sync_dynamic_tables_generator. Company=1, TableIDs=None, SyncData=True
+[2026-03-03T17:12:17.525959] Auto-selecting tables for empresa_id=1
+[2026-03-03T17:12:31.727689] Validation Report empresa=1 years=[2026, 2025, 2024, 2023, 2021, 2004]
+[2026-03-03T17:12:33.359128] START sync_dynamic_tables_generator. Company=2, TableIDs=None, SyncData=True
+[2026-03-03T17:12:33.363174] Auto-selecting tables for empresa_id=2
+[2026-03-03T17:12:36.639625] Validation Report empresa=2 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T17:12:38.450498] START sync_dynamic_tables_generator. Company=3, TableIDs=None, SyncData=True
+[2026-03-03T17:12:38.454948] Auto-selecting tables for empresa_id=3
+[2026-03-03T17:12:42.671413] Validation Report empresa=3 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T17:12:44.551109] START sync_dynamic_tables_generator. Company=4, TableIDs=None, SyncData=True
+[2026-03-03T17:12:44.556681] Auto-selecting tables for empresa_id=4
+[2026-03-03T17:12:45.438293] Validation Report empresa=4 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T17:12:50.726050] START sync_dynamic_tables_generator. Company=5, TableIDs=None, SyncData=True
+[2026-03-03T17:12:50.731619] Auto-selecting tables for empresa_id=5
+[2026-03-03T17:12:51.247930] Validation Report empresa=5 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T17:12:53.586161] START sync_dynamic_tables_generator. Company=6, TableIDs=None, SyncData=True
+[2026-03-03T17:12:53.591917] Auto-selecting tables for empresa_id=6
+[2026-03-03T17:12:53.884650] Validation Report empresa=6 years=[2026]
+[2026-03-03T17:12:54.585921] START sync_dynamic_tables_generator. Company=7, TableIDs=None, SyncData=True
+[2026-03-03T17:12:54.590664] Auto-selecting tables for empresa_id=7
+[2026-03-03T17:12:54.862429] Validation Report empresa=7 years=[2026, 2025, 2024]
+[2026-03-03T17:12:55.621305] START sync_dynamic_tables_generator. Company=99, TableIDs=None, SyncData=True
+[2026-03-03T17:12:55.630906] Auto-selecting tables for empresa_id=99
+[2026-03-03T17:12:56.084545] Validation Report empresa=99 years=[2025, 2024]
+[2026-03-03T17:31:35.362192] START sync_dynamic_tables_generator. Company=1, TableIDs=None, SyncData=True
+[2026-03-03T17:31:35.370051] Auto-selecting tables for empresa_id=1
+[2026-03-03T17:32:02.459465] Validation Report empresa=1 years=[2026, 2025, 2024, 2023, 2021, 2004]
+[2026-03-03T17:32:05.503212] START sync_dynamic_tables_generator. Company=2, TableIDs=None, SyncData=True
+[2026-03-03T17:32:05.528396] Auto-selecting tables for empresa_id=2
+[2026-03-03T17:32:11.115902] Validation Report empresa=2 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T17:32:14.135518] START sync_dynamic_tables_generator. Company=3, TableIDs=None, SyncData=True
+[2026-03-03T17:32:14.145461] Auto-selecting tables for empresa_id=3
+[2026-03-03T17:32:20.844727] Validation Report empresa=3 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T17:32:22.459264] START sync_dynamic_tables_generator. Company=4, TableIDs=None, SyncData=True
+[2026-03-03T17:32:22.465232] Auto-selecting tables for empresa_id=4
+[2026-03-03T17:32:22.702062] Validation Report empresa=4 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T17:32:24.743812] START sync_dynamic_tables_generator. Company=5, TableIDs=None, SyncData=True
+[2026-03-03T17:32:24.760859] Auto-selecting tables for empresa_id=5
+[2026-03-03T17:32:25.239110] Validation Report empresa=5 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T17:32:25.614056] START sync_dynamic_tables_generator. Company=6, TableIDs=None, SyncData=True
+[2026-03-03T17:32:25.619979] Auto-selecting tables for empresa_id=6
+[2026-03-03T17:32:25.934346] Validation Report empresa=6 years=[2026]
+[2026-03-03T17:32:27.384760] START sync_dynamic_tables_generator. Company=7, TableIDs=None, SyncData=True
+[2026-03-03T17:32:27.390199] Auto-selecting tables for empresa_id=7
+[2026-03-03T17:32:27.686594] Validation Report empresa=7 years=[2026, 2025, 2024]
+[2026-03-03T17:32:28.316984] START sync_dynamic_tables_generator. Company=99, TableIDs=None, SyncData=True
+[2026-03-03T17:32:28.323339] Auto-selecting tables for empresa_id=99
+[2026-03-03T17:32:28.664559] Validation Report empresa=99 years=[2025, 2024]
+[2026-03-03T17:59:57.498645] START sync_dynamic_tables_generator. Company=1, TableIDs=None, SyncData=True
+[2026-03-03T17:59:57.506570] Auto-selecting tables for empresa_id=1
+[2026-03-03T18:00:12.143111] Validation Report empresa=1 years=[2026, 2025, 2024, 2023, 2021, 2004]
+[2026-03-03T18:00:15.636250] START sync_dynamic_tables_generator. Company=2, TableIDs=None, SyncData=True
+[2026-03-03T18:00:15.643451] Auto-selecting tables for empresa_id=2
+[2026-03-03T18:00:19.060031] Validation Report empresa=2 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T18:00:21.865921] START sync_dynamic_tables_generator. Company=3, TableIDs=None, SyncData=True
+[2026-03-03T18:00:21.874161] Auto-selecting tables for empresa_id=3
+[2026-03-03T18:00:25.599329] Validation Report empresa=3 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T18:00:27.404833] START sync_dynamic_tables_generator. Company=4, TableIDs=None, SyncData=True
+[2026-03-03T18:00:27.408651] Auto-selecting tables for empresa_id=4
+[2026-03-03T18:00:27.670129] Validation Report empresa=4 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T18:00:29.162497] START sync_dynamic_tables_generator. Company=5, TableIDs=None, SyncData=True
+[2026-03-03T18:00:29.179424] Auto-selecting tables for empresa_id=5
+[2026-03-03T18:00:29.628942] Validation Report empresa=5 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T18:00:30.147798] START sync_dynamic_tables_generator. Company=6, TableIDs=None, SyncData=True
+[2026-03-03T18:00:30.155152] Auto-selecting tables for empresa_id=6
+[2026-03-03T18:00:30.424431] Validation Report empresa=6 years=[2026]
+[2026-03-03T18:00:31.135017] START sync_dynamic_tables_generator. Company=7, TableIDs=None, SyncData=True
+[2026-03-03T18:00:31.140625] Auto-selecting tables for empresa_id=7
+[2026-03-03T18:00:31.443009] Validation Report empresa=7 years=[2026, 2025, 2024]
+[2026-03-03T18:00:31.966664] START sync_dynamic_tables_generator. Company=99, TableIDs=None, SyncData=True
+[2026-03-03T18:00:31.970868] Auto-selecting tables for empresa_id=99
+[2026-03-03T18:00:32.232642] Validation Report empresa=99 years=[2025, 2024]
+[2026-03-03T19:24:18.239425] START sync_dynamic_tables_generator. Company=1, TableIDs=None, SyncData=True
+[2026-03-03T19:24:18.247747] Auto-selecting tables for empresa_id=1
+[2026-03-03T19:24:39.302417] Validation Report empresa=1 years=[2026, 2025, 2024, 2023, 2021, 2004]
+[2026-03-03T19:24:42.470051] START sync_dynamic_tables_generator. Company=2, TableIDs=None, SyncData=True
+[2026-03-03T19:24:42.477820] Auto-selecting tables for empresa_id=2
+[2026-03-03T19:24:48.005763] Validation Report empresa=2 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T19:24:50.702052] START sync_dynamic_tables_generator. Company=3, TableIDs=None, SyncData=True
+[2026-03-03T19:24:50.723145] Auto-selecting tables for empresa_id=3
+[2026-03-03T19:24:55.995989] Validation Report empresa=3 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T19:24:58.110603] START sync_dynamic_tables_generator. Company=4, TableIDs=None, SyncData=True
+[2026-03-03T19:24:58.116756] Auto-selecting tables for empresa_id=4
+[2026-03-03T19:24:58.330035] Validation Report empresa=4 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T19:24:59.722081] START sync_dynamic_tables_generator. Company=5, TableIDs=None, SyncData=True
+[2026-03-03T19:24:59.727548] Auto-selecting tables for empresa_id=5
+[2026-03-03T19:24:59.928295] Validation Report empresa=5 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T19:25:00.370632] START sync_dynamic_tables_generator. Company=6, TableIDs=None, SyncData=True
+[2026-03-03T19:25:00.378038] Auto-selecting tables for empresa_id=6
+[2026-03-03T19:25:00.857945] Validation Report empresa=6 years=[2026]
+[2026-03-03T19:25:01.805582] START sync_dynamic_tables_generator. Company=7, TableIDs=None, SyncData=True
+[2026-03-03T19:25:01.813070] Auto-selecting tables for empresa_id=7
+[2026-03-03T19:25:02.068673] Validation Report empresa=7 years=[2026, 2025, 2024]
+[2026-03-03T19:25:02.821803] START sync_dynamic_tables_generator. Company=99, TableIDs=None, SyncData=True
+[2026-03-03T19:25:02.828384] Auto-selecting tables for empresa_id=99
+[2026-03-03T19:25:03.100703] Validation Report empresa=99 years=[2025, 2024]
+[2026-03-03T20:07:49.491472] START sync_dynamic_tables_generator. Company=1, TableIDs=None, SyncData=True
+[2026-03-03T20:07:49.496571] Auto-selecting tables for empresa_id=1
+[2026-03-03T20:08:07.137090] Validation Report empresa=1 years=[2026, 2025, 2024, 2023, 2021, 2004]
+[2026-03-03T20:08:09.281912] START sync_dynamic_tables_generator. Company=2, TableIDs=None, SyncData=True
+[2026-03-03T20:08:09.288726] Auto-selecting tables for empresa_id=2
+[2026-03-03T20:08:12.699397] Validation Report empresa=2 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T20:08:14.205890] START sync_dynamic_tables_generator. Company=3, TableIDs=None, SyncData=True
+[2026-03-03T20:08:14.212874] Auto-selecting tables for empresa_id=3
+[2026-03-03T20:08:18.522229] Validation Report empresa=3 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T20:08:20.076697] START sync_dynamic_tables_generator. Company=4, TableIDs=None, SyncData=True
+[2026-03-03T20:08:20.080987] Auto-selecting tables for empresa_id=4
+[2026-03-03T20:08:20.304136] Validation Report empresa=4 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T20:08:21.448724] START sync_dynamic_tables_generator. Company=5, TableIDs=None, SyncData=True
+[2026-03-03T20:08:21.453881] Auto-selecting tables for empresa_id=5
+[2026-03-03T20:08:21.678962] Validation Report empresa=5 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T20:08:22.523601] START sync_dynamic_tables_generator. Company=6, TableIDs=None, SyncData=True
+[2026-03-03T20:08:22.559256] Auto-selecting tables for empresa_id=6
+[2026-03-03T20:08:23.129605] Validation Report empresa=6 years=[2026]
+[2026-03-03T20:08:24.520126] START sync_dynamic_tables_generator. Company=7, TableIDs=None, SyncData=True
+[2026-03-03T20:08:24.526166] Auto-selecting tables for empresa_id=7
+[2026-03-03T20:08:24.873969] Validation Report empresa=7 years=[2026, 2025, 2024]
+[2026-03-03T20:08:26.953965] START sync_dynamic_tables_generator. Company=99, TableIDs=None, SyncData=True
+[2026-03-03T20:08:26.962335] Auto-selecting tables for empresa_id=99
+[2026-03-03T20:08:27.679836] Validation Report empresa=99 years=[2025, 2024]
+[2026-03-03T20:22:06.555093] START sync_dynamic_tables_generator. Company=1, TableIDs=None, SyncData=True
+[2026-03-03T20:22:06.565112] Auto-selecting tables for empresa_id=1
+[2026-03-03T20:22:21.296183] Validation Report empresa=1 years=[2026, 2025, 2024, 2023, 2021, 2004]
+[2026-03-03T20:22:23.660452] START sync_dynamic_tables_generator. Company=2, TableIDs=None, SyncData=True
+[2026-03-03T20:22:23.666381] Auto-selecting tables for empresa_id=2
+[2026-03-03T20:22:26.640824] Validation Report empresa=2 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T20:22:28.305523] START sync_dynamic_tables_generator. Company=3, TableIDs=None, SyncData=True
+[2026-03-03T20:22:28.311961] Auto-selecting tables for empresa_id=3
+[2026-03-03T20:22:31.776675] Validation Report empresa=3 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T20:22:33.315981] START sync_dynamic_tables_generator. Company=4, TableIDs=None, SyncData=True
+[2026-03-03T20:22:33.322471] Auto-selecting tables for empresa_id=4
+[2026-03-03T20:22:33.634939] Validation Report empresa=4 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T20:22:34.888981] START sync_dynamic_tables_generator. Company=5, TableIDs=None, SyncData=True
+[2026-03-03T20:22:34.926983] Auto-selecting tables for empresa_id=5
+[2026-03-03T20:22:35.304207] Validation Report empresa=5 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T20:22:35.665548] START sync_dynamic_tables_generator. Company=6, TableIDs=None, SyncData=True
+[2026-03-03T20:22:35.672683] Auto-selecting tables for empresa_id=6
+[2026-03-03T20:22:35.992080] Validation Report empresa=6 years=[2026]
+[2026-03-03T20:22:36.896639] START sync_dynamic_tables_generator. Company=7, TableIDs=None, SyncData=True
+[2026-03-03T20:22:36.902536] Auto-selecting tables for empresa_id=7
+[2026-03-03T20:22:37.236125] Validation Report empresa=7 years=[2026, 2025, 2024]
+[2026-03-03T20:22:38.542248] START sync_dynamic_tables_generator. Company=99, TableIDs=None, SyncData=True
+[2026-03-03T20:22:38.551544] Auto-selecting tables for empresa_id=99
+[2026-03-03T20:22:39.036032] Validation Report empresa=99 years=[2025, 2024]
+[2026-03-03T21:56:32.202985] START sync_dynamic_tables_generator. Company=1, TableIDs=None, SyncData=True
+[2026-03-03T21:56:32.211286] Auto-selecting tables for empresa_id=1
+[2026-03-03T21:56:46.571456] Validation Report empresa=1 years=[2026, 2025, 2024, 2023, 2021, 2004]
+[2026-03-03T21:56:48.959661] START sync_dynamic_tables_generator. Company=2, TableIDs=None, SyncData=True
+[2026-03-03T21:56:48.966715] Auto-selecting tables for empresa_id=2
+[2026-03-03T21:56:52.370430] Validation Report empresa=2 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T21:56:53.853792] START sync_dynamic_tables_generator. Company=3, TableIDs=None, SyncData=True
+[2026-03-03T21:56:53.859339] Auto-selecting tables for empresa_id=3
+[2026-03-03T21:56:57.673344] Validation Report empresa=3 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T21:57:00.600522] START sync_dynamic_tables_generator. Company=4, TableIDs=None, SyncData=True
+[2026-03-03T21:57:00.608800] Auto-selecting tables for empresa_id=4
+[2026-03-03T21:57:01.074519] Validation Report empresa=4 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T21:57:02.533747] START sync_dynamic_tables_generator. Company=5, TableIDs=None, SyncData=True
+[2026-03-03T21:57:02.539715] Auto-selecting tables for empresa_id=5
+[2026-03-03T21:57:02.763957] Validation Report empresa=5 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T21:57:03.080068] START sync_dynamic_tables_generator. Company=6, TableIDs=None, SyncData=True
+[2026-03-03T21:57:03.084616] Auto-selecting tables for empresa_id=6
+[2026-03-03T21:57:03.299768] Validation Report empresa=6 years=[2026]
+[2026-03-03T21:57:04.386692] START sync_dynamic_tables_generator. Company=7, TableIDs=None, SyncData=True
+[2026-03-03T21:57:04.392995] Auto-selecting tables for empresa_id=7
+[2026-03-03T21:57:04.605336] Validation Report empresa=7 years=[2026, 2025, 2024]
+[2026-03-03T21:57:05.138592] START sync_dynamic_tables_generator. Company=99, TableIDs=None, SyncData=True
+[2026-03-03T21:57:05.145591] Auto-selecting tables for empresa_id=99
+[2026-03-03T21:57:05.398996] Validation Report empresa=99 years=[2025, 2024]
+[2026-03-03T23:19:48.865663] START sync_dynamic_tables_generator. Company=1, TableIDs=None, SyncData=True
+[2026-03-03T23:19:48.874726] Auto-selecting tables for empresa_id=1
+[2026-03-03T23:20:05.745483] Validation Report empresa=1 years=[2026, 2025, 2024, 2023, 2021, 2004]
+[2026-03-03T23:20:08.313831] START sync_dynamic_tables_generator. Company=2, TableIDs=None, SyncData=True
+[2026-03-03T23:20:08.321629] Auto-selecting tables for empresa_id=2
+[2026-03-03T23:20:12.106206] Validation Report empresa=2 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T23:20:19.050772] START sync_dynamic_tables_generator. Company=3, TableIDs=None, SyncData=True
+[2026-03-03T23:20:19.058466] Auto-selecting tables for empresa_id=3
+[2026-03-03T23:20:23.569302] Validation Report empresa=3 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T23:20:25.808164] START sync_dynamic_tables_generator. Company=4, TableIDs=None, SyncData=True
+[2026-03-03T23:20:25.814668] Auto-selecting tables for empresa_id=4
+[2026-03-03T23:20:26.120404] Validation Report empresa=4 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T23:20:27.895636] START sync_dynamic_tables_generator. Company=5, TableIDs=None, SyncData=True
+[2026-03-03T23:20:27.902450] Auto-selecting tables for empresa_id=5
+[2026-03-03T23:20:28.223550] Validation Report empresa=5 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-03T23:20:29.152536] START sync_dynamic_tables_generator. Company=6, TableIDs=None, SyncData=True
+[2026-03-03T23:20:29.160506] Auto-selecting tables for empresa_id=6
+[2026-03-03T23:20:29.446954] Validation Report empresa=6 years=[2026]
+[2026-03-03T23:20:30.598679] START sync_dynamic_tables_generator. Company=7, TableIDs=None, SyncData=True
+[2026-03-03T23:20:30.606269] Auto-selecting tables for empresa_id=7
+[2026-03-03T23:20:30.963402] Validation Report empresa=7 years=[2026, 2025, 2024]
+[2026-03-03T23:20:31.789674] START sync_dynamic_tables_generator. Company=99, TableIDs=None, SyncData=True
+[2026-03-03T23:20:31.797014] Auto-selecting tables for empresa_id=99
+[2026-03-03T23:20:32.198590] Validation Report empresa=99 years=[2025, 2024]
+[2026-03-04T13:06:53.746736] START sync_dynamic_tables_generator. Company=1, TableIDs=None, SyncData=True
+[2026-03-04T13:06:53.754627] Auto-selecting tables for empresa_id=1
+[2026-03-04T13:07:09.576320] Validation Report empresa=1 years=[2026, 2025, 2024, 2023, 2021, 2004]
+[2026-03-04T13:07:11.326753] START sync_dynamic_tables_generator. Company=2, TableIDs=None, SyncData=True
+[2026-03-04T13:07:11.334932] Auto-selecting tables for empresa_id=2
+[2026-03-04T13:07:14.836938] Validation Report empresa=2 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-04T13:07:16.864147] START sync_dynamic_tables_generator. Company=3, TableIDs=None, SyncData=True
+[2026-03-04T13:07:16.872886] Auto-selecting tables for empresa_id=3
+[2026-03-04T13:07:20.931936] Validation Report empresa=3 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-04T13:07:23.487102] START sync_dynamic_tables_generator. Company=4, TableIDs=None, SyncData=True
+[2026-03-04T13:07:23.499377] Auto-selecting tables for empresa_id=4
+[2026-03-04T13:07:23.862494] Validation Report empresa=4 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-04T13:07:26.016944] START sync_dynamic_tables_generator. Company=5, TableIDs=None, SyncData=True
+[2026-03-04T13:07:26.024996] Auto-selecting tables for empresa_id=5
+[2026-03-04T13:07:26.345559] Validation Report empresa=5 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020]
+[2026-03-04T13:07:26.831342] START sync_dynamic_tables_generator. Company=6, TableIDs=None, SyncData=True
+[2026-03-04T13:07:26.838425] Auto-selecting tables for empresa_id=6
+[2026-03-04T13:07:27.063718] Validation Report empresa=6 years=[2026]
+[2026-03-04T13:07:28.394089] START sync_dynamic_tables_generator. Company=7, TableIDs=None, SyncData=True
+[2026-03-04T13:07:28.402563] Auto-selecting tables for empresa_id=7
+[2026-03-04T13:07:28.647777] Validation Report empresa=7 years=[2026, 2025, 2024]
+[2026-03-04T13:07:29.387501] START sync_dynamic_tables_generator. Company=99, TableIDs=None, SyncData=True
+[2026-03-04T13:07:29.394757] Auto-selecting tables for empresa_id=99
+[2026-03-04T13:07:29.661409] Validation Report empresa=99 years=[2025, 2024]
+[2026-03-04T15:07:50.456410] START sync_dynamic_tables_generator. Company=1, TableIDs=None, SyncData=True
+[2026-03-04T15:07:50.466994] Auto-selecting tables for empresa_id=1
+[2026-03-04T15:13:40.454122] START sync_dynamic_tables_generator. Company=1, TableIDs=None, SyncData=True
+[2026-03-04T15:13:40.462493] Auto-selecting tables for empresa_id=1
+[2026-03-04T15:13:55.261886] Validation Report empresa=1 years=[2026, 2025, 2024, 2023, 2021, 2004]
+[2026-03-04T15:14:00.528867] START sync_dynamic_tables_generator. Company=2, TableIDs=None, SyncData=True
+[2026-03-04T15:14:00.537439] Auto-selecting tables for empresa_id=2
+[2026-03-04T15:14:03.756841] Validation Report empresa=2 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019]
+[2026-03-04T15:14:05.796608] START sync_dynamic_tables_generator. Company=3, TableIDs=None, SyncData=True
+[2026-03-04T15:14:05.807195] Auto-selecting tables for empresa_id=3
+[2026-03-04T15:14:12.591121] Validation Report empresa=3 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019]
+[2026-03-04T15:14:15.095445] START sync_dynamic_tables_generator. Company=4, TableIDs=None, SyncData=True
+[2026-03-04T15:14:15.103661] Auto-selecting tables for empresa_id=4
+[2026-03-04T15:14:15.423156] Validation Report empresa=4 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019]
+[2026-03-04T15:14:18.328497] START sync_dynamic_tables_generator. Company=5, TableIDs=None, SyncData=True
+[2026-03-04T15:14:18.336922] Auto-selecting tables for empresa_id=5
+[2026-03-04T15:14:18.625900] Validation Report empresa=5 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019]
+[2026-03-04T15:14:19.145609] START sync_dynamic_tables_generator. Company=6, TableIDs=None, SyncData=True
+[2026-03-04T15:14:19.157950] Auto-selecting tables for empresa_id=6
+[2026-03-04T15:14:19.722327] Validation Report empresa=6 years=[2026]
+[2026-03-04T15:14:21.669146] START sync_dynamic_tables_generator. Company=7, TableIDs=None, SyncData=True
+[2026-03-04T15:14:21.684249] Auto-selecting tables for empresa_id=7
+[2026-03-04T15:14:22.250013] Validation Report empresa=7 years=[2026, 2025, 2024]
+[2026-03-04T15:14:25.929911] START sync_dynamic_tables_generator. Company=99, TableIDs=None, SyncData=True
+[2026-03-04T15:14:25.938198] Auto-selecting tables for empresa_id=99
+[2026-03-04T15:14:26.379666] Validation Report empresa=99 years=[2025, 2024]
+[2026-03-05T16:22:08.945290] START sync_dynamic_tables_generator. Company=1, TableIDs=None, SyncData=True
+[2026-03-05T16:22:08.956955] Auto-selecting tables for empresa_id=1
+[2026-03-05T16:22:35.737129] Validation Report empresa=1 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2004]
+[2026-03-05T16:22:47.093320] START sync_dynamic_tables_generator. Company=2, TableIDs=None, SyncData=True
+[2026-03-05T16:22:47.105185] Auto-selecting tables for empresa_id=2
+[2026-03-05T16:23:01.831470] Validation Report empresa=2 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019]
+[2026-03-05T16:23:07.555986] START sync_dynamic_tables_generator. Company=3, TableIDs=None, SyncData=True
+[2026-03-05T16:23:07.566617] Auto-selecting tables for empresa_id=3
+[2026-03-05T16:23:14.109749] Validation Report empresa=3 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019]
+[2026-03-05T16:23:28.858440] START sync_dynamic_tables_generator. Company=4, TableIDs=None, SyncData=True
+[2026-03-05T16:23:28.973990] Auto-selecting tables for empresa_id=4
+[2026-03-05T16:23:29.908516] Validation Report empresa=4 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019]
+[2026-03-05T16:23:42.573248] START sync_dynamic_tables_generator. Company=5, TableIDs=None, SyncData=True
+[2026-03-05T16:23:42.584980] Auto-selecting tables for empresa_id=5
+[2026-03-05T16:23:43.261730] Validation Report empresa=5 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019]
+[2026-03-05T16:23:45.527712] START sync_dynamic_tables_generator. Company=6, TableIDs=None, SyncData=True
+[2026-03-05T16:23:45.541262] Auto-selecting tables for empresa_id=6
+[2026-03-05T16:23:46.081579] Validation Report empresa=6 years=[2026]
+[2026-03-05T16:23:49.540254] START sync_dynamic_tables_generator. Company=7, TableIDs=None, SyncData=True
+[2026-03-05T16:23:49.552627] Auto-selecting tables for empresa_id=7
+[2026-03-05T16:23:50.039223] Validation Report empresa=7 years=[2026, 2025, 2024]
+[2026-03-05T16:24:00.898606] START sync_dynamic_tables_generator. Company=99, TableIDs=None, SyncData=True
+[2026-03-05T16:24:00.924104] Auto-selecting tables for empresa_id=99
+[2026-03-05T16:24:01.559900] Validation Report empresa=99 years=[2025, 2024]
+[2026-03-05T19:28:53.499603] COPY fallback triggered: el valor nulo en la columna «nombre» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (2, 1, 1, null, null, null, 2021-12-31 10:41:47+00, t, null, 2026-03-05 18:28:53.401443+00, 2026-03-05 18:28:53.401443+00).
+CONTEXT:  COPY datia_cliente, línea 2: «1,1,,,2021-12-31 10:41:47»
+
+[2026-03-05T19:28:53.740320] COPY fallback triggered: el valor nulo en la columna «nombre» de la relación «datia_proveedores» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (1591, 3, 410.6011400, null, null, null, null, t, null, 2026-03-05 18:28:53.65037+00, 2026-03-05 18:28:53.65037+00).
+CONTEXT:  COPY datia_proveedores, línea 1591: «3,410.6011400,,»
+
+[2026-03-08T18:06:25.657608] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (1, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:06:25.616464+00, 2026-03-08 17:06:25.616464+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:06:31.174063] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (2, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:06:31.152684+00, 2026-03-08 17:06:31.152684+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:14:28.514639] START sync_dynamic_tables_generator. Company=1, TableIDs=None, SyncData=True
+[2026-03-08T18:14:28.525576] Auto-selecting tables for empresa_id=1
+[2026-03-08T18:14:35.160258] Validation Report empresa=1 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017]
+[2026-03-08T18:14:35.345110] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (3, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:14:35.322498+00, 2026-03-08 17:14:35.322498+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:15:42.043911] START sync_dynamic_tables_generator. Company=2, TableIDs=None, SyncData=True
+[2026-03-08T18:15:42.053685] Auto-selecting tables for empresa_id=2
+[2026-03-08T18:15:44.003067] Validation Report empresa=2 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017]
+[2026-03-08T18:15:44.391568] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (4, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:15:44.319229+00, 2026-03-08 17:15:44.319229+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:17:13.946843] START sync_dynamic_tables_generator. Company=3, TableIDs=None, SyncData=True
+[2026-03-08T18:17:13.958888] Auto-selecting tables for empresa_id=3
+[2026-03-08T18:17:17.063939] Validation Report empresa=3 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017]
+[2026-03-08T18:17:17.548528] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (5, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:17:17.518617+00, 2026-03-08 17:17:17.518617+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:17:20.151317] START sync_dynamic_tables_generator. Company=4, TableIDs=None, SyncData=True
+[2026-03-08T18:17:20.164192] Auto-selecting tables for empresa_id=4
+[2026-03-08T18:17:20.217053] Validation Report empresa=4 years=[]
+[2026-03-08T18:17:20.605367] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (6, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:17:20.531799+00, 2026-03-08 17:17:20.531799+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:18:01.886013] START sync_dynamic_tables_generator. Company=5, TableIDs=None, SyncData=True
+[2026-03-08T18:18:01.896264] Auto-selecting tables for empresa_id=5
+[2026-03-08T18:18:01.946887] Validation Report empresa=5 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018]
+[2026-03-08T18:18:02.160622] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (7, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:18:02.117199+00, 2026-03-08 17:18:02.117199+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:18:54.666908] START sync_dynamic_tables_generator. Company=10, TableIDs=None, SyncData=True
+[2026-03-08T18:18:54.675170] Auto-selecting tables for empresa_id=10
+[2026-03-08T18:18:54.706822] Validation Report empresa=10 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018]
+[2026-03-08T18:18:54.895106] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (8, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:18:54.867689+00, 2026-03-08 17:18:54.867689+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:18:57.495514] COPY fallback triggered: el valor nulo en la columna «codigo» de la relación «datia_financial_plan» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (103714, 13, 2025, 2026-03-08 17:18:57+00, null, Alta desde la importación, 1, f, null, null, null).
+CONTEXT:  COPY datia_financial_plan, línea 121: «13,2025,,Alta desde la importación,1,,false,2026-03-08 17:18:57»
+
+[2026-03-08T18:18:57.886067] COPY fallback triggered: el valor nulo en la columna «codigo» de la relación «datia_financial_plan» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (103835, 13, 2024, 2026-03-08 17:18:57+00, null, Alta desde la importación, 1, f, null, null, null).
+CONTEXT:  COPY datia_financial_plan, línea 121: «13,2024,,Alta desde la importación,1,,false,2026-03-08 17:18:57»
+
+[2026-03-08T18:18:59.362821] COPY fallback triggered: el valor nulo en la columna «codigo» de la relación «datia_financial_plan» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (103956, 13, 2023, 2026-03-08 17:18:59+00, null, Alta desde la importación, 1, f, null, null, null).
+CONTEXT:  COPY datia_financial_plan, línea 121: «13,2023,,Alta desde la importación,1,,false,2026-03-08 17:18:59»
+
+[2026-03-08T18:19:00.021192] COPY fallback triggered: el valor nulo en la columna «codigo» de la relación «datia_financial_plan» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (104077, 13, 2022, 2026-03-08 17:18:59+00, null, Alta desde la importación, 1, f, null, null, null).
+CONTEXT:  COPY datia_financial_plan, línea 121: «13,2022,,Alta desde la importación,1,,false,2026-03-08 17:18:59»
+
+[2026-03-08T18:19:00.567106] COPY fallback triggered: el valor nulo en la columna «codigo» de la relación «datia_financial_plan» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (104198, 13, 2021, 2026-03-08 17:19:00+00, null, Alta desde la importación, 1, f, null, null, null).
+CONTEXT:  COPY datia_financial_plan, línea 121: «13,2021,,Alta desde la importación,1,,false,2026-03-08 17:19:00»
+
+[2026-03-08T18:19:00.920202] COPY fallback triggered: el valor nulo en la columna «codigo» de la relación «datia_financial_plan» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (104319, 13, 2020, 2026-03-08 17:19:00+00, null, Alta desde la importación, 1, f, null, null, null).
+CONTEXT:  COPY datia_financial_plan, línea 121: «13,2020,,Alta desde la importación,1,,false,2026-03-08 17:19:00»
+
+[2026-03-08T18:19:01.253606] COPY fallback triggered: el valor nulo en la columna «codigo» de la relación «datia_financial_plan» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (104440, 13, 2019, 2026-03-08 17:19:01+00, null, Alta desde la importación, 1, f, null, null, null).
+CONTEXT:  COPY datia_financial_plan, línea 121: «13,2019,,Alta desde la importación,1,,false,2026-03-08 17:19:01»
+
+[2026-03-08T18:19:01.620325] COPY fallback triggered: el valor nulo en la columna «codigo» de la relación «datia_financial_plan» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (104561, 13, 2018, 2026-03-08 17:19:01+00, null, Alta desde la importación, 1, f, null, null, null).
+CONTEXT:  COPY datia_financial_plan, línea 121: «13,2018,,Alta desde la importación,1,,false,2026-03-08 17:19:01»
+
+[2026-03-08T18:19:01.975785] COPY fallback triggered: el valor nulo en la columna «codigo» de la relación «datia_financial_plan» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (104682, 13, 2017, 2026-03-08 17:19:01+00, null, Alta desde la importación, 1, f, null, null, null).
+CONTEXT:  COPY datia_financial_plan, línea 121: «13,2017,,Alta desde la importación,1,,false,2026-03-08 17:19:01»
+
+[2026-03-08T18:19:02.129173] START sync_dynamic_tables_generator. Company=13, TableIDs=None, SyncData=True
+[2026-03-08T18:19:02.139190] Auto-selecting tables for empresa_id=13
+[2026-03-08T18:19:02.178320] Validation Report empresa=13 years=[2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017]
+[2026-03-08T18:19:02.727465] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (9, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:19:02.624305+00, 2026-03-08 17:19:02.624305+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:19:39.305105] START sync_dynamic_tables_generator. Company=15, TableIDs=None, SyncData=True
+[2026-03-08T18:19:39.310950] Auto-selecting tables for empresa_id=15
+[2026-03-08T18:19:39.360907] Validation Report empresa=15 years=[2025, 2024, 2023, 2022, 2021, 2020, 2019]
+[2026-03-08T18:19:39.594932] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (10, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:19:39.557105+00, 2026-03-08 17:19:39.557105+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:19:43.998303] START sync_dynamic_tables_generator. Company=16, TableIDs=None, SyncData=True
+[2026-03-08T18:19:44.007897] Auto-selecting tables for empresa_id=16
+[2026-03-08T18:19:44.054272] Validation Report empresa=16 years=[2022, 2021]
+[2026-03-08T18:19:44.248439] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (11, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:19:44.215384+00, 2026-03-08 17:19:44.215384+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:19:50.012082] START sync_dynamic_tables_generator. Company=17, TableIDs=None, SyncData=True
+[2026-03-08T18:19:50.018889] Auto-selecting tables for empresa_id=17
+[2026-03-08T18:19:50.049687] Validation Report empresa=17 years=[2024, 2023, 2022, 2021]
+[2026-03-08T18:19:50.179802] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (12, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:19:50.158769+00, 2026-03-08 17:19:50.158769+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:19:54.212601] START sync_dynamic_tables_generator. Company=18, TableIDs=None, SyncData=True
+[2026-03-08T18:19:54.222988] Auto-selecting tables for empresa_id=18
+[2026-03-08T18:19:54.264597] Validation Report empresa=18 years=[2024, 2023]
+[2026-03-08T18:19:54.455609] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (13, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:19:54.415221+00, 2026-03-08 17:19:54.415221+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:19:56.966976] START sync_dynamic_tables_generator. Company=20, TableIDs=None, SyncData=True
+[2026-03-08T18:19:56.972876] Auto-selecting tables for empresa_id=20
+[2026-03-08T18:19:57.021910] Validation Report empresa=20 years=[]
+[2026-03-08T18:19:57.228611] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (14, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:19:57.189302+00, 2026-03-08 17:19:57.189302+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:20:01.664035] START sync_dynamic_tables_generator. Company=50, TableIDs=None, SyncData=True
+[2026-03-08T18:20:01.670211] Auto-selecting tables for empresa_id=50
+[2026-03-08T18:20:01.709207] Validation Report empresa=50 years=[2023]
+[2026-03-08T18:20:02.017536] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (15, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:20:01.973057+00, 2026-03-08 17:20:01.973057+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:20:05.960362] START sync_dynamic_tables_generator. Company=90, TableIDs=None, SyncData=True
+[2026-03-08T18:20:05.968070] Auto-selecting tables for empresa_id=90
+[2026-03-08T18:20:06.002190] Validation Report empresa=90 years=[2025]
+[2026-03-08T18:20:06.187226] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (16, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:20:06.143034+00, 2026-03-08 17:20:06.143034+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:20:09.265129] START sync_dynamic_tables_generator. Company=99, TableIDs=None, SyncData=True
+[2026-03-08T18:20:09.279958] Auto-selecting tables for empresa_id=99
+[2026-03-08T18:20:09.328404] Validation Report empresa=99 years=[2021]
+[2026-03-08T18:20:09.524795] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (17, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:20:09.487244+00, 2026-03-08 17:20:09.487244+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:20:11.704240] START sync_dynamic_tables_generator. Company=1000, TableIDs=None, SyncData=True
+[2026-03-08T18:20:11.713220] Auto-selecting tables for empresa_id=1000
+[2026-03-08T18:20:11.765708] Validation Report empresa=1000 years=[]
+[2026-03-08T18:20:11.973431] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (18, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:20:11.932871+00, 2026-03-08 17:20:11.932871+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:20:14.129151] START sync_dynamic_tables_generator. Company=1001, TableIDs=None, SyncData=True
+[2026-03-08T18:20:14.138523] Auto-selecting tables for empresa_id=1001
+[2026-03-08T18:20:14.182331] Validation Report empresa=1001 years=[]
+[2026-03-08T18:20:14.442111] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (19, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:20:14.403734+00, 2026-03-08 17:20:14.403734+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:20:18.207472] START sync_dynamic_tables_generator. Company=1002, TableIDs=None, SyncData=True
+[2026-03-08T18:20:18.214965] Auto-selecting tables for empresa_id=1002
+[2026-03-08T18:20:18.269159] Validation Report empresa=1002 years=[]
+[2026-03-08T18:20:18.468966] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (20, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:20:18.424909+00, 2026-03-08 17:20:18.424909+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:20:20.546009] START sync_dynamic_tables_generator. Company=1003, TableIDs=None, SyncData=True
+[2026-03-08T18:20:20.553080] Auto-selecting tables for empresa_id=1003
+[2026-03-08T18:20:20.592164] Validation Report empresa=1003 years=[]
+[2026-03-08T18:20:20.800972] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (21, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:20:20.740881+00, 2026-03-08 17:20:20.740881+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:20:23.099503] START sync_dynamic_tables_generator. Company=1005, TableIDs=None, SyncData=True
+[2026-03-08T18:20:23.104888] Auto-selecting tables for empresa_id=1005
+[2026-03-08T18:20:23.150375] Validation Report empresa=1005 years=[]
+[2026-03-08T18:20:23.314222] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (22, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:20:23.282662+00, 2026-03-08 17:20:23.282662+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:20:25.901415] START sync_dynamic_tables_generator. Company=1006, TableIDs=None, SyncData=True
+[2026-03-08T18:20:25.910946] Auto-selecting tables for empresa_id=1006
+[2026-03-08T18:20:25.959335] Validation Report empresa=1006 years=[]
+[2026-03-08T18:20:26.141749] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (23, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:20:26.10668+00, 2026-03-08 17:20:26.10668+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:20:30.328316] START sync_dynamic_tables_generator. Company=1007, TableIDs=None, SyncData=True
+[2026-03-08T18:20:30.337664] Auto-selecting tables for empresa_id=1007
+[2026-03-08T18:20:30.391132] Validation Report empresa=1007 years=[2025]
+[2026-03-08T18:20:30.739374] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (24, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:20:30.671486+00, 2026-03-08 17:20:30.671486+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:20:35.482506] START sync_dynamic_tables_generator. Company=1009, TableIDs=None, SyncData=True
+[2026-03-08T18:20:35.490012] Auto-selecting tables for empresa_id=1009
+[2026-03-08T18:20:35.524764] Validation Report empresa=1009 years=[]
+[2026-03-08T18:20:35.741259] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (25, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:20:35.701376+00, 2026-03-08 17:20:35.701376+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:20:38.278744] START sync_dynamic_tables_generator. Company=1010, TableIDs=None, SyncData=True
+[2026-03-08T18:20:38.289645] Auto-selecting tables for empresa_id=1010
+[2026-03-08T18:20:38.339573] Validation Report empresa=1010 years=[]
+[2026-03-08T18:20:38.530532] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (26, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:20:38.499905+00, 2026-03-08 17:20:38.499905+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:20:41.636857] START sync_dynamic_tables_generator. Company=1011, TableIDs=None, SyncData=True
+[2026-03-08T18:20:41.648331] Auto-selecting tables for empresa_id=1011
+[2026-03-08T18:20:41.696459] Validation Report empresa=1011 years=[]
+[2026-03-08T18:20:41.912731] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (27, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:20:41.858478+00, 2026-03-08 17:20:41.858478+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:20:44.106113] START sync_dynamic_tables_generator. Company=1012, TableIDs=None, SyncData=True
+[2026-03-08T18:20:44.116918] Auto-selecting tables for empresa_id=1012
+[2026-03-08T18:20:44.165481] Validation Report empresa=1012 years=[]
+[2026-03-08T18:20:44.413003] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (28, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:20:44.381431+00, 2026-03-08 17:20:44.381431+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:20:47.172114] START sync_dynamic_tables_generator. Company=1014, TableIDs=None, SyncData=True
+[2026-03-08T18:20:47.178513] Auto-selecting tables for empresa_id=1014
+[2026-03-08T18:20:47.215995] Validation Report empresa=1014 years=[]
+[2026-03-08T18:20:47.449369] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (29, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:20:47.409543+00, 2026-03-08 17:20:47.409543+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:20:51.083265] START sync_dynamic_tables_generator. Company=1015, TableIDs=None, SyncData=True
+[2026-03-08T18:20:51.088929] Auto-selecting tables for empresa_id=1015
+[2026-03-08T18:20:51.140386] Validation Report empresa=1015 years=[]
+[2026-03-08T18:20:51.393010] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (30, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:20:51.349575+00, 2026-03-08 17:20:51.349575+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:20:54.466682] START sync_dynamic_tables_generator. Company=1017, TableIDs=None, SyncData=True
+[2026-03-08T18:20:54.473481] Auto-selecting tables for empresa_id=1017
+[2026-03-08T18:20:54.520124] Validation Report empresa=1017 years=[]
+[2026-03-08T18:20:54.808800] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (31, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:20:54.756782+00, 2026-03-08 17:20:54.756782+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:21:02.409283] START sync_dynamic_tables_generator. Company=8888, TableIDs=None, SyncData=True
+[2026-03-08T18:21:02.415332] Auto-selecting tables for empresa_id=8888
+[2026-03-08T18:21:02.445266] Validation Report empresa=8888 years=[2023, 2022, 2021, 2020, 2019, 2018]
+[2026-03-08T18:21:02.589576] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (32, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:21:02.56362+00, 2026-03-08 17:21:02.56362+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:21:05.431178] START sync_dynamic_tables_generator. Company=9999, TableIDs=None, SyncData=True
+[2026-03-08T18:21:05.440387] Auto-selecting tables for empresa_id=9999
+[2026-03-08T18:21:05.473143] Validation Report empresa=9999 years=[]
+[2026-03-08T18:53:47.109756] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (1, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:53:47.031697+00, 2026-03-08 17:53:47.031697+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T18:53:50.814996] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (2, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 17:53:50.756523+00, 2026-03-08 17:53:50.756523+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T19:02:20.033384] START sync_dynamic_tables_generator. Company=1, TableIDs=None, SyncData=True
+[2026-03-08T19:02:20.044301] Auto-selecting tables for empresa_id=1
+[2026-03-08T19:02:31.738088] Validation Report empresa=1 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017]
+[2026-03-08T19:02:34.145756] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (3, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 18:02:34.086376+00, 2026-03-08 18:02:34.086376+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T19:04:13.312281] START sync_dynamic_tables_generator. Company=2, TableIDs=None, SyncData=True
+[2026-03-08T19:04:13.325330] Auto-selecting tables for empresa_id=2
+[2026-03-08T19:04:15.392522] Validation Report empresa=2 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017]
+[2026-03-08T19:04:15.587020] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (4, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 18:04:15.560754+00, 2026-03-08 18:04:15.560754+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T19:06:02.447842] START sync_dynamic_tables_generator. Company=3, TableIDs=None, SyncData=True
+[2026-03-08T19:06:02.453730] Auto-selecting tables for empresa_id=3
+[2026-03-08T19:06:05.205961] Validation Report empresa=3 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017]
+[2026-03-08T19:06:05.459131] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (5, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 18:06:05.415704+00, 2026-03-08 18:06:05.415704+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T19:06:08.636132] START sync_dynamic_tables_generator. Company=4, TableIDs=None, SyncData=True
+[2026-03-08T19:06:08.646153] Auto-selecting tables for empresa_id=4
+[2026-03-08T19:06:08.681537] Validation Report empresa=4 years=[]
+[2026-03-08T19:06:08.885276] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (6, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 18:06:08.850851+00, 2026-03-08 18:06:08.850851+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T19:07:00.498972] START sync_dynamic_tables_generator. Company=5, TableIDs=None, SyncData=True
+[2026-03-08T19:07:00.521094] Auto-selecting tables for empresa_id=5
+[2026-03-08T19:07:00.575631] Validation Report empresa=5 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018]
+[2026-03-08T19:07:01.116109] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (7, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 18:07:01.003659+00, 2026-03-08 18:07:01.003659+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T19:08:03.106766] START sync_dynamic_tables_generator. Company=10, TableIDs=None, SyncData=True
+[2026-03-08T19:08:03.113388] Auto-selecting tables for empresa_id=10
+[2026-03-08T19:08:03.168092] Validation Report empresa=10 years=[2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018]
+[2026-03-08T19:08:03.391284] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (8, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 18:08:03.362695+00, 2026-03-08 18:08:03.362695+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+
+[2026-03-08T19:08:06.953036] COPY fallback triggered: el valor nulo en la columna «codigo» de la relación «datia_financial_plan» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (103714, 13, 2025, 2026-03-08 18:08:06+00, null, Alta desde la importación, 1, f, null, null, null).
+CONTEXT:  COPY datia_financial_plan, línea 121: «13,2025,,Alta desde la importación,1,,false,2026-03-08 18:08:06»
+
+[2026-03-08T19:08:08.724765] COPY fallback triggered: el valor nulo en la columna «codigo» de la relación «datia_financial_plan» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (103835, 13, 2024, 2026-03-08 18:08:08+00, null, Alta desde la importación, 1, f, null, null, null).
+CONTEXT:  COPY datia_financial_plan, línea 121: «13,2024,,Alta desde la importación,1,,false,2026-03-08 18:08:08»
+
+[2026-03-08T19:08:10.952822] COPY fallback triggered: el valor nulo en la columna «codigo» de la relación «datia_financial_plan» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (103956, 13, 2023, 2026-03-08 18:08:10+00, null, Alta desde la importación, 1, f, null, null, null).
+CONTEXT:  COPY datia_financial_plan, línea 121: «13,2023,,Alta desde la importación,1,,false,2026-03-08 18:08:10»
+
+[2026-03-08T19:08:11.502912] COPY fallback triggered: el valor nulo en la columna «codigo» de la relación «datia_financial_plan» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (104077, 13, 2022, 2026-03-08 18:08:11+00, null, Alta desde la importación, 1, f, null, null, null).
+CONTEXT:  COPY datia_financial_plan, línea 121: «13,2022,,Alta desde la importación,1,,false,2026-03-08 18:08:11»
+
+[2026-03-08T19:08:12.833257] COPY fallback triggered: el valor nulo en la columna «codigo» de la relación «datia_financial_plan» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (104198, 13, 2021, 2026-03-08 18:08:12+00, null, Alta desde la importación, 1, f, null, null, null).
+CONTEXT:  COPY datia_financial_plan, línea 121: «13,2021,,Alta desde la importación,1,,false,2026-03-08 18:08:12»
+
+[2026-03-08T19:08:13.552111] COPY fallback triggered: el valor nulo en la columna «codigo» de la relación «datia_financial_plan» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (104319, 13, 2020, 2026-03-08 18:08:13+00, null, Alta desde la importación, 1, f, null, null, null).
+CONTEXT:  COPY datia_financial_plan, línea 121: «13,2020,,Alta desde la importación,1,,false,2026-03-08 18:08:13»
+
+[2026-03-08T19:08:14.334955] COPY fallback triggered: el valor nulo en la columna «codigo» de la relación «datia_financial_plan» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (104440, 13, 2019, 2026-03-08 18:08:14+00, null, Alta desde la importación, 1, f, null, null, null).
+CONTEXT:  COPY datia_financial_plan, línea 121: «13,2019,,Alta desde la importación,1,,false,2026-03-08 18:08:14»
+
+[2026-03-08T19:08:15.057951] COPY fallback triggered: el valor nulo en la columna «codigo» de la relación «datia_financial_plan» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (104561, 13, 2018, 2026-03-08 18:08:14+00, null, Alta desde la importación, 1, f, null, null, null).
+CONTEXT:  COPY datia_financial_plan, línea 121: «13,2018,,Alta desde la importación,1,,false,2026-03-08 18:08:14»
+
+[2026-03-08T19:08:16.098297] COPY fallback triggered: el valor nulo en la columna «codigo» de la relación «datia_financial_plan» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (104682, 13, 2017, 2026-03-08 18:08:16+00, null, Alta desde la importación, 1, f, null, null, null).
+CONTEXT:  COPY datia_financial_plan, línea 121: «13,2017,,Alta desde la importación,1,,false,2026-03-08 18:08:16»
+
+[2026-03-08T19:08:16.346578] START sync_dynamic_tables_generator. Company=13, TableIDs=None, SyncData=True
+[2026-03-08T19:08:16.357720] Auto-selecting tables for empresa_id=13
+[2026-03-08T19:08:16.405580] Validation Report empresa=13 years=[2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017]
+[2026-03-08T19:08:16.666197] COPY fallback triggered: el valor nulo en la columna «cliente» de la relación «datia_cliente» viola la restricción de no nulo
+DETAIL:  La fila que falla contiene (9, 1, null, SIN_NOMBRE, SIN_NOMBRE, null, 2025-01-13 15:42:51.447+00, t, null, 2026-03-08 18:08:16.618284+00, 2026-03-08 18:08:16.618284+00).
+CONTEXT:  COPY datia_cliente, línea 1: «1,,SIN_NOMBRE,SIN_NOMBRE,2025-01-13 15:42:51.447000»
+

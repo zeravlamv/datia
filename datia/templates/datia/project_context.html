@@ -1,0 +1,28 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contexto del Proyecto - Datia Analytics</title>
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'css/project_context.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <a href="{% url 'catalog' %}" class="back-btn">← Volver al Catálogo</a>
+        
+        <div id="content">
+            <!-- Rendered Content Will Appear Here -->
+            <div style="text-align:center; padding: 2rem;">Cargando contexto...</div>
+        </div>
+        
+        <!-- Raw content hidden store -->
+        <textarea id="rawMarkdown" style="display:none;">{{ content }}</textarea>
+    </div>
+
+    <script src="{% static 'js/project_context.js' %}"></script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+{% load static i18n %}
+<link rel="stylesheet" href="{% static 'css/pool_bancario.css' %}">
+<div id="tab-pool-bancario" class="financial-theme">
+    <div class="pool-filters">
+        <label for="pool-bank">{% trans "Banco" %}</label>
+        <select id="pool-bank">
+            <option value="">{% trans "-- Todos --" %}</option>
+        </select>
+        <label for="pool-tipo">{% trans "Tipo" %}</label>
+        <select id="pool-tipo">
+            <option value="">{% trans "-- Todos --" %}</option>
+        </select>
+        <label for="pool-hasta-mes">{% trans "Hasta mes" %}</label>
+        <select id="pool-hasta-mes">
+            <option value="">--</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+        </select>
+    </div>
+    <div class="pool-grid">
+        <div class="pool-kpi">
+            <div class="pool-kpi-title">{% trans "Límite total" %}</div>
+            <div class="pool-kpi-val" id="pool-kpi-limite">-- €</div>
+            <div class="pool-kpi-sub" id="pool-kpi-limite-sub"></div>
+        </div>
+        <div class="pool-kpi">
+            <div class="pool-kpi-title">{% trans "Dispuesto" %}</div>
+            <div class="pool-kpi-val" id="pool-kpi-dispuesto">-- €</div>
+            <div class="pool-kpi-sub" id="pool-kpi-dispuesto-sub"></div>
+        </div>
+        <div class="pool-kpi">
+            <div class="pool-kpi-title">{% trans "Disponible" %}</div>
+            <div class="pool-kpi-val" id="pool-kpi-disponible">-- €</div>
+            <div class="pool-kpi-sub" id="pool-kpi-disponible-sub"></div>
+        </div>
+        <div class="pool-kpi">
+            <div class="pool-kpi-title">{% trans "% Utilización" %}</div>
+            <div class="pool-kpi-val" id="pool-kpi-utilizacion">-- %</div>
+            <div class="pool-kpi-sub" id="pool-kpi-utilizacion-sub"></div>
+        </div>
+    </div>
+    <div class="pool-section">
+        <div class="pool-section-title">{% trans "Concentración por banco" %}</div>
+        <div id="pool-concentration-chart" class="pool-chart"></div>
+    </div>
+    <div class="pool-section">
+        <div class="pool-section-title">{% trans "Vencimientos próximos" %}</div>
+        <div id="pool-maturities-chart" class="pool-chart"></div>
+    </div>
+    <div class="pool-section">
+        <div class="pool-section-title">{% trans "Cuentas bancarias" %}</div>
+        <div class="pool-accounts-controls">
+            <input id="pool-acc-iban" type="text" placeholder="IBAN">
+            <input id="pool-acc-alias" type="text" placeholder="Alias">
+            <input id="pool-acc-uso" type="text" placeholder="Uso">
+            <label class="pool-acc-check">
+                <input id="pool-acc-activo" type="checkbox" checked>
+                <span>{% trans "Activo" %}</span>
+            </label>
+            <button id="pool-acc-add" class="btn-primary-glow">{% trans "Añadir" %}</button>
+        </div>
+        <div id="pool-accounts-list" class="pool-accounts-list"></div>
+    </div>
+</div>
+<script src="{% static 'js/dashboard/pool_bancario.js' %}?v={{ cache_bust|add:'1' }}"></script>

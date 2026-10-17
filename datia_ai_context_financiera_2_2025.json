@@ -1,0 +1,275 @@
+{
+  "meta": {
+    "empresa_id": 2,
+    "ejercicio": 2025,
+    "moneda": "EUR",
+    "rol": "Controller Financiero / CFO",
+    "comparison_mode": "previous_year",
+    "fingerprint": "ad805958"
+  },
+  "kpis_globales": {
+    "ventas": 6240672.27,
+    "otros_ingresos": 159466.62,
+    "v_existencias": 22504.79,
+    "compras": 3740666.31,
+    "otros_gastos": 2347906.44,
+    "gastos": 3740666.31,
+    "ebitda": 334070.93,
+    "margen_op_pct": 5.2,
+    "resultado_neto_balance": 2846.04
+  },
+  "kpis_comparativa": {
+    "py": {
+      "ingresos": 6333403.67,
+      "otros_ingresos": 263021.68,
+      "gastos": 5144744.5,
+      "otros_gastos": 2027838.37,
+      "resultado": -1449767.49,
+      "variacion": -873609.97,
+      "ejercicio": 2024
+    },
+    "var": {
+      "ingresos": {
+        "abs": -92731.4,
+        "pct": -1.46
+      },
+      "otros_ingresos": {
+        "abs": -103555.06,
+        "pct": -39.37
+      },
+      "gastos": {
+        "abs": -1404078.2,
+        "pct": -27.29
+      },
+      "otros_gastos": {
+        "abs": 320068.07,
+        "pct": 15.78
+      },
+      "resultado": {
+        "abs": 1783838.43,
+        "pct": -123.04
+      },
+      "variacion": {
+        "abs": 896114.76,
+        "pct": -102.58
+      }
+    }
+  },
+  "balance_situacion": {
+    "activo_total": 5080645.57,
+    "pasivo_total": 3658073.06,
+    "patrimonio_neto": 1425418.55,
+    "fondo_maniobra": 0,
+    "ratios": {
+      "liquidez": 3.33,
+      "solvencia": 1.39,
+      "endeudamiento_pct": 256.63
+    }
+  },
+  "series_mensuales": {
+    "labels": [
+      "Ene",
+      "Feb",
+      "Mar",
+      "Abr",
+      "May",
+      "Jun",
+      "Jul",
+      "Ago",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dic"
+    ],
+    "ingresos": [
+      473435.28,
+      476176.43,
+      469917.58,
+      478597.5,
+      488734.86,
+      507689.84,
+      638096.81,
+      598020.03,
+      508249.38,
+      717273.36,
+      566217.31,
+      477730.51
+    ],
+    "gastos": [
+      521627.05,
+      440152.42,
+      413415.77,
+      508311.62,
+      514257.43,
+      532610.56,
+      509414.22,
+      539514.55,
+      543394.02,
+      540333.99,
+      508778.55,
+      539267.34
+    ],
+    "ebitda": [
+      -48191.77,
+      36024.01,
+      56501.81,
+      -29714.12,
+      -25522.57,
+      -24920.72,
+      128682.59,
+      58505.48,
+      -35144.64,
+      176939.37,
+      57438.76,
+      -61536.83
+    ],
+    "margen_pct": [
+      -10.18,
+      7.57,
+      12.02,
+      -6.21,
+      -5.22,
+      -4.91,
+      20.17,
+      9.78,
+      -6.91,
+      24.67,
+      10.14,
+      -12.88
+    ]
+  },
+  "pl_analisis": [
+    {
+      "concepto": "VENTAS",
+      "real": 6240672.27,
+      "objetivo": 0,
+      "desviacion_importe": 6240672.27,
+      "desviacion_pct": 0
+    },
+    {
+      "concepto": "OTROS INGRESOS",
+      "real": 159466.62,
+      "objetivo": 0,
+      "desviacion_importe": 159466.62,
+      "desviacion_pct": 0
+    },
+    {
+      "concepto": "Variación de existencias",
+      "real": 22504.79,
+      "objetivo": 0,
+      "desviacion_importe": 22504.79,
+      "desviacion_pct": 0
+    },
+    {
+      "concepto": "COMPRAS Y APROVISIONAMIENTOS",
+      "real": 3740666.31,
+      "objetivo": 0,
+      "desviacion_importe": 3740666.31,
+      "desviacion_pct": 0
+    },
+    {
+      "concepto": "GASTOS DE PERSONAL",
+      "real": 2253407.49,
+      "objetivo": 0,
+      "desviacion_importe": 2253407.49,
+      "desviacion_pct": 0
+    },
+    {
+      "concepto": "OTROS GASTOS DE EXPLOTACIÓN",
+      "real": 93897.2,
+      "objetivo": 0,
+      "desviacion_importe": 93897.2,
+      "desviacion_pct": 0
+    },
+    {
+      "concepto": "RESULTADO FINANCIERO",
+      "real": 601.75,
+      "objetivo": 0,
+      "desviacion_importe": 601.75,
+      "desviacion_pct": 0
+    }
+  ],
+  "tesoreria": {
+    "disponible_actual": 0,
+    "periodo_medio_cobro_dias": 0,
+    "periodo_medio_pago_dias": 0,
+    "dso": 47.79,
+    "dpo": 60.77,
+    "fondo_maniobra": 2787914.6591,
+    "disponible": 871179.05,
+    "tension_liquidez_detectada": false
+  },
+  "tendencias_anomalias": {
+    "direccion_anual": "stable",
+    "anomalias_detectadas": [
+      "Mes 10: spike (717273.36)"
+    ],
+    "recomendaciones_algoritmicas": [
+      "⚠️ **Alerta de Rentabilidad**: El margen es crítico (<10%). Revisar política de precios o costes de proveedores inmediatamente.",
+      "🚀 **Gestión de Crecimiento**: Crecimiento acelerado. Vigilar stock y flujo de caja para soportar la demanda."
+    ]
+  },
+  "estacionalidad": [
+    {
+      "mes": 1,
+      "share_pct": 7.4,
+      "yoy_pct": 3.62
+    },
+    {
+      "mes": 2,
+      "share_pct": 7.44,
+      "yoy_pct": 1.61
+    },
+    {
+      "mes": 3,
+      "share_pct": 7.34,
+      "yoy_pct": -1.12
+    },
+    {
+      "mes": 4,
+      "share_pct": 7.48,
+      "yoy_pct": -10.59
+    },
+    {
+      "mes": 5,
+      "share_pct": 7.64,
+      "yoy_pct": -2.31
+    },
+    {
+      "mes": 6,
+      "share_pct": 7.93,
+      "yoy_pct": -4.32
+    },
+    {
+      "mes": 7,
+      "share_pct": 9.97,
+      "yoy_pct": 6.4
+    },
+    {
+      "mes": 8,
+      "share_pct": 9.34,
+      "yoy_pct": 9.56
+    },
+    {
+      "mes": 9,
+      "share_pct": 7.94,
+      "yoy_pct": -14.75
+    },
+    {
+      "mes": 10,
+      "share_pct": 11.21,
+      "yoy_pct": 20.68
+    },
+    {
+      "mes": 11,
+      "share_pct": 8.85,
+      "yoy_pct": -8.08
+    },
+    {
+      "mes": 12,
+      "share_pct": 7.46,
+      "yoy_pct": -29.48
+    }
+  ],
+  "alertas_sistema": []
+}

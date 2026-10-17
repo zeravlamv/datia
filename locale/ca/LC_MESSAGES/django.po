@@ -1,0 +1,592 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-01-02 13:08+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:11
+msgid "Ventas"
+msgstr "Vendes"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:15
+msgid "Compras"
+msgstr "Compres"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:19
+msgid "Almacén"
+msgstr "Magatzem"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:24
+msgid "Financiera"
+msgstr "Financera"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:50
+msgid "Girar todas las tarjetas"
+msgstr "Girar totes les targetes"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:57
+msgid "Detalles"
+msgstr "Detalls"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:74
+msgid "Ventas (1 Día)"
+msgstr "Vendes (1 Dia)"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:96
+#: .\datia\templates\datia\components\tab_actualidad.html:142
+#: .\datia\templates\datia\components\tab_actualidad.html:186
+#: .\datia\templates\datia\components\tab_actualidad.html:230
+#: .\datia\templates\datia\components\tab_actualidad.html:272
+#: .\datia\templates\datia\components\tab_actualidad.html:314
+#: .\datia\templates\datia\components\tab_actualidad.html:357
+#: .\datia\templates\datia\components\tab_actualidad.html:399
+#: .\datia\templates\datia\components\tab_actualidad.html:441
+#: .\datia\templates\datia\components\tab_actualidad.html:493
+#: .\datia\templates\datia\components\tab_actualidad.html:539
+#: .\datia\templates\datia\components\tab_actualidad.html:635
+#: .\datia\templates\datia\components\tab_actualidad.html:670
+#: .\datia\templates\datia\components\tab_actualidad.html:718
+#: .\datia\templates\datia\components\tab_actualidad.html:765
+#: .\datia\templates\datia\components\tab_actualidad.html:801
+msgid "Tabla:"
+msgstr "Taula:"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:99
+#: .\datia\templates\datia\components\tab_actualidad.html:145
+#: .\datia\templates\datia\components\tab_actualidad.html:189
+#: .\datia\templates\datia\components\tab_actualidad.html:233
+#: .\datia\templates\datia\components\tab_actualidad.html:275
+#: .\datia\templates\datia\components\tab_actualidad.html:317
+#: .\datia\templates\datia\components\tab_actualidad.html:496
+#: .\datia\templates\datia\components\tab_actualidad.html:542
+msgid "Campo:"
+msgstr "Camp:"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:101
+#: .\datia\templates\datia\components\tab_actualidad.html:147
+#: .\datia\templates\datia\components\tab_actualidad.html:191
+#: .\datia\templates\datia\components\tab_actualidad.html:236
+#: .\datia\templates\datia\components\tab_actualidad.html:278
+#: .\datia\templates\datia\components\tab_actualidad.html:320
+#: .\datia\templates\datia\components\tab_actualidad.html:363
+#: .\datia\templates\datia\components\tab_actualidad.html:405
+#: .\datia\templates\datia\components\tab_actualidad.html:447
+#: .\datia\templates\datia\components\tab_actualidad.html:498
+#: .\datia\templates\datia\components\tab_actualidad.html:544
+#: .\datia\templates\datia\components\tab_actualidad.html:593
+msgid "Previo:"
+msgstr "Previ:"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:102
+msgid "Mismo día (Año anterior)"
+msgstr "Mateix dia (Any anterior)"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:103
+#: .\datia\templates\datia\components\tab_actualidad.html:149
+#: .\datia\templates\datia\components\tab_actualidad.html:193
+#: .\datia\templates\datia\components\tab_actualidad.html:238
+#: .\datia\templates\datia\components\tab_actualidad.html:280
+#: .\datia\templates\datia\components\tab_actualidad.html:322
+#: .\datia\templates\datia\components\tab_actualidad.html:365
+#: .\datia\templates\datia\components\tab_actualidad.html:407
+#: .\datia\templates\datia\components\tab_actualidad.html:449
+#: .\datia\templates\datia\components\tab_actualidad.html:500
+#: .\datia\templates\datia\components\tab_actualidad.html:546
+#: .\datia\templates\datia\components\tab_actualidad.html:595
+msgid "Variación:"
+msgstr "Variació:"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:104
+#: .\datia\templates\datia\components\tab_actualidad.html:152
+#: .\datia\templates\datia\components\tab_actualidad.html:196
+#: .\datia\templates\datia\components\tab_actualidad.html:239
+#: .\datia\templates\datia\components\tab_actualidad.html:281
+#: .\datia\templates\datia\components\tab_actualidad.html:323
+#: .\datia\templates\datia\components\tab_actualidad.html:366
+#: .\datia\templates\datia\components\tab_actualidad.html:408
+#: .\datia\templates\datia\components\tab_actualidad.html:450
+#: .\datia\templates\datia\components\tab_actualidad.html:501
+#: .\datia\templates\datia\components\tab_actualidad.html:548
+#: .\datia\templates\datia\components\tab_actualidad.html:725
+#: .\datia\templates\datia\components\tab_actualidad.html:771
+#: .\datia\templates\datia\components\tab_actualidad.html:807
+msgid "Actualizado:"
+msgstr "Actualitzat:"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:105
+#: .\datia\templates\datia\components\tab_actualidad.html:153
+#: .\datia\templates\datia\components\tab_actualidad.html:197
+#: .\datia\templates\datia\components\tab_actualidad.html:240
+#: .\datia\templates\datia\components\tab_actualidad.html:282
+#: .\datia\templates\datia\components\tab_actualidad.html:324
+#: .\datia\templates\datia\components\tab_actualidad.html:367
+#: .\datia\templates\datia\components\tab_actualidad.html:409
+#: .\datia\templates\datia\components\tab_actualidad.html:451
+#: .\datia\templates\datia\components\tab_actualidad.html:502
+#: .\datia\templates\datia\components\tab_actualidad.html:549
+#: .\datia\templates\datia\components\tab_actualidad.html:726
+#: .\datia\templates\datia\components\tab_actualidad.html:772
+#: .\datia\templates\datia\components\tab_actualidad.html:808
+msgid "Hace 5 min"
+msgstr "Fa 5 min"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:120
+msgid "Ventas (7 Días)"
+msgstr "Vendes (7 Dies)"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:148
+msgid "7 Días (Año anterior)"
+msgstr "7 Dies (Any anterior)"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:164
+msgid "Ventas (30 Días)"
+msgstr "Vendes (30 Dies)"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:192
+msgid "30 Días (Año anterior)"
+msgstr "30 Dies (Any anterior)"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:209
+msgid "Ticket Medio (1 Día)"
+msgstr "Tiquet Mitjà (1 Dia)"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:237
+#: .\datia\templates\datia\components\tab_actualidad.html:279
+#: .\datia\templates\datia\components\tab_actualidad.html:321
+msgid "Ticket Medio (Año anterior)"
+msgstr "Tiquet Mitjà (Any anterior)"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:238
+#: .\datia\templates\datia\components\tab_actualidad.html:280
+#: .\datia\templates\datia\components\tab_actualidad.html:322
+msgid "Diferencia porcentual"
+msgstr "Diferència percentual"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:251
+msgid "Ticket Medio (7 Días)"
+msgstr "Tiquet Mitjà (7 Dies)"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:293
+msgid "Ticket Medio (30 Días)"
+msgstr "Tiquet Mitjà (30 Dies)"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:336
+msgid "Margen (1 Día)"
+msgstr "Marge (1 Dia)"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:360
+#: .\datia\templates\datia\components\tab_actualidad.html:402
+#: .\datia\templates\datia\components\tab_actualidad.html:444
+msgid "Calculado:"
+msgstr "Calculat:"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:364
+#: .\datia\templates\datia\components\tab_actualidad.html:406
+#: .\datia\templates\datia\components\tab_actualidad.html:448
+msgid "Margen (Año anterior)"
+msgstr "Marge (Any anterior)"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:365
+#: .\datia\templates\datia\components\tab_actualidad.html:407
+#: .\datia\templates\datia\components\tab_actualidad.html:449
+msgid "Puntos porcentuales"
+msgstr "Punts percentuals"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:378
+msgid "Margen (7 Días)"
+msgstr "Marge (7 Dies)"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:420
+msgid "Margen (30 Días)"
+msgstr "Marge (30 Dies)"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:466
+msgid "Ventas (Sin IVA)"
+msgstr "Vendes (Sense IVA)"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:499
+#: .\datia\templates\datia\components\tab_actualidad.html:545
+msgid "Total Ejercicio Anterior"
+msgstr "Total Exercici Anterior"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:500
+msgid "Crecimiento anual"
+msgstr "Creixement anual"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:514
+msgid "Costes Directos"
+msgstr "Costos Directes"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:546
+msgid "Evolución costes"
+msgstr "Evolució costos"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:561
+msgid "Margen Bruto"
+msgstr "Marge Brut"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:594
+msgid "Margen Medio Anterior"
+msgstr "Marge Mitjà Anterior"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:653
+msgid "Evolución Ventas"
+msgstr "Evolució Vendes"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:691
+msgid "Top Clientes"
+msgstr "Top Clients"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:738
+msgid "Top Artículos"
+msgstr "Top Articles"
+
+#: .\datia\templates\datia\components\tab_actualidad.html:784
+msgid "Top Zonas"
+msgstr "Top Zones"
+
+#: .\datia\templates\datia\components\tab_auto.html:8
+msgid "Auto Entreno & Contexto"
+msgstr "Auto Entrenament i Context"
+
+#: .\datia\templates\datia\components\tab_auto.html:10
+msgid ""
+"Define qué es tu empresa y cómo opera. La IA usará esta información para "
+"entender mejor tus datos."
+msgstr ""
+
+#: .\datia\templates\datia\components\tab_auto.html:17
+msgid "Contexto Negocio"
+msgstr "Context Negoci"
+
+#: .\datia\templates\datia\components\tab_auto.html:21
+msgid "Mapeo Datos"
+msgstr "Mapeig Dades"
+
+#: .\datia\templates\datia\components\tab_auto.html:24
+msgid "Sincronización"
+msgstr "Sincronització"
+
+#: .\datia\templates\datia\components\tab_auto.html:28
+msgid "Relaciones (Joins)"
+msgstr "Relacions (Joins)"
+
+#: .\datia\templates\datia\components\tab_auto.html:32
+msgid "Entrenamiento IA"
+msgstr "Entrenament IA"
+
+#: .\datia\templates\datia\components\tab_auto.html:42
+msgid "Contexto de Negocio"
+msgstr "Context de Negoci"
+
+#: .\datia\templates\datia\components\tab_auto.html:60
+msgid "Guardar Contexto"
+msgstr "Desar Context"
+
+#: .\datia\templates\datia\components\tab_auto.html:70
+msgid "Mapeo de Datos"
+msgstr "Mapeig de Dades"
+
+#: .\datia\templates\datia\components\tab_auto.html:74
+msgid "Seleccionar Tabla Origen (ERP)"
+msgstr "Seleccionar Taula Origen (ERP)"
+
+#: .\datia\templates\datia\components\tab_auto.html:359
+msgid "Entrenamiento Masivo de IA"
+msgstr "Entrenament Massiu de la IA"
+
+#: .\datia\templates\datia\components\tab_datia.html:34
+msgid "Inteligencia de Negocio"
+msgstr "Intel·ligència de Negoci"
+
+#: .\datia\templates\datia\components\tab_datia.html:34
+msgid "Local, Privada y Universal"
+msgstr "Local, Privada i Universal"
+
+#: .\datia\templates\datia\components\tab_datia.html:35
+msgid ""
+"Tu SAGE 200 y todos tus datos, unificados en un solo corazón inteligente."
+msgstr "El teu SAGE 200 i totes les teves dades, unificats en un sol cor intel·ligent."
+
+#: .\datia\templates\datia\components\tab_datia.html:53
+msgid "Universal & Multilingüe"
+msgstr "Universal i Multilingüe"
+
+#: .\datia\templates\datia\components\tab_datia.html:54
+msgid "Nativo para"
+msgstr "Natiu per a"
+
+#: .\datia\templates\datia\components\tab_datia.html:54
+msgid "y cualquier ERP (API, HTTP, ODBC)."
+msgstr "i qualsevol ERP (API, HTTP, ODBC)."
+
+#: .\datia\templates\datia\components\tab_datia.html:55
+msgid "Multilingüe"
+msgstr "Multilingüe"
+
+#: .\datia\templates\datia\components\tab_datia.html:55
+msgid "para hablar el idioma de tu negocio."
+msgstr "per parlar l'idioma del teu negoci."
+
+#: .\datia\templates\datia\components\tab_datia.html:72
+msgid "Multi-Empresa"
+msgstr "Multi-Empresa"
+
+#: .\datia\templates\datia\components\tab_datia.html:73
+msgid ""
+"Gestión centralizada de múltiples razones sociales. Cambia de empresa con un "
+"clic y mantén contextos separados."
+msgstr "Gestió centralitzada de múltiples raons socials. Canvia d'empresa amb un clic i mantingues contextos separats."
+
+#: .\datia\templates\datia\components\tab_datia.html:85
+msgid "Seguridad Granular"
+msgstr "Seguretat Granular"
+
+#: .\datia\templates\datia\components\tab_datia.html:86
+msgid ""
+"Acceso basado en roles y metadatos. Define quién ve qué (ventas, márgenes, "
+"costes) con precisión quirúrgica."
+msgstr "Accés basat en rols i metadades. Defineix qui veu què (vendes, marges, costos) amb precisió quirúrgica."
+
+#: .\datia\templates\datia\components\tab_datia.html:98
+msgid "Privacidad por Diseño"
+msgstr "Privacitat per Disseny"
+
+#: .\datia\templates\datia\components\tab_datia.html:99
+msgid "Datia opera con un motor"
+msgstr "Datia opera amb un motor"
+
+#: .\datia\templates\datia\components\tab_datia.html:100
+msgid "Tus datos financieros nunca abandonan tu servidor."
+msgstr "Les teves dades financeres mai abandonen el teu servidor."
+
+#: .\datia\templates\datia\components\tab_datia.html:105
+msgid "Conexión Agnóstica"
+msgstr "Connexió Agnòstica"
+
+#: .\datia\templates\datia\components\tab_datia.html:114
+msgid "Vectorización Local"
+msgstr "Vectorització Local"
+
+#: .\datia\templates\datia\components\tab_datia.html:115
+msgid ""
+"Transformamos datos en vectores matemáticos ininteligibles para externos."
+msgstr "Transformem dades en vectors matemàtics inintel·ligibles per a externs."
+
+#: .\datia\templates\datia\components\tab_datia.html:123
+msgid "Razonamiento Profundo"
+msgstr "Raonament Profund"
+
+#: .\datia\templates\datia\components\tab_datia.html:124
+msgid ""
+"La IA cruza cientos de variables para responder 'Por qué bajó el margen' sin "
+"alucinaciones."
+msgstr "La IA creua centenars de variables per respondre 'Per què va baixar el marge' sense al·lucinacions."
+
+#: .\datia\templates\datia\components\tab_historico.html:9
+msgid "Histórico de Consultas"
+msgstr "Històric de Consultes"
+
+#: .\datia\templates\datia\components\tab_historico.html:12
+msgid "Consultas guardadas que puedes reutilizar y actualizar"
+msgstr "Consultes desades que pots reutilitzar i actualitzar"
+
+#: .\datia\templates\datia\components\tab_historico.html:17
+msgid "Actualizar Todo"
+msgstr "Actualitzar Tot"
+
+#: .\datia\templates\datia\components\tab_historico.html:33
+msgid "No hay consultas guardadas"
+msgstr "No hi ha consultes desades"
+
+#: .\datia\templates\datia\components\tab_historico.html:36
+msgid "Dale 👍 a una respuesta en la pestaña IA para guardarla aquí"
+msgstr "Dona-li 👍 a una resposta a la pestanya IA per desar-la aquí"
+
+#: .\datia\templates\datia\components\tab_historico.html:117
+msgid "Ejecutar"
+msgstr "Executar"
+
+#: .\datia\templates\datia\components\tab_ia.html:11
+msgid "tu negocio"
+msgstr "el teu negoci"
+
+#: .\datia\templates\datia\components\tab_ia.html:12
+#, python-format
+msgid ""
+"Hola, ¿qué quieres saber de <span id=\"ia-prompt-company\"\n"
+"                style=\"color: var(--accent); font-weight: "
+"700;\">%(business_text)s</span>?"
+msgstr "Hola, què vols saber de <span id=\"ia-prompt-company\" style=\"color: var(--accent); font-weight: 700;\">%(business_text)s</span>?"
+
+#: .\datia\templates\datia\components\tab_ia.html:20
+msgid "Hazme cualquier pregunta sobre tu negocio..."
+msgstr "Fes-me qualsevol pregunta sobre el teu negoci..."
+
+#: .\datia\templates\datia\components\tab_ia.html:38
+msgid "Hazme otra pregunta..."
+msgstr "Fes-me una altra pregunta..."
+
+#: .\datia\templates\datia\dashboard.html:48
+msgid "Integrado con"
+msgstr "Integrat amb"
+
+#: .\datia\templates\datia\dashboard.html:54
+msgid "IA"
+msgstr "IA"
+
+#: .\datia\templates\datia\dashboard.html:55
+msgid "Auto entreno"
+msgstr "Auto entrenament"
+
+#: .\datia\templates\datia\dashboard.html:56
+msgid "Actualidad"
+msgstr "Actualitat"
+
+#: .\datia\templates\datia\dashboard.html:57
+msgid "Histórico"
+msgstr "Històric"
+
+#: .\datia\templates\datia\dashboard.html:58
+msgid "Datia"
+msgstr "Datia"
+
+#: .\datia\templates\datia\dashboard.html:88
+msgid "Configuración"
+msgstr "Configuració"
+
+#: .\datia\templates\datia\dashboard.html:104
+msgid "Cerrar sesión"
+msgstr "Tancar sessió"
+
+#: .\datia\templates\datia\dashboard.html:105
+msgid "Salir"
+msgstr "Sortir"
+
+#: .\datia\templates\datia\dashboard.html:115
+msgid "Datos actualizados"
+msgstr "Dades actualitzades"
+
+#: .\datia\templates\datia\dashboard.html:117
+msgid "Sincronización pendiente"
+msgstr "Sincronització pendent"
+
+#: .\datia\templates\datia\dashboard.html:136
+msgid "Sincronizando..."
+msgstr "Sincronitzant..."
+
+msgid "📡 Conectando con Nodos Datia..."
+msgstr "📡 Connectant amb Nodes Datia..."
+
+msgid "✨ Explorando Memoria Vectorial..."
+msgstr "✨ Explorant Memòria Vectorial..."
+
+msgid "🛡️ Validando Esquema Seguro..."
+msgstr "🛡️ Validant Esquema Segur..."
+
+msgid "✨ Materializando Respuesta..."
+msgstr "✨ Materialitzant Resposta..."
+
+msgid "✨ Entrenamiento Manual Solicitado..."
+msgstr "✨ Entrenament Manual Sol·licitat..."
+
+msgid "🎓 IA asimilando del experto..."
+msgstr "🎓 IA assimilant de l'expert..."
+
+msgid "💾 Guardando nuevo conocimiento..."
+msgstr "💾 Desant nou coneixement..."
+
+msgid "✨ Generando respuesta maestra..."
+msgstr "✨ Generant resposta mestra..."
+
+msgid "Procesando cambio de idioma..."
+msgstr "Processant canvi d'idioma..."
+
+msgid "No encuentro esta consulta en mi memoria verificada."
+msgstr "No trobo aquesta consulta a la meva memòria verificada."
+
+msgid "Generar con IA (vZULU)"
+msgstr "Generar amb IA (vZULU)"
+
+msgid "Esto analizará tu pregunta y generará una respuesta nueva."
+msgstr "Això analitzarà la teva pregunta i generarà una resposta nova."
+
+msgid "Error ZULU: Consulta vacía"
+msgstr "Error ZULU: Consulta buida"
+
+msgid "Idioma actualizado"
+msgstr "Idioma actualitzat"
+
+msgid "Error de sistema:"
+msgstr "Error de sistema:"
+
+msgid "⏳ Analizando..."
+msgstr "⏳ Analitzant..."
+
+msgid "Generando insights y gráficos avanzados..."
+msgstr "Generant insights i gràfics avançats..."
+
+msgid "✨ Analizar más"
+msgstr "✨ Analitzar més"
+
+msgid "✨ Análisis Detallado"
+msgstr "✨ Anàlisi Detallada"
+
+msgid "Sin etiqueta"
+msgstr "Sense etiqueta"
+
+msgid "Dale a 'Analizar más' para ver desgloses y distribuciones."
+msgstr "Fes clic a 'Analitzar més' per veure desglossaments i distribucions."
+
+msgid "Distribución de Ventas por Cliente (Pareto)"
+msgstr "Distribució de Vendes per Client (Pareto)"
+
+msgid "Distribución de Ventas (Pareto Top 20)"
+msgstr "Distribució de Vendes (Pareto Top 20)"
+
+msgid "Distribución de Ventas por Artículo (Pareto)"
+msgstr "Distribució de Vendes per Article (Pareto)"
+
+msgid "Concentración de Clientes (Top 5)"
+msgstr "Concentració de Clients (Top 5)"
+
+msgid "Este informe no contiene desgloses adicionales (Pareto), pero observa el gráfico principal arriba."
+msgstr "Aquest informe no conté desglossaments addicionals (Pareto), però observa el gràfic principal a dalt."
+
+msgid "No hay gráficos de desglose adicionales disponibles en este informe."
+msgstr "No hi ha gràfics de desglossament addicionals disponibles en aquest informe."
+
+msgid "Formato de tabla incorrecto o sin datos."
+msgstr "Format de taula incorrecte o sense dades."
+
+msgid "Por favor, introduce la contraseña."
+msgstr "Si us plau, introdueix la contrasenya."
+
+msgid "BORRANDO..."
+msgstr "ESBORRANT..."
+
+msgid "Éxito"
+msgstr "Èxit"
+
+msgid "Sistema reseteado correctamente"
+msgstr "Sistema reinicialitzat correctament"
+
+msgid "Error de conexión:"
+msgstr "Error de connexió:"
+
+msgid "CONFIRMAR RESET"
+msgstr "CONFIRMAR RESET"

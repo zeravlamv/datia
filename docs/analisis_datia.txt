@@ -1,0 +1,90 @@
+ANALISIS INTEGRAL TÉCNICO - DATIA ANALYTICS v2 (Enero 2026)
+================================================================
+
+1. RESUMEN EJECUTIVO Y VISIÓN DEL PRODUCTO
+------------------------------------------
+Datia Analytics v2 es una plataforma de Inteligencia de Negocios (BI) "AI-First" diseñada para transformar datos estáticos de ERPs (Sage Murano, Sage 200, etc.) en un sistema de soporte a la decisión en tiempo real.
+
+A diferencia de los BI tradicionales, Datia no solo visualiza datos, sino que los *interpreta* y *narra*. Su arquitectura híbrida combina la robustez de un Data Warehouse local (PostgreSQL) con la agilidad de Modelos de Lenguaje Locales (Ollama/Llama3) para ofrecer analítica predictiva, detección de anomalías y reportes estratégicos automáticos sin comprometer la privacidad de los datos financieros.
+
+2. ARQUITECTURA DEL SISTEMA
+---------------------------
+El sistema sigue una arquitectura monolítica modular desacoplada, priorizando la mantenibilidad y el rendimiento.
+
+2.1. NÚCLEO (BACKEND)
+- **Framework**: Django 4.2+ (Python 3.10+).
+- **API Layer**: Django Ninja (FastAPI-like) para endpoints tipados y autodocumentados.
+- **Servidor Dual**:
+    - Puerto 8000: Aplicación de Escritorio (`config.settings`).
+    - Puerto 8001: Aplicación Móvil Dedicada (`config.settings_mobile`).
+- **Base de Datos (Híbrida)**:
+    - **Operacional/Analítica (Write)**: PostgreSQL local. Almacena data warehouse (`metrics_*`, `datia_*`), configuración, usuarios y vectores de IA.
+    - **Fuente ERP (Read-Only)**: MSSQL conectado vía ODBC. Solo lectura estricta para extracción (ETL).
+
+2.2. FRONTEND (ESCRITORIO)
+- **Filosofía**: "No-Framework" / Vanilla JS. Se evita la complejidad de React/Vue en favor de HTML5 semántico + CSS3 moderno + JS ES6 modular.
+- **Renderizado**: Híbrido. Servidor (Django Templates) para estructura + Cliente (JS) para interactividad.
+- **Visualización**: Apache ECharts para gráficos complejos, optimizados con `ResizeObserver` y soporte de modo oscuro nátivo.
+- **Estilo**: CSS Grid/Flexbox, variables CSS para temas (Dark/Light), diseño "Glassmorphism" premium.
+
+2.3. FRONTEND (MÓVIL)
+- **Mobile First Real**: No es una adaptación responsive, sino una aplicación web separada (`mobile_dashboard_view`).
+- **UX**: Navegación por gestos, widgets simplificados, carga diferida de datos (Lazy Loading) y autenticación persistente por dispositivo.
+
+2.4. SERVICIOS PRINCIPALES (BUSINESS LOGIC)
+- **ETLService**: Orquestador de sincronización. Copia incremental (Upsert) desde MSSQL a Postgres. Ventana deslizante de 7 años.
+- **FinancialService**: Motor contable. Calcula Balances, P&L y Ratios en tiempo real.
+- **AnalysisService**: Motor estadístico. Z-Score para anomalías, Regresión Lineal para tendencias.
+- **AIService**: Integración con Ollama. Gestión de prompts, contexto de negocio y generación de SQL (Text-to-SQL).
+
+3. MÓDULOS DE NEGOCIO
+---------------------
+3.1. DASHBOARD FINANCIERO (CORE)
+- **KPIs**: EBITDA, Margen Bruto, Deuda Neta, ROE, ROI.
+- **P&L Interactiva**: Drill-down desde cuenta de resultados a apuntes contables.
+- **Balance**: Visualización gráfica de masas patrimoniales y fondo de maniobra.
+- **Tesorería**: Control de flujo de caja, Aging de deuda (Clientes/Proveedores) y previsión de cobros/pagos.
+- **Análisis "Senior"**: Evaluación automática de la salud financiera basada en reglas expertas ("Tratado Integral de Análisis").
+
+3.2. COMERCIAL (VENTAS/COMPRAS)
+- **Evolución**: Comparativas YoY (Year-over-Year) y MoM (Month-over-Month).
+- **Segmentación**: Análisis ABC (Pareto) dinámico de Clientes y Productos.
+- **Geolocalización**: Mapas de calor de ventas por región.
+
+3.3. INTELIGENCIA ARTIFICIAL (EL CEREBRO)
+- **Chat Natural**: Interfaz conversacional para interrogar a la base de datos ("¿Cuáles son mis 5 mejores clientes en Madrid este año?").
+- **Reportes Estratégicos**: Generación on-demand de dossieres ejecutivos con narrativas de negocio completas.
+- **Auto-Aprendizaje**: Sistema RLHF (Reinforcement Learning from Human Feedback) donde el usuario valida respuestas para entrenar el modelo.
+
+4. FLUJO DE DATOS E INTEGRACIÓN
+-------------------------------
+1. **Ingestión**: Tareas programadas o manuales (`sync`) extraen datos crudos de MSSQL.
+2. **Normalización**: Transformación de esquemas propietarios de Sage a modelo canónico Datia.
+3. **Enriquecimiento**: Cálculo de métricas derivadas (beneficio, margen) y estadísticas (z-score).
+4. **Semántica**: Indexación vectorial de metadatos para que la IA "entienda" qué es un cliente o una factura.
+5. **Consumo**: API REST sirve datos JSON ligeros al frontend.
+
+5. SEGURIDAD Y GOBERNANZA
+-------------------------
+- **Autenticación**: Django Auth extendido.
+- **Autorización**: Sistema granular `UserEmpresaPermission`. Un usuario solo ve las empresas asignadas.
+- **Trazabilidad**: Middleware `TraceID` que etiqueta cada request/log para depuración distribuida.
+- **Visibilidad**: Control global (Implantador) y personal (Usuario) de pestañas y módulos visibles.
+
+6. OBSERVACIONES TÉCNICAS Y "REGLAS DE ORO"
+-------------------------------------------
+- **Consistencia**: Unificación visual estricta entre escritorio y móvil.
+- **Rendimiento**: Prohibido superar 500 líneas por fichero de código. Refactorización constante.
+- **Separación**: CSS en `/static/css`, JS en `/static/js`, HTML en `/templates`. Nunca mezclados.
+- **Estabilidad**: Los cambios en modelos o ETL requieren plan de migración y verificación (Codigos: 666 para ejecutar).
+
+7. ESTADO ACTUAL (ROADMAP)
+--------------------------
+- **Completado**: Core financiero, ETL incremental, Módulo IA v2, Versión Móvil 1.0.
+- **En curso**: Refinamiento de predicciones de tesorería a corto plazo.
+- **Futuro**: Integración con más ERPs, expansión del módulo de predicción presupuestaria.
+
+================================================================
+Documento generado automáticamente por Agente AI Datia.
+Fecha: 23/01/2026
+Versión: 2.1.0

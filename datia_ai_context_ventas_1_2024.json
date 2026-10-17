@@ -1,0 +1,643 @@
+{
+  "empresa": 1,
+  "ejercicio": 2024,
+  "moneda": "EUR",
+  "meta": {
+    "empresa_id": 1,
+    "ejercicio": 2024,
+    "fingerprint": "7fb8292b"
+  },
+  "kpis": {
+    "ventas_totales": 7479486.87,
+    "margen_beneficio_pct": -91.39,
+    "crecimiento_anual_pct": -16.96,
+    "diferencia_absoluta_anual": -1527823.9300000006,
+    "total_operaciones": 7589
+  },
+  "top_clientes": [
+    {
+      "nombre": "DISTRIBUCIONES CAFES AGÜERA,SL",
+      "volumen_compras": 666552.88
+    },
+    {
+      "nombre": "N R ORIGINAL COFFEE & TEA SLU",
+      "volumen_compras": 542006.21
+    },
+    {
+      "nombre": "PRODUCTES VALLHONRAT, S.L",
+      "volumen_compras": 341087.85
+    },
+    {
+      "nombre": "CAFES ORFEO",
+      "volumen_compras": 271804.15
+    },
+    {
+      "nombre": "CARACAS CIGNE",
+      "volumen_compras": 91787.95
+    }
+  ],
+  "top_productos": [
+    {
+      "nombre": "CAFE ESP.CAF. NATURAL 1 KG",
+      "ingresos_generados": 1300039.91
+    },
+    {
+      "nombre": "CAFE BAR EXPRES NAT.1KG",
+      "ingresos_generados": 500676.37
+    },
+    {
+      "nombre": "CAFE ESP.CAF.NAT. Bote 3 KG",
+      "ingresos_generados": 457701.56
+    },
+    {
+      "nombre": "CAFE BATAVIA Bote 3 KG",
+      "ingresos_generados": 276065.52
+    },
+    {
+      "nombre": "CAPSULAS NAT.UNIC (100 UN)",
+      "ingresos_generados": 269308.54
+    }
+  ],
+  "evolucion_mensual": [
+    {
+      "mes": 1,
+      "ventas": 574437.9,
+      "margen": 276050.07
+    },
+    {
+      "mes": 2,
+      "ventas": 633279.31,
+      "margen": 253316.17
+    },
+    {
+      "mes": 3,
+      "ventas": 544965.43,
+      "margen": 214000.24
+    },
+    {
+      "mes": 4,
+      "ventas": 603481.25,
+      "margen": 213514.75
+    },
+    {
+      "mes": 5,
+      "ventas": 755227.44,
+      "margen": 176618.18
+    },
+    {
+      "mes": 6,
+      "ventas": 523460.53,
+      "margen": 114996.75
+    },
+    {
+      "mes": 7,
+      "ventas": 611227.57,
+      "margen": -461541.84
+    },
+    {
+      "mes": 8,
+      "ventas": 410380.07,
+      "margen": -5614387.56
+    },
+    {
+      "mes": 9,
+      "ventas": 637946.77,
+      "margen": -2417973.28
+    },
+    {
+      "mes": 10,
+      "ventas": 775043.47,
+      "margen": -102518.98
+    },
+    {
+      "mes": 11,
+      "ventas": 630895.64,
+      "margen": 265105.13
+    },
+    {
+      "mes": 12,
+      "ventas": 779141.49,
+      "margen": 247485.39
+    }
+  ],
+  "ticket_mensual": [
+    {
+      "mes": 1,
+      "ticket": 834.9388081395349
+    },
+    {
+      "mes": 2,
+      "ticket": 566.9465622202329
+    },
+    {
+      "mes": 3,
+      "ticket": 364.0383633934536
+    },
+    {
+      "mes": 4,
+      "ticket": 337.51747762863533
+    },
+    {
+      "mes": 5,
+      "ticket": 331.0948882069268
+    },
+    {
+      "mes": 6,
+      "ticket": 403.2823805855162
+    },
+    {
+      "mes": 7,
+      "ticket": 472.720471771075
+    },
+    {
+      "mes": 8,
+      "ticket": 306.02540641312453
+    },
+    {
+      "mes": 9,
+      "ticket": 335.0560766806723
+    },
+    {
+      "mes": 10,
+      "ticket": 336.0986426712923
+    },
+    {
+      "mes": 11,
+      "ticket": 283.548602247191
+    },
+    {
+      "mes": 12,
+      "ticket": 304.70922565506453
+    }
+  ],
+  "clientes_mes": [
+    {
+      "cliente": "43000008820",
+      "nombre": "DISTRIBUCIONES CAFES AGÜERA,SL",
+      "series": [
+        {
+          "mes": 1,
+          "ventas": 63787.2
+        },
+        {
+          "mes": 2,
+          "ventas": 76070.55
+        },
+        {
+          "mes": 3,
+          "ventas": 31310.69
+        },
+        {
+          "mes": 4,
+          "ventas": 36785.95
+        },
+        {
+          "mes": 5,
+          "ventas": 107728.05
+        },
+        {
+          "mes": 6,
+          "ventas": 22094.82
+        },
+        {
+          "mes": 7,
+          "ventas": 67593.3
+        },
+        {
+          "mes": 8,
+          "ventas": 29549.75
+        },
+        {
+          "mes": 9,
+          "ventas": 56333.66
+        },
+        {
+          "mes": 10,
+          "ventas": 100265.4
+        },
+        {
+          "mes": 11,
+          "ventas": 16899.0
+        },
+        {
+          "mes": 12,
+          "ventas": 58134.51
+        }
+      ]
+    },
+    {
+      "cliente": "43000009303",
+      "nombre": "N R ORIGINAL COFFEE & TEA SLU",
+      "series": [
+        {
+          "mes": 1,
+          "ventas": 15399.48
+        },
+        {
+          "mes": 2,
+          "ventas": 47526.2
+        },
+        {
+          "mes": 3,
+          "ventas": 40445.0
+        },
+        {
+          "mes": 4,
+          "ventas": 44613.11
+        },
+        {
+          "mes": 5,
+          "ventas": 61786.25
+        },
+        {
+          "mes": 6,
+          "ventas": 51039.1
+        },
+        {
+          "mes": 7,
+          "ventas": 30012.4
+        },
+        {
+          "mes": 8,
+          "ventas": 21461.4
+        },
+        {
+          "mes": 9,
+          "ventas": 85310.85
+        },
+        {
+          "mes": 10,
+          "ventas": 12528.8
+        },
+        {
+          "mes": 11,
+          "ventas": 17029.3
+        },
+        {
+          "mes": 12,
+          "ventas": 114854.32
+        }
+      ]
+    },
+    {
+      "cliente": "43000011422",
+      "nombre": "PRODUCTES VALLHONRAT, S.L",
+      "series": [
+        {
+          "mes": 1,
+          "ventas": 24814.3
+        },
+        {
+          "mes": 2,
+          "ventas": 29772.25
+        },
+        {
+          "mes": 3,
+          "ventas": 21705.47
+        },
+        {
+          "mes": 4,
+          "ventas": 28162.92
+        },
+        {
+          "mes": 5,
+          "ventas": 37388.87
+        },
+        {
+          "mes": 6,
+          "ventas": 19139.5
+        },
+        {
+          "mes": 7,
+          "ventas": 27013.69
+        },
+        {
+          "mes": 8,
+          "ventas": 17421.98
+        },
+        {
+          "mes": 9,
+          "ventas": 25195.58
+        },
+        {
+          "mes": 10,
+          "ventas": 42064.79
+        },
+        {
+          "mes": 11,
+          "ventas": 27237.8
+        },
+        {
+          "mes": 12,
+          "ventas": 41170.7
+        }
+      ]
+    },
+    {
+      "cliente": "43300000030",
+      "nombre": "CAFES ORFEO",
+      "series": [
+        {
+          "mes": 1,
+          "ventas": 15917.8
+        },
+        {
+          "mes": 2,
+          "ventas": 18622.18
+        },
+        {
+          "mes": 3,
+          "ventas": 23698.95
+        },
+        {
+          "mes": 4,
+          "ventas": 25868.0
+        },
+        {
+          "mes": 5,
+          "ventas": 21687.6
+        },
+        {
+          "mes": 6,
+          "ventas": 24854.28
+        },
+        {
+          "mes": 7,
+          "ventas": 30878.21
+        },
+        {
+          "mes": 8,
+          "ventas": 16148.95
+        },
+        {
+          "mes": 9,
+          "ventas": 20678.7
+        },
+        {
+          "mes": 10,
+          "ventas": 34095.0
+        },
+        {
+          "mes": 11,
+          "ventas": 20259.38
+        },
+        {
+          "mes": 12,
+          "ventas": 19095.1
+        }
+      ]
+    },
+    {
+      "cliente": "43300000001",
+      "nombre": "CARACAS CIGNE",
+      "series": [
+        {
+          "mes": 1,
+          "ventas": 8111.61
+        },
+        {
+          "mes": 2,
+          "ventas": 7227.74
+        },
+        {
+          "mes": 3,
+          "ventas": 8484.36
+        },
+        {
+          "mes": 4,
+          "ventas": 8667.26
+        },
+        {
+          "mes": 5,
+          "ventas": 7226.44
+        },
+        {
+          "mes": 6,
+          "ventas": 6403.56
+        },
+        {
+          "mes": 7,
+          "ventas": 7283.22
+        },
+        {
+          "mes": 8,
+          "ventas": 4635.76
+        },
+        {
+          "mes": 9,
+          "ventas": 5981.73
+        },
+        {
+          "mes": 10,
+          "ventas": 7223.12
+        },
+        {
+          "mes": 11,
+          "ventas": 9526.46
+        },
+        {
+          "mes": 12,
+          "ventas": 11016.69
+        }
+      ]
+    }
+  ],
+  "geografia": [],
+  "pareto": {
+    "top_share_pct": 25.65,
+    "top_n": 5
+  },
+  "estacionalidad": [
+    {
+      "mes": 1,
+      "share_pct": 7.68,
+      "yoy_pct": -19.18
+    },
+    {
+      "mes": 2,
+      "share_pct": 8.47,
+      "yoy_pct": -13.43
+    },
+    {
+      "mes": 3,
+      "share_pct": 7.29,
+      "yoy_pct": -42.14
+    },
+    {
+      "mes": 4,
+      "share_pct": 8.07,
+      "yoy_pct": -5.75
+    },
+    {
+      "mes": 5,
+      "share_pct": 10.1,
+      "yoy_pct": -15.67
+    },
+    {
+      "mes": 6,
+      "share_pct": 7.0,
+      "yoy_pct": -26.89
+    },
+    {
+      "mes": 7,
+      "share_pct": 8.17,
+      "yoy_pct": -5.98
+    },
+    {
+      "mes": 8,
+      "share_pct": 5.49,
+      "yoy_pct": -28.4
+    },
+    {
+      "mes": 9,
+      "share_pct": 8.53,
+      "yoy_pct": -4.95
+    },
+    {
+      "mes": 10,
+      "share_pct": 10.36,
+      "yoy_pct": -12.65
+    },
+    {
+      "mes": 11,
+      "share_pct": 8.44,
+      "yoy_pct": -25.87
+    },
+    {
+      "mes": 12,
+      "share_pct": 10.42,
+      "yoy_pct": 5.5
+    }
+  ],
+  "alertas": [
+    "Margen por debajo del 20%",
+    "Caída interanual relevante en algún mes (>15%)"
+  ],
+  "señales": {
+    "margen_pct": -91.39,
+    "meses_yoy_caida": 6,
+    "clientes_riesgo_count": 2,
+    "productos_negativos_count": 53,
+    "concentracion_pct": 25.65
+  },
+  "productos_negativos": [
+    {
+      "articulo": "01110",
+      "nombre": "CAFE ESP.CAF. NATURAL 1 KG",
+      "margen": -1415727.26
+    },
+    {
+      "articulo": "01115",
+      "nombre": "CAFE ESP.CAF.NAT. Bote 3 KG",
+      "margen": -376871.72000000003
+    },
+    {
+      "articulo": "01105",
+      "nombre": "CAFE BATAVIA Bote 3 KG",
+      "margen": -521547.05999999994
+    },
+    {
+      "articulo": "01120",
+      "nombre": "CAFE EXTRA NATURAL 1 KG",
+      "margen": -141382.57
+    },
+    {
+      "articulo": "01200",
+      "nombre": "CAFE CARACAS HOST SUPERIOR NATURAL 1 KG",
+      "margen": -1229274.0
+    },
+    {
+      "articulo": "01905",
+      "nombre": "CAFE AGUERA ESPRESSO Bote 3 kgs",
+      "margen": -264538.17000000004
+    },
+    {
+      "articulo": "01140",
+      "nombre": "CAFE ORGANICO 1KG  ",
+      "margen": -201775.21000000002
+    },
+    {
+      "articulo": "96001",
+      "nombre": "CAFE NATURAL 250 GRS.",
+      "margen": -463352.62999999995
+    },
+    {
+      "articulo": "96000",
+      "nombre": "CAFÈ NATURAL GRANEL",
+      "margen": -342494.34
+    },
+    {
+      "articulo": "01420",
+      "nombre": "CAFE ORFEO  CLASSIC NATURAL 1 KG",
+      "margen": -1204584.12
+    }
+  ],
+  "clientes_riesgo": [
+    {
+      "cliente": "43000008820",
+      "nombre": "DISTRIBUCIONES CAFES AGÜERA,SL",
+      "yoy_pct": -41.1,
+      "peso_pct": 8.91
+    },
+    {
+      "cliente": "43000009303",
+      "nombre": "N R ORIGINAL COFFEE & TEA SLU",
+      "yoy_pct": -18.57,
+      "peso_pct": 7.25
+    }
+  ],
+  "ranking_top_margen": [
+    {
+      "articulo": "02140",
+      "nombre": "CAPSULAS NAT.UNIC (100 UN)",
+      "margen": 257052.56999999998
+    },
+    {
+      "articulo": "01130",
+      "nombre": "CAFE BAR EXPRES NAT.1KG",
+      "margen": 251781.0
+    },
+    {
+      "articulo": "01100",
+      "nombre": "CAFE BATAVIA 1 KG",
+      "margen": 186455.15000000002
+    },
+    {
+      "articulo": "01112",
+      "nombre": "CAFE ESP.CAF. 80/20 1 KG",
+      "margen": 157183.90999999997
+    },
+    {
+      "articulo": "01132",
+      "nombre": "CAFE BAR EXPRES 80/20 1KG",
+      "margen": 122097.20000000001
+    }
+  ],
+  "margen_por_producto_pct": [
+    {
+      "articulo": "02140",
+      "nombre": "CAPSULAS NAT.UNIC (100 UN)",
+      "share_pct": 13.23
+    },
+    {
+      "articulo": "01130",
+      "nombre": "CAFE BAR EXPRES NAT.1KG",
+      "share_pct": 12.96
+    },
+    {
+      "articulo": "01100",
+      "nombre": "CAFE BATAVIA 1 KG",
+      "share_pct": 9.6
+    },
+    {
+      "articulo": "01112",
+      "nombre": "CAFE ESP.CAF. 80/20 1 KG",
+      "share_pct": 8.09
+    },
+    {
+      "articulo": "01132",
+      "nombre": "CAFE BAR EXPRES 80/20 1KG",
+      "share_pct": 6.29
+    }
+  ]
+}

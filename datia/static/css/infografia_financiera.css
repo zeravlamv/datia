@@ -1,0 +1,33 @@
+.infografia-root{width:100%;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;background:transparent;overflow:auto}
+.infografia-card{width:100%;max-width:1400px;min-height:auto;margin:24px auto;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,0.08);padding:24px}
+.inf-header{display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #d6d3d1;padding-bottom:12px;margin-bottom:16px}
+.inf-header h1{font-size:24px;margin:0;color:#1f2937}
+.inf-subtitle{font-size:12px;color:#6b7280}
+.inf-brand-logo{width:40px;height:40px;border-radius:8px;object-fit:contain;box-shadow:0 0 6px rgba(0,0,0,0.15)}
+.inf-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
+.inf-kpi{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px;box-shadow:0 1px 2px rgba(0,0,0,0.05)}
+.inf-kpi-val{font-size:20px;color:#111827;margin-bottom:6px}
+.inf-kpi-label{font-size:12px;color:#6b7280}
+.inf-section{margin-top:18px}
+.inf-section h2{font-size:18px;color:#374151;margin:0 0 10px 0}
+.inf-quarter-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.inf-quarter{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px}
+.inf-q-title{font-weight:600;color:#111827;margin-bottom:6px}
+.inf-q-line{font-size:12px;color:#4b5563}
+.inf-product-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.inf-product{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px}
+.inf-prod-name{font-weight:600;color:#111827;margin-bottom:6px}
+.inf-prod-val{font-size:12px;color:#4b5563}
+.inf-table{display:block;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;background:#fff}
+.inf-row{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr 1fr;gap:0;border-top:1px solid #f3f4f6}
+.inf-row.inf-head{background:#f9fafb;font-weight:600;color:#111827}
+.inf-cell{padding:8px 10px;font-size:12px;color:#374151}
+.inf-cell.inf-label{color:#111827}
+.inf-cell.inf-value{text-align:right}
+.inf-chip-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.inf-chip{background:#eef2ff;color:#1e40af;border:1px solid #c7d2fe;border-radius:999px;padding:6px 10px;font-size:12px}
+.inf-chip-warn{background:#fff7ed;color:#9a3412;border-color:#fdba74}
+.inf-list{margin:6px 0 0 18px;color:#374151;font-size:12px}
+.inf-subhead{margin-top:8px;color:#374151;font-weight:600}
+.inf-muted{color:#9ca3af;font-size:12px}
+.inf-footer{margin-top:18px;font-size:12px;color:#6b7280;border-top:1px solid #d6d3d1;padding-top:8px}

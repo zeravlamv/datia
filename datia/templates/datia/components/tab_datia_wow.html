@@ -1,0 +1,463 @@
+{% load static i18n %}
+<div id="tab-datia-wow" class="tab-panel">
+
+    <!-- PREMIUM ANIMATED BACKGROUND -->
+    <div class="wow-bg-container">
+        <div class="wow-orb wow-orb-1"></div>
+        <div class="wow-orb wow-orb-2"></div>
+        <div class="wow-noise"></div>
+    </div>
+
+    <!-- FEATURE CAROUSEL ASSETS -->
+    <link rel="stylesheet" href="{% static 'css/feature_carousel.css' %}">
+    <script src="{% static 'js/feature_carousel.js' %}"></script>
+
+    <div class="wow-container">
+        <!-- HEADER HERO -->
+        <div class="wow-hero">
+            <div class="wow-logo-container">
+                <!-- ID added for JS sync -->
+                <img id="wow-logo-img" src="{% static 'logo_analytics.png' %}" alt="Datia Logo" class="wow-logo">
+                <div class="wow-glow"></div>
+            </div>
+
+            <h1 class="wow-title"><span id="app-title-datia-wow">Datia</span></h1>
+            <p class="wow-subtitle">Inteligencia sin límites.</p>
+        </div>
+
+        <!-- FEATURE CAROUSEL -->
+        <div style="margin-bottom: 12rem; width: 100%;">
+            {% include "datia/components/feature_carousel.html" %}
+        </div>
+
+        <!-- DEEP DIVE (FLOATING STEPS) -->
+        <div class="wow-deep-dive delay-4">
+            <h2 class="wow-section-title">Privacidad por Diseño</h2>
+            <div class="wow-steps">
+                <div class="wow-step-card">
+                    <span class="wow-step-num">1</span>
+                    <h4>Conexión Agnóstica</h4>
+                    <p>Entrenamos al sistema con tus datos (SAGE, SAP, Dynamics) usando estándares seguros.</p>
+                </div>
+                <div class="wow-step-card">
+                    <span class="wow-step-num">2</span>
+                    <h4>Vectorización Local</h4>
+                    <p>Transformamos datos en vectores matemáticos ininteligibles para externos.</p>
+                </div>
+                <div class="wow-step-card">
+                    <span class="wow-step-num">3</span>
+                    <h4>Razonamiento Profundo</h4>
+                    <p>IA que cruza cientos de variables para responder "por qué" sin alucinaciones.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- BIG TEXT SECTION -->
+        <div class="wow-statement delay-4">
+            <p>
+                Diseñado para entender tu negocio.<br>
+                <span class="wow-white">Habla con tus datos.</span>
+            </p>
+        </div>
+
+    </div>
+
+    <script>
+        // 1. Logo Sync Logic
+        (function () {
+            function syncLogo() {
+                try {
+                    var saved = localStorage.getItem('datia-selected-logo');
+                    var img = document.getElementById('wow-logo-img');
+                    if (saved && img) {
+                        img.src = saved;
+                    }
+                } catch (e) { console.error(e); }
+            }
+            // Run immediately
+            syncLogo();
+            // Optional: Listen for storage changes if user has multiple tabs open
+            window.addEventListener('storage', syncLogo);
+            // Re-check on click (in case it changed in settings without page reload)
+            document.getElementById('nav-tab-datia-wow').addEventListener('click', syncLogo);
+        })();
+
+        // 2. Scroll Animation Observer
+        (function () {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('.wow-step-card, .wow-section-title').forEach(el => observer.observe(el));
+        })();
+    </script>
+
+    <style>
+        /* FONTS */
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@300;400;600&display=swap');
+
+        #tab-datia-wow {
+            font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
+            color: var(--text-muted, #a1a1aa);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* BACKGROUND SYSTEM */
+        .wow-bg-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #050505;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        /* Ambient Orbs utilizing Theme Color (var(--accent)) */
+        .wow-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.25;
+            z-index: 1;
+        }
+
+        .wow-orb-1 {
+            top: -10%;
+            left: -10%;
+            width: 50vw;
+            height: 50vw;
+            background: var(--accent, #a855f7);
+            animation: orbFloat 10s ease-in-out infinite alternate;
+        }
+
+        .wow-orb-2 {
+            bottom: -10%;
+            right: -10%;
+            width: 40vw;
+            height: 40vw;
+            background: var(--accent, #a855f7);
+            /* Fallback or secondary color could be used */
+            animation: orbFloat 15s ease-in-out infinite alternate-reverse;
+        }
+
+        .wow-noise {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            opacity: 0.04;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E");
+            pointer-events: none;
+        }
+
+        @keyframes orbFloat {
+            0% {
+                transform: translate(0, 0);
+            }
+
+            100% {
+                transform: translate(50px, 50px);
+            }
+        }
+
+        /* CONTAINER */
+        .wow-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 8rem 2rem;
+            text-align: center;
+            position: relative;
+            z-index: 5;
+            /* Above bg */
+        }
+
+        /* HERO */
+        .wow-hero {
+            margin-bottom: 10rem;
+            animation: fadeInMove 1.2s ease-out forwards;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .wow-logo-container {
+            position: relative;
+            width: 140px;
+            height: 140px;
+            margin: 0 auto 3rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .wow-logo {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            position: relative;
+            z-index: 2;
+            filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.5));
+            animation: floatLogo 6s ease-in-out infinite;
+        }
+
+        .wow-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 200%;
+            height: 200%;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle, var(--accent, rgba(168, 85, 247, 0.4)) 0%, transparent 70%);
+            opacity: 0.3;
+            z-index: 1;
+            filter: blur(40px);
+            animation: pulseSlow 4s infinite;
+        }
+
+        .wow-title {
+            font-size: 6rem;
+            font-weight: 800;
+            color: #fff;
+            margin: 0 0 1.5rem;
+            letter-spacing: -0.04em;
+            line-height: 0.9;
+        }
+
+        .wow-highlight {
+            /* Use Accent Color for Highlight gradient */
+            background: linear-gradient(135deg, #fff 0%, var(--accent, #a855f7) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .wow-subtitle {
+            font-size: 1.8rem;
+            font-weight: 300;
+            color: var(--text, #fff);
+            opacity: 0.8;
+            letter-spacing: -0.02em;
+        }
+
+        /* FEATURES GRID */
+        .wow-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 5rem;
+            margin-bottom: 12rem;
+            text-align: left;
+        }
+
+        .wow-feature-item {
+            opacity: 0;
+            animation: fadeInMove 1s ease-out forwards;
+        }
+
+        .wow-icon-box {
+            color: var(--accent, #fff);
+            margin-bottom: 1.5rem;
+            display: inline-flex;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .wow-feature-item h3 {
+            color: #fff;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0 0 0.75rem;
+            letter-spacing: -0.02em;
+        }
+
+        .wow-feature-item p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: var(--text-muted, #a1a1aa);
+        }
+
+        /* DEEP DIVE */
+        .wow-deep-dive {
+            margin-bottom: 10rem;
+            text-align: left;
+        }
+
+        .wow-section-title {
+            font-size: 4rem;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 5rem;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease-out;
+            letter-spacing: -0.03em;
+        }
+
+        .wow-section-title.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .wow-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 5rem;
+            position: relative;
+        }
+
+        .wow-steps::before {
+            content: '';
+            position: absolute;
+            left: 29px;
+            top: 30px;
+            bottom: 30px;
+            width: 2px;
+            background: linear-gradient(to bottom, transparent, var(--accent, #3f3f46), transparent);
+            opacity: 0.3;
+        }
+
+        .wow-step-card {
+            padding-left: 90px;
+            position: relative;
+            opacity: 0;
+            transform: translateX(-30px);
+            transition: all 0.8s ease-out;
+        }
+
+        .wow-step-card.visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .wow-step-num {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 60px;
+            height: 60px;
+            background: #000;
+            border: 2px solid var(--accent, #3f3f46);
+            color: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.2rem;
+            z-index: 2;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+        }
+
+        .wow-step-card h4 {
+            font-size: 2rem;
+            margin: 0 0 1rem;
+            color: #fff;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .wow-step-card p {
+            font-size: 1.2rem;
+            color: var(--text-muted, #a1a1aa);
+            max-width: 650px;
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        /* BIG STATEMENT */
+        .wow-statement {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #52525b;
+            line-height: 1.1;
+            opacity: 0;
+            animation: fadeInMove 1s ease-out forwards;
+            max-width: 900px;
+            margin: 0 auto;
+            letter-spacing: -0.03em;
+        }
+
+        .wow-white {
+            color: #fff;
+        }
+
+        /* ANIMATIONS & RESPONSIVE */
+        @keyframes fadeInMove {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulseSlow {
+
+            0%,
+            100% {
+                opacity: 0.3;
+                transform: translate(-50%, -50%) scale(1);
+            }
+
+            50% {
+                opacity: 0.6;
+                transform: translate(-50%, -50%) scale(1.1);
+            }
+        }
+
+        @keyframes floatLogo {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .wow-title {
+                font-size: 3.5rem;
+            }
+
+            .wow-section-title {
+                font-size: 2.5rem;
+                text-align: center;
+            }
+
+            .wow-features {
+                gap: 3rem;
+                text-align: center;
+            }
+
+            .wow-steps::before {
+                left: 19px;
+            }
+
+            .wow-step-card {
+                padding-left: 60px;
+            }
+
+            .wow-step-num {
+                width: 40px;
+                height: 40px;
+                font-size: 1rem;
+            }
+
+            .wow-step-card h4 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</div>

@@ -1,0 +1,54 @@
+{% load static i18n %}
+<div id="tab-ia" class="tab-panel" style="display: none; min-height: 80vh; position: relative;">
+
+    <!-- Centered Prompt (Initial State) -->
+    <div id="ia-prompt-centered" class="ia-prompt-centered">
+        <div class="ia-logo-container">
+            <img id="main-ai-logo" src="{% static 'logo_analytics.png' %}" alt="Datia Logo">
+        </div>
+
+        <p class="ia-welcome-subtitle" style="font-size: 1.2rem; font-weight: 500; color: #fff; margin-bottom: 30px;">
+            {% trans "tu negocio" as business_text %}
+            {% blocktrans %}Hola, ¿qué quieres saber de <span id="ia-prompt-company"
+                style="color: var(--accent); font-weight: 700;">{{ business_text }}</span>?{% endblocktrans %}
+        </p>
+
+        <div class="ia-input-wrapper larger">
+            <div class="ia-search-icon">
+                <i class="bi bi-search"></i>
+            </div>
+            <input type="text" id="ai-input" placeholder="{% trans 'Hazme cualquier pregunta sobre tu negocio...' %}"
+                onkeydown="handleAiKey(event)" autocomplete="off">
+            <button class="ia-send-btn larger" onclick="askAI()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Sticky Top Prompt (After First Query) -->
+    <div id="ia-prompt-sticky" class="ia-prompt-sticky" style="display: none;">
+        <div class="ia-input-wrapper" style="max-width: 80%; margin: 0 auto;">
+            <div class="ia-search-icon">
+                <i class="bi bi-search"></i>
+            </div>
+            <input type="text" id="ai-input-sticky" placeholder="{% trans 'Hazme otra pregunta...' %}"
+                onkeydown="handleAiKeySticky(event)" autocomplete="off">
+            <button class="ia-send-btn" onclick="askAIFromSticky()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Results Stream -->
+    <div id="ia-results-stream" class="ia-stream">
+        <!-- Dynamic Content -->
+    </div>
+</div>

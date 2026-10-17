@@ -1,0 +1,42 @@
+{
+  "empresa": 2,
+  "ejercicio": 2025,
+  "moneda": "EUR",
+  "meta": {
+    "empresa_id": 2,
+    "ejercicio": 2025,
+    "fingerprint": "ad805958"
+  },
+  "kpis": {
+    "ventas_totales": 0.0,
+    "margen_beneficio_pct": 0,
+    "crecimiento_anual_pct": 0,
+    "diferencia_absoluta_anual": 0.0,
+    "total_operaciones": 0
+  },
+  "top_clientes": [],
+  "top_productos": [],
+  "evolucion_mensual": [],
+  "ticket_mensual": [],
+  "clientes_mes": [],
+  "geografia": [],
+  "pareto": {
+    "top_share_pct": 0.0,
+    "top_n": 0
+  },
+  "estacionalidad": [],
+  "alertas": [
+    "Margen por debajo del 20%"
+  ],
+  "señales": {
+    "margen_pct": 0,
+    "meses_yoy_caida": 0,
+    "clientes_riesgo_count": 0,
+    "productos_negativos_count": 0,
+    "concentracion_pct": 0.0
+  },
+  "productos_negativos": [],
+  "clientes_riesgo": [],
+  "ranking_top_margen": [],
+  "margen_por_producto_pct": []
+}

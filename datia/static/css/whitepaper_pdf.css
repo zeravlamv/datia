@@ -1,0 +1,12 @@
+@page { size: A4; margin: 20mm; }
+body { font-family: Arial, sans-serif; color: #222; }
+.pdf-container { width: 100%; }
+.pdf-header { text-align: center; margin-bottom: 12mm; }
+.pdf-title { font-size: 24pt; font-weight: 700; }
+.pdf-subtitle { font-size: 12pt; color: #555; }
+.pdf-section { margin-bottom: 10mm; }
+.pdf-section h2 { font-size: 14pt; margin: 0 0 4mm 0; }
+.pdf-section p, .pdf-section ul { font-size: 11pt; line-height: 1.5; margin: 0; }
+.pdf-section ul { padding-left: 5mm; }
+.pdf-gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; }
+.pdf-gallery-item img { width: 100%; height: auto; }

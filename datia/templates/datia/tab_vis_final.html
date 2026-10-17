@@ -1,0 +1,44 @@
+﻿{% extends "admin/base_site.html" %}
+{% load i18n static datia_extras %}
+{% block content %}
+<div id="content-main">
+    <form id="user-select-form" method="get">
+        <label>{% trans "Seleccionar usuario" %}:</label>
+        <select name="user" onchange="this.form.submit()">
+            <option value="">— {% trans "Elegir" %} —</option>
+            {% for u in users %}
+            <option value="{{ u.id }}" {% if selected_user and selected_user.id == u.id %}selected{% endif %}>{{ u.username }}</option>
+            {% endfor %}
+        </select>
+    </form>
+    {% if selected_user %}
+    <div class="module">
+        <form id="visibility-form">
+            {% csrf_token %}
+            <table>
+                <thead>
+                    <tr><th>{% trans "Pestaña" %}</th><th>{% trans "Visible" %}</th></tr>
+                </thead>
+                <tbody>
+                    {% for tab in tab_ids %}
+                    <tr>
+                        <td>{{ tab }}</td>
+                        <td>
+                            <input type="checkbox" name="visible_tabs" value="{{ tab }}" {% if pref|get_item:tab != False %}checked{% endif %}>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="submit-row">
+                <input type="button" value="{% trans 'Guardar' %}" class="default" onclick="saveVisibility()">
+            </div>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+{% block extrahead %}
+{{ block.super }}
+<script src="{% static 'js/dashboard/tab_visibility.js' %}"></script>
+{% endblock %}

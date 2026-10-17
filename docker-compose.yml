@@ -1,0 +1,54 @@
+version: "3.8"
+services:
+  web:
+    build: .
+    image: datia-web:secure
+    command: ["python","manage.py","serveboth"]
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings
+      DATIA_ANALYTICS_URL: postgres://postgres:postgres@db:5432/datia
+      SECRET_KEY: ${SECRET_KEY}
+      DEBUG: "0"
+      DATIA_LOG_FILE: /app/logs/datia.log
+      MSSQL_HOST: ${MSSQL_HOST}
+      MSSQL_USER: ${MSSQL_USER}
+      MSSQL_PASSWORD: ${MSSQL_PASSWORD}
+      MSSQL_NAME: ${MSSQL_NAME}
+      MSSQL_PORT: ${MSSQL_PORT}
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+    networks:
+      - private
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - app_logs:/app/logs
+      - static:/app/datia/static
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    user: "datia"
+    restart: unless-stopped
+    depends_on:
+      - db
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: datia
+    networks:
+      - private
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+networks:
+  private:
+    driver: bridge
+volumes:
+  pgdata:
+  app_logs:
+  static:

@@ -1,0 +1,102 @@
+{% load i18n %}
+{% load static %}
+
+<div class="actualidad-evolucion-container" style="padding: 20px;">
+    <!-- Controls Header -->
+    <div class="glass-card" style="margin-bottom: 25px; padding: 20px; border-radius: 16px; background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%); display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);">
+                <i class="bi bi-graph-up-arrow" style="color: white; font-size: 1.2rem;"></i>
+            </div>
+            <div>
+                <h2 style="margin: 0; color: #f4f4f5; font-size: 1.25rem; font-weight: 600;">{% trans "Evolución Financiera Interactiva" %}</h2>
+                <span style="font-size: 0.8rem; color: #71717a;">{% trans "Tendencia de Ingresos, Gastos y Margen Neto" %}</span>
+            </div>
+        </div>
+
+        <div class="evolucion-controls" style="display: flex; align-items: center; gap: 12px;">
+            <div class="evol-select-wrapper">
+                <span style="font-size: 0.75rem; color: #a1a1aa; display: block; margin-bottom: 4px; margin-left: 5px;">{% trans "Año Inicio" %}</span>
+                <select id="evol-year-start" class="sub-nav-btn" style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: #e4e4e7; border-radius: 8px; padding: 8px 12px; min-width: 100px; outline: none; -webkit-appearance: none;">
+                    <!-- Populated by JS -->
+                </select>
+            </div>
+            <div style="margin-top: 15px; color: #3f3f46;">—</div>
+            <div class="evol-select-wrapper">
+                <span style="font-size: 0.75rem; color: #a1a1aa; display: block; margin-bottom: 4px; margin-left: 5px;">{% trans "Año Fin" %}</span>
+                <select id="evol-year-end" class="sub-nav-btn" style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: #e4e4e7; border-radius: 8px; padding: 8px 12px; min-width: 100px; outline: none; -webkit-appearance: none;">
+                    <!-- Populated by JS -->
+                </select>
+            </div>
+            <button id="btn-refresh-evol" class="sub-nav-btn" style="margin-top: 18px; padding: 8px 15px; background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 8px; font-weight: 500; display: flex; align-items: center; gap: 8px; transition: all 0.3s ease;">
+                <i class="bi bi-arrow-clockwise"></i> {% trans "Filtrar" %}
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Chart Section -->
+    <div class="glass-card" style="border-radius: 20px; overflow: hidden; background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5); position: relative;">
+        <!-- Loading Overlay -->
+        <div id="evol-loading" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(9, 9, 11, 0.7); z-index: 10; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); transition: all 0.3s ease;">
+            <div class="spinner-border text-info" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+
+        <div style="padding: 20px 25px; border-bottom: 1px solid rgba(255, 255, 255, 0.03); display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="chart-dot" style="width: 10px; height: 10px; border-radius: 50%; background: #34d399; box-shadow: 0 0 10px #34d399;"></div>
+                <h3 style="margin: 0; font-size: 1rem; color: #f4f4f5; font-weight: 500;">{% trans "Gráfico de Evolución Mensual" %}</h3>
+            </div>
+            <div style="font-size: 0.8rem; color: #71717a;">
+                <i class="bi bi-info-circle" style="margin-right: 5px;"></i> {% trans "Comparativa progresiva de flujos financieros" %}
+            </div>
+        </div>
+
+        <!-- ECharts Container -->
+        <div id="evol-chart-main" style="width: 100%; height: 500px; background: transparent; padding: 10px;"></div>
+
+        <div style="padding: 15px 25px; background: rgba(255,255,255,0.01); border-top: 1px solid rgba(255,255,255,0.03); display: flex; justify-content: space-between;">
+            <div style="display: flex; gap: 20px;">
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: #a1a1aa;">
+                    <div style="width: 12px; height: 12px; background: #34d399; border-radius: 3px;"></div> {% trans "Ingresos" %}
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: #a1a1aa;">
+                    <div style="width: 12px; height: 12px; background: #ff453a; border-radius: 3px;"></div> {% trans "Gastos" %}
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: #a1a1aa;">
+                    <i class="bi bi-dash" style="color: #facc15; stroke-width: 3px;"></i> {% trans "Resultado" %}
+                </div>
+            </div>
+            <div style="font-size: 0.75rem; color: #52525b;">
+                {% trans "Fuente: AcumuladosConta" %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Yearly Summary Chart Section -->
+    <div class="glass-card" style="margin-top: 30px; border-radius: 20px; overflow: hidden; background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5); position: relative;">
+        <!-- Loading Overlay -->
+        <div id="evol-year-loading" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(9, 9, 11, 0.7); z-index: 10; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); transition: all 0.3s ease; display: none;">
+            <div class="spinner-border text-info" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+
+        <div style="padding: 20px 25px; border-bottom: 1px solid rgba(255, 255, 255, 0.03); display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="chart-dot" style="width: 10px; height: 10px; border-radius: 2px; background: #facc15; box-shadow: 0 0 10px #facc15;"></div>
+                <h3 style="margin: 0; font-size: 1rem; color: #f4f4f5; font-weight: 500;">{% trans "Resumen Anual (Por Ejercicio)" %}</h3>
+            </div>
+            <div style="font-size: 0.8rem; color: #71717a;">
+                <i class="bi bi-calendar3" style="margin-right: 5px;"></i> {% trans "Totales consolidados por año" %}
+            </div>
+        </div>
+
+        <!-- ECharts Container for Yearly Data -->
+        <div id="evol-chart-year" style="width: 100%; height: 400px; background: transparent; padding: 10px;"></div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="{% static 'css/dashboard/evolucion.css' %}?v={% now 'U' %}">
+<script src="{% static 'js/dashboard/evolucion.js' %}?v={% now 'U' %}"></script>
