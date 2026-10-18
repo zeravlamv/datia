@@ -162,6 +162,60 @@
     text-align: center;
     margin-top: 20px;
     color: #a1a1aa;
+    width: min(420px, 100%);
+}
+
+.mb-ngrok-btn,
+.mb-ngrok-copy {
+    margin-top: 14px;
+    border: 0;
+    border-radius: 8px;
+    background: #a855f7;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 10px 16px;
+}
+
+.mb-ngrok-btn:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.mb-ngrok-box {
+    margin-top: 14px;
+    text-align: left;
+}
+
+.mb-ngrok-box label {
+    display: block;
+    font-size: 0.8rem;
+    margin-bottom: 6px;
+}
+
+.mb-ngrok-row {
+    display: flex;
+    gap: 8px;
+}
+
+.mb-ngrok-row input {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid #3f3f46;
+    border-radius: 8px;
+    background: #09090b;
+    color: #fff;
+    padding: 8px 10px;
+}
+
+.mb-ngrok-copy {
+    margin-top: 0;
+    background: #3f3f46;
+}
+
+.mb-ngrok-box small {
+    display: block;
+    margin-top: 8px;
 }
 
 /* Builder categories */

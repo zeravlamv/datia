@@ -4,9 +4,14 @@
 <div id="tab-actualidad" class="tab-panel" style="padding:0; margin:0;">
 
     <!-- MOBILE RUNTIME VIEW (Visible only on mobile + custom mode) -->
-    <div id="actualidad-mobile-view" style="display:none; padding: 20px;">
-        <div id="mobile-runtime-content" style="display: flex; flex-direction: column; gap: 15px;">
-            <!-- Rendered by JS -->
+    <div id="actualidad-mobile-view" style="display:none; padding: 16px;">
+        <nav class="mobile-section-nav" aria-label="Secciones del móvil">
+            <button type="button" class="is-on" data-section="Ventas" onclick="MobileManager.setPhoneSection('Ventas', this)">Ventas</button>
+            <button type="button" data-section="Compras" onclick="MobileManager.setPhoneSection('Compras', this)">Compras</button>
+            <button type="button" data-section="Financiera" onclick="MobileManager.setPhoneSection('Financiera', this)">Financiera</button>
+        </nav>
+        <div id="mobile-runtime-content" style="display: flex; flex-direction: column; gap: 12px;">
+            <div class="mobile-runtime-widget"><div class="mrw-header">Cargando cifras...</div></div>
         </div>
     </div>
 

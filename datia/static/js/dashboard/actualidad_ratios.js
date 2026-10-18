@@ -264,11 +264,15 @@
     }
 
     function paintRatios(data) {
-        bindRatios(data);
-        renderKeyGauges(data);
-        renderAllRatioGauges(data);
-        renderRadar(data);
-        renderRentabilidadBars(data);
+        try {
+            bindRatios(data);
+            renderKeyGauges(data);
+            renderAllRatioGauges(data);
+            renderRadar(data);
+            renderRentabilidadBars(data);
+        } finally {
+            try { document.dispatchEvent(new CustomEvent('datia:ratios-ready')); } catch (_) {}
+        }
     }
 
     function renderRadar(data) {

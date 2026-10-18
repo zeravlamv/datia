@@ -152,6 +152,9 @@ async function init() {
     } finally {
         // La pestaña favorita se aplica al final para que el arranque no la sustituya
         applyStartupTab();
+        if (window.MobileManager && typeof window.MobileManager.enterPhone === 'function') {
+            window.MobileManager.enterPhone();
+        }
         if (window.location.hash === '#carga-inicial') {
             const openReset = function (left) {
                 if (typeof window.requestFactoryReset === 'function') {
@@ -1322,6 +1325,9 @@ function switchSubTab(subTabId) {
                 const container = document.getElementById('tab-actualidad-movil');
                 if (container) container.style.display = 'block';
                 window.MobileManager.renderBuilder();
+                if (typeof window.MobileManager.refreshNgrokUrl === 'function') {
+                    window.MobileManager.refreshNgrokUrl();
+                }
                 console.log("Mobile Editor Rendered via switchSubTab");
             }, 300);
         }

@@ -8,6 +8,25 @@ const MobileManager = {
         mode: 'standard', // 'standard' | 'custom'
         layout: [] // List of widget IDs
     },
+    phoneSection: 'Ventas',
+    _phoneReady: false,
+    defaultLayout: {
+        Ventas: ['widget-sales-1d', 'widget-sales-30d', 'widget-margin-1d', 'widget-kpi-neto', 'widget-kpi-margen', 'widget-chart-activity', 'widget-chart-products'],
+        Compras: ['widget-compras-1d', 'widget-compras-30d', 'widget-kpi-compras-neto', 'widget-chart-top-proveedores'],
+        Financiera: ['widget-fin-ingresos', 'widget-fin-gastos', 'widget-fin-resultado', 'widget-fin-liquidez', 'widget-fin-margen']
+    },
+    _isPhone: function () {
+        return document.documentElement.classList.contains('is-phone') || window.innerWidth <= 900;
+    },
+    widgetsForSection: function () {
+        const section = this.phoneSection || 'Ventas';
+        const saved = (this.config.layout || []).filter(id => {
+            const widget = this.widgets.find(item => item.id === id);
+            return widget && widget.tab === section;
+        });
+        if (saved.length) return saved;
+        return this.defaultLayout[section] || [];
+    },
     _getEmpresaId: function () {
         let e = typeof currEmpresa !== 'undefined' ? currEmpresa : '';
         const sel = document.getElementById('sel-empresa');
@@ -302,6 +321,7 @@ const MobileManager = {
                 if (container) container.style.display = 'block';
 
                 this.renderBuilder();
+                this.refreshNgrokUrl();
                 console.log("Mobile Editor Rendered via Tab Switch");
             }, 300); // Increased timeout to 300ms
         } else {
@@ -837,6 +857,14 @@ const MobileManager = {
         const isMobile = isSmallScreen || isTabletLandscape || isMobileUserAgent;
         const isCustom = this.config.mode === 'custom';
 
+        if (this._isPhone()) {
+            if (this._phoneReady) return;
+            this._showPhone();
+            this._phoneReady = true;
+            return;
+        }
+        this._phoneReady = false;
+
         const standardContainer = document.getElementById('actualidad-standard-view');
         const customContainer = document.getElementById('actualidad-mobile-view');
         const settingsBtn = document.getElementById('btn-settings');
@@ -897,6 +925,39 @@ const MobileManager = {
             document.body.classList.remove('mobile-app-mode');
             if (settingsBtn) settingsBtn.style.display = '';
         }
+    },
+
+    _showPhone: function () {
+        const standardContainer = document.getElementById('actualidad-standard-view');
+        const customContainer = document.getElementById('actualidad-mobile-view');
+        if (standardContainer) standardContainer.style.display = 'none';
+        if (customContainer) customContainer.style.display = 'block';
+        document.body.classList.add('phone-shell');
+        document.body.classList.remove('mobile-app-mode');
+        this.toggleEmptyState(false);
+        document.querySelectorAll('#sel-empresa, #sel-ejercicio').forEach(select => {
+            select.style.display = '';
+        });
+        this.renderMobileRuntime();
+    },
+
+    enterPhone: async function () {
+        if (!this._isPhone()) return;
+        if (typeof switchTab === 'function') switchTab('tab-actualidad');
+        await this.loadConfig();
+        this._phoneReady = false;
+        this.applyRuntimeView();
+    },
+
+    setPhoneSection: function (name, button) {
+        this.phoneSection = name;
+        document.querySelectorAll('.mobile-section-nav button').forEach(item => {
+            item.classList.toggle('is-on', item.dataset.section === name);
+        });
+        if (button) button.classList.add('is-on');
+        this._phoneReady = false;
+        this.renderMobileRuntime();
+        this._phoneReady = true;
     },
 
     toggleEmptyState: function (show) {
@@ -1016,7 +1077,8 @@ const MobileManager = {
 
         // Ensure Financial Data is loaded if financial widgets are present
         const hasFin = window.cachedFinancialData && Object.keys(window.cachedFinancialData).length > 0;
-        if (!hasFin && this.config.layout.some(id => id.startsWith('widget-fin-'))) {
+        const activeIds = this._isPhone() ? this.widgetsForSection() : (this.config.layout || []);
+        if (!hasFin && activeIds.some(id => id.startsWith('widget-fin-'))) {
             const emp = currEmpresa;
             const ej = currEjercicio;
             const cached = this._getFinCache(emp, ej);
@@ -1038,7 +1100,7 @@ const MobileManager = {
 
         // [NEW] Ensure Chart Data is loaded
         const hasCharts = window.cachedActivityData && Object.keys(window.cachedActivityData).length > 0;
-        if (!hasCharts && this.config.layout.some(id => id.includes('chart-activity'))) {
+        if (!hasCharts && activeIds.some(id => id.includes('chart-activity'))) {
             console.log("[Mobile] Missing Chart Data. Fetching...");
             const q = `?empresa=${encodeURIComponent(currEmpresa)}&ejercicio=${encodeURIComponent(currEjercicio)}`;
             fetch(`${API}/widgets/actividad_mensual${q}`)
@@ -1051,19 +1113,20 @@ const MobileManager = {
                 .catch(e => console.error("[Mobile] Chart Fetch Error", e));
         }
 
-        if (this.config.layout.length === 0) {
-            container.innerHTML = '<div style="text-align:center; padding:20px; color:#71717a;">Falta licencia consulta móvil o definición de elementos para visualizar</div>';
+        const widgetIds = this._isPhone() ? this.widgetsForSection() : (this.config.layout || []);
+        if (!widgetIds.length) {
+            container.innerHTML = '<div style="text-align:center; padding:20px; color:#71717a;">No hay tarjetas para esta sección.</div>';
             return;
         }
 
-        this.config.layout.forEach(wId => {
+        widgetIds.forEach(wId => {
             const widget = this.widgets.find(x => x.id === wId);
             if (widget) {
                 const el = document.createElement('div');
                 el.className = 'mobile-runtime-widget';
 
                 if (widget.type === 'chart') {
-                    // [NEW] Chart Container
+                    el.classList.add('mobile-runtime-chart');
                     el.innerHTML = `
                         <div class="mrw-header">${widget.title}</div>
                         <div class="mrw-chart-container" id="mob-chart-${widget.id}">
@@ -1089,7 +1152,8 @@ const MobileManager = {
 
     refreshWidgets: function () {
         console.log("[Mobile] Refreshing all widgets...");
-        this.config.layout.forEach(wId => this.bindWidgetData(wId));
+        const ids = this._isPhone() ? this.widgetsForSection() : (this.config.layout || []);
+        ids.forEach(wId => this.bindWidgetData(wId));
     },
 
     bindWidgetData: function (widgetId) {
@@ -1115,6 +1179,29 @@ const MobileManager = {
         const dFin = window.cachedFinancialData;
 
         if (dSnap || dKpi || dCompras || dChart || dFin) {
+
+            if (widgetId.startsWith('widget-fin-') && dFin) {
+                switch (widgetId) {
+                    case 'widget-fin-ingresos': val = money(dFin.ingresos); break;
+                    case 'widget-fin-gastos': val = money(dFin.gastos); break;
+                    case 'widget-fin-resultado': val = money(dFin.resultado); break;
+                    case 'widget-fin-liquidez': val = dFin.ratios ? dFin.ratios.liquidez : null; break;
+                    case 'widget-fin-margen': val = dFin.ratios ? dFin.ratios.margen : null; break;
+                    case 'widget-fin-solvencia': val = dFin.ratios ? dFin.ratios.solvencia : null; break;
+                    case 'widget-fin-endeudamiento': val = dFin.ratios ? dFin.ratios.endeudamiento : null; break;
+                }
+                const finEl = document.getElementById(`mob-val-${widgetId}`);
+                if (finEl) {
+                    if (widgetId === 'widget-fin-margen' || widgetId === 'widget-fin-endeudamiento') {
+                        finEl.innerText = (val === null || val === undefined || isNaN(Number(val))) ? '--' : Number(val).toFixed(2) + '%';
+                    } else if (widgetId === 'widget-fin-liquidez' || widgetId === 'widget-fin-solvencia') {
+                        finEl.innerText = (val === null || val === undefined || isNaN(Number(val))) ? '--' : Number(val).toFixed(2);
+                    } else {
+                        finEl.innerText = val === null || val === undefined ? '--' : val;
+                    }
+                }
+                return;
+            }
 
             // 1. CHARTS
             if (widgetId === 'widget-chart-activity' && dChart) {
@@ -1309,6 +1396,70 @@ const MobileManager = {
                 }
             }
         });
+    },
+
+    refreshNgrokUrl: async function () {
+        const box = document.getElementById('ngrok-url-box');
+        const input = document.getElementById('ngrok-url-value');
+        if (!box || !input) return;
+        try {
+            const res = await fetch(this._api('/system/ngrok/url'));
+            const data = await res.json();
+            if (data && data.url) {
+                input.value = data.url;
+                box.hidden = false;
+                const status = document.getElementById('ngrok-url-status');
+                if (status) status.textContent = 'Túnel ya abierto. Ábrelo en el móvil.';
+            }
+        } catch (e) { }
+    },
+
+    openNgrok: async function () {
+        const btn = document.getElementById('btn-ngrok-open');
+        const box = document.getElementById('ngrok-url-box');
+        const input = document.getElementById('ngrok-url-value');
+        const status = document.getElementById('ngrok-url-status');
+        if (btn) btn.disabled = true;
+        if (box) box.hidden = false;
+        if (status) status.textContent = 'Abriendo el túnel...';
+        try {
+            const res = await fetch(this._api('/system/ngrok/open'), {
+                method: 'POST',
+                headers: { 'X-CSRFToken': (typeof getCookie === 'function' ? getCookie('csrftoken') : '') }
+            });
+            const data = await res.json();
+            if (data && data.url) {
+                if (input) input.value = data.url;
+                if (status) {
+                    status.textContent = data.already
+                        ? 'El túnel ya estaba abierto.'
+                        : 'Túnel listo. Copia la dirección y ábrela en el móvil.';
+                }
+            } else if (status) {
+                status.textContent = (data && data.message) || 'No se pudo obtener la dirección.';
+            }
+        } catch (e) {
+            if (status) status.textContent = 'No se pudo contactar con el servidor.';
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    },
+
+    copyNgrokUrl: function () {
+        const input = document.getElementById('ngrok-url-value');
+        if (!input || !input.value) return;
+        const done = () => this.showToast('Dirección copiada');
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(input.value).then(done).catch(() => {
+                input.select();
+                document.execCommand('copy');
+                done();
+            });
+            return;
+        }
+        input.select();
+        document.execCommand('copy');
+        done();
     },
 
     showToast: function (msg) {

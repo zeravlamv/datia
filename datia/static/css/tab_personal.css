@@ -55,10 +55,12 @@
     font-size: 0.95rem;
     margin: 8px 2px;
 }
-.personal-group-grid {
+.personal-group-grid,
+.personal-widget-list:not(.grouped) {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 14px;
+    align-items: start;
 }
 .personal-card {
     background: rgba(24,24,27,0.8);
@@ -110,6 +112,61 @@
 .group-compras .personal-group-title { color: #4CAF50; border-left: 4px solid #4CAF50; padding-left: 8px; }
 .group-almacen .personal-group-title { color: #FF9800; border-left: 4px solid #FF9800; padding-left: 8px; }
 .group-financiera .personal-group-title { color: #673AB7; border-left: 4px solid #673AB7; padding-left: 8px; }
+.group-ratios .personal-group-title { color: #38bdf8; border-left: 4px solid #38bdf8; padding-left: 8px; }
+.group-tesoreria .personal-group-title { color: #34d399; border-left: 4px solid #34d399; padding-left: 8px; }
+.group-presupuestos .personal-group-title { color: #f59e0b; border-left: 4px solid #f59e0b; padding-left: 8px; }
+.group-balances .personal-group-title { color: #fb7185; border-left: 4px solid #fb7185; padding-left: 8px; }
+.group-anatomia .personal-group-title { color: #c084fc; border-left: 4px solid #c084fc; padding-left: 8px; }
+.origin-ratios { background: #38bdf8; border-color: #38bdf8; }
+.origin-tesoreria { background: #34d399; border-color: #34d399; }
+.origin-presupuestos { background: #f59e0b; border-color: #f59e0b; }
+.origin-balances { background: #fb7185; border-color: #fb7185; }
+.origin-anatomia { background: #c084fc; border-color: #c084fc; }
+.personal-group-grid > .personal-card,
+.personal-widget-list:not(.grouped) > .personal-card {
+    grid-column: span 3;
+    min-width: 0;
+}
+.personal-group-grid > .personal-card-ratio,
+.personal-widget-list:not(.grouped) > .personal-card-ratio { grid-column: span 4; }
+.personal-group-grid > .personal-card-half,
+.personal-widget-list:not(.grouped) > .personal-card-half { grid-column: span 6; }
+.personal-group-grid > .personal-card-wide,
+.personal-widget-list:not(.grouped) > .personal-card-wide { grid-column: span 12; }
+.personal-card-half [data-mirror-of="chart-clients"],
+.personal-card-half [data-mirror-of="chart-products"],
+.personal-card-half [data-mirror-of^="chart-top-"] {
+    width: 100%;
+    height: 240px;
+}
+@media (max-width: 1200px) {
+    .personal-group-grid > .personal-card,
+    .personal-widget-list:not(.grouped) > .personal-card,
+    .personal-group-grid > .personal-card-ratio,
+    .personal-widget-list:not(.grouped) > .personal-card-ratio {
+        grid-column: span 6;
+    }
+    .personal-group-grid > .personal-card-half,
+    .personal-widget-list:not(.grouped) > .personal-card-half,
+    .personal-group-grid > .personal-card-wide,
+    .personal-widget-list:not(.grouped) > .personal-card-wide {
+        grid-column: span 12;
+    }
+}
+@media (max-width: 720px) {
+    .personal-group-grid > .personal-card,
+    .personal-widget-list:not(.grouped) > .personal-card,
+    .personal-group-grid > .personal-card-ratio,
+    .personal-widget-list:not(.grouped) > .personal-card-ratio,
+    .personal-group-grid > .personal-card-half,
+    .personal-widget-list:not(.grouped) > .personal-card-half,
+    .personal-group-grid > .personal-card-wide,
+    .personal-widget-list:not(.grouped) > .personal-card-wide {
+        grid-column: span 12;
+    }
+}
+.personal-card-chart { width: 100%; height: 260px; }
+.personal-card-block { white-space: pre-wrap; font-size: 0.9rem; max-height: 220px; overflow: auto; color: #e4e4e7; }
 .personal-card-value {
     font-size: 1.2rem;
     color: #fff;
@@ -119,6 +176,40 @@
     border: none;
     color: #ef4444;
     cursor: pointer;
+}
+.personal-card-mirror {
+    position: relative;
+    background: transparent;
+    border: none;
+    padding: 0;
+    box-shadow: none;
+    overflow: visible;
+}
+.personal-card-mirror:hover {
+    transform: none;
+    box-shadow: none;
+}
+.personal-mirror .act-fav-btn,
+.personal-mirror .act-fav-overlay {
+    display: none;
+}
+.personal-remove-float {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 6;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #18181b;
+    border: 1px solid #3f3f46;
+    line-height: 18px;
+}
+.personal-card-mirror .v2-kpi-header,
+.personal-card-mirror .fin-card-header,
+.personal-card-mirror .ratio-header-inline,
+.personal-card-mirror .fin-kpi-label {
+    padding-left: 28px;
 }
 
 .act-fav-overlay {

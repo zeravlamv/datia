@@ -59,6 +59,7 @@ urlpatterns = [
     
     # Landing Resumen Comercial
     path('resumen/comercial/', lambda request: render(request, 'datia/resumen_comercial.html'), name='resumen_comercial'),
+    path('comercial/', lambda request: render(request, 'datia/comercial.html'), name='comercial'),
     
     # Project Context (Technical Landing)
     path('project-context/', project_context_view, name='project_context'),

@@ -42,6 +42,44 @@
             { key: 'fin_gastos', title: 'Gastos Totales (Fin)', type: 'fin_gastos', period: 'year', domId: 'fin-val-gastos' },
             { key: 'fin_resultado', title: 'EBITDA (Fin)', type: 'fin_resultado', period: 'year', domId: 'fin-val-resultado' }
         ],
+        widgetFromKey(k) {
+            const it = this.catalog.find(x => x.key === k);
+            if (!it) return { key: k, title: k, type: 'kpi', period: 'year', kind: 'kpi' };
+            return {
+                key: it.key,
+                title: it.title,
+                type: it.type,
+                period: it.period,
+                origin: it.origin,
+                kind: it.kind || (it.type === 'chart' ? 'chart' : 'kpi'),
+                domId: it.domId
+            };
+        },
+        absorbRegistry() {
+            if (!window.WidgetRegistry || !Array.isArray(window.WidgetRegistry.list)) return;
+            const byKey = {};
+            this.catalog.forEach(it => { byKey[it.key] = it; });
+            window.WidgetRegistry.list.forEach(it => {
+                if (!byKey[it.key]) {
+                    const row = {
+                        key: it.key,
+                        title: it.title || it.key,
+                        type: it.type,
+                        period: it.period || 'year',
+                        domId: it.domId,
+                        origin: it.origin,
+                        kind: it.kind || (it.type === 'chart' ? 'chart' : 'kpi')
+                    };
+                    this.catalog.push(row);
+                    byKey[it.key] = row;
+                } else {
+                    if (it.origin) byKey[it.key].origin = it.origin;
+                    if (it.kind) byKey[it.key].kind = it.kind;
+                    if (it.title && !byKey[it.key].title) byKey[it.key].title = it.title;
+                    if (it.domId) byKey[it.key].domId = it.domId;
+                }
+            });
+        },
         dedupe() {
             const seen = new Set();
             this.state.widgets = this.state.widgets.filter(w => {
@@ -53,21 +91,24 @@
         },
         setStarState(key, active) {
             try {
-                const btn = document.querySelector('.act-fav-btn[data-key="' + key + '"]');
-                if (!btn) return;
-                if (active) {
-                    btn.classList.remove('inactive');
-                    btn.title = 'Añadido a Pestaña Personal';
-                } else {
-                    btn.classList.add('inactive');
-                    btn.title = 'Añadir a Pestaña Personal';
-                }
+                document.querySelectorAll('.act-fav-btn[data-key="' + key + '"]').forEach(btn => {
+                    if (active) {
+                        btn.classList.remove('inactive');
+                        btn.title = 'Añadido a Pestaña Personal';
+                        btn.setAttribute('aria-pressed', 'true');
+                    } else {
+                        btn.classList.add('inactive');
+                        btn.title = 'Añadir a Pestaña Personal';
+                        btn.setAttribute('aria-pressed', 'false');
+                    }
+                });
             } catch (_) {}
         },
         _toast(msg, isError) {
             try { if (typeof showToast === 'function') showToast(msg, !!isError); } catch (_) {}
         },
         async init() {
+            this.absorbRegistry();
             if (typeof window.FavoriteStore !== 'undefined') {
                 try { await window.FavoriteStore.init(); } catch (_) {}
                 this.state.name = typeof window.FavoriteStore.name === 'string' ? window.FavoriteStore.name : this.state.name;
@@ -77,7 +118,7 @@
                     this.catalog.forEach(it => { map[it.key] = it; });
                     this.state.widgets = keys.map(k => {
                         const it = map[k];
-                        return it ? { key: it.key, title: it.title, type: it.type, period: it.period } : { key: k, title: k, type: 'sales', period: '1d' };
+                        return this.widgetFromKey(k);
                     });
                 } else {
                     await this.load();
@@ -99,6 +140,11 @@
             window.PersonalTab = this;
             document.addEventListener('datia:snapshot-ready', () => { this.render(); if (typeof window.StarInjector === 'undefined') this.attachFavOverlaysCompras(); });
             document.addEventListener('datia:kpis-ready', () => { this.render(); });
+            document.addEventListener('datia:ratios-ready', () => {
+                if (!this._ratiosWait) return;
+                this._ratiosWait = false;
+                if (this._ratioGaugesReady()) this.render();
+            });
             document.addEventListener('datia:tab-change', (e) => {
                 try {
                     const id = e && e.detail && e.detail.tabId;
@@ -119,7 +165,7 @@
                     this.catalog.forEach(it => { map[it.key] = it; });
                     this.state.widgets = keys.map(k => {
                         const it = map[k];
-                        return it ? { key: it.key, title: it.title, type: it.type, period: it.period } : { key: k, title: k, type: 'sales', period: '1d' };
+                        return this.widgetFromKey(k);
                     });
                     this.dedupe();
                     this.render();
@@ -383,6 +429,7 @@
             return true;
         },
         _getOrigin(w) {
+            if (w && w.origin) return w.origin;
             try {
                 if (typeof window.WidgetRegistry !== 'undefined' && window.WidgetRegistry.map) {
                     const it = window.WidgetRegistry.map[w.key];
@@ -410,7 +457,7 @@
                     this.catalog.forEach(it => { map[it.key] = it; });
                     this.state.widgets = actives.map(k => {
                         const it = map[k];
-                        return it ? { key: it.key, title: it.title, type: it.type, period: it.period } : { key: k, title: k, type: 'sales', period: '1d' };
+                        return this.widgetFromKey(k);
                     });
                     this.save();
                 } else {
@@ -419,14 +466,14 @@
                         if (cached) {
                             const c = JSON.parse(cached);
                             if (c && Array.isArray(c.widgets) && c.widgets.length > 0) {
-                                this.state.widgets = c.widgets;
+                                this.state.widgets = c.widgets.map(w => this.widgetFromKey((w && w.key) || w));
                             } else if (c && c.widgets && typeof c.widgets === 'object') {
                                 const keys = Object.keys(c.widgets).filter(k => c.widgets[k]);
                                 const map2 = {};
                                 this.catalog.forEach(it => { map2[it.key] = it; });
                                 this.state.widgets = keys.map(k => {
                                     const it = map2[k];
-                                    return it ? { key: it.key, title: it.title, type: it.type, period: it.period } : { key: k, title: k, type: 'sales', period: '1d' };
+                                    return this.widgetFromKey(k);
                                 });
                             }
                         }
@@ -437,21 +484,23 @@
                         const defaults = ['compras_1d'];
                         this.state.widgets = defaults.map(k => {
                             const it = map3[k];
-                            return it ? { key: it.key, title: it.title, type: it.type, period: it.period } : { key: k, title: k, type: 'sales', period: '1d' };
+                            return this.widgetFromKey(k);
                         });
                     }
                 }
             }
             const snap = window.cachedSnapshotData || null;
             const kpi = window.cachedKpiData || null;
+            this._ensureRatios();
+            this._ensureSources();
             if (this.state.grouped) {
-                const groups = { ventas: [], compras: [], almacen: [], financiera: [] };
+                const groups = { ventas: [], compras: [], almacen: [], financiera: [], ratios: [], tesoreria: [], presupuestos: [], balances: [], anatomia: [] };
                 this.state.widgets.forEach(w => {
                     const origin = this._getOrigin(w);
                     (groups[origin] || groups['ventas']).push(w);
                 });
-                const order = ['ventas','compras','almacen','financiera'];
-                const labels = { ventas: 'Ventas', compras: 'Compras', almacen: 'Existencias', financiera: 'Financiera' };
+                const order = ['ventas','compras','almacen','financiera','ratios','tesoreria','presupuestos','balances','anatomia'];
+                const labels = { ventas: 'Ventas', compras: 'Compras', almacen: 'Existencias', financiera: 'Financiera', ratios: 'Ratios', tesoreria: 'Tesorería', presupuestos: 'Presupuestos', balances: 'Balances', anatomia: 'Anatomía' };
                 let idx = 0;
                 order.forEach(group => {
                     const arr = groups[group];
@@ -466,77 +515,270 @@
                     section.appendChild(title);
                     section.appendChild(grid);
                     arr.forEach(w => {
-                        const card = document.createElement('div');
-                        card.className = 'personal-card';
-                        card.draggable = true;
-                        card.dataset.index = String(idx);
-                        const header = document.createElement('div');
-                        header.className = 'personal-card-title';
-                        const badge = document.createElement('span');
-                        badge.className = 'personal-origin-badge origin-' + this._getOrigin(w);
-                        badge.textContent = labels[this._getOrigin(w)];
-                        const titleSpan = document.createElement('span');
-                        titleSpan.textContent = w.title;
-                        const removeBtn = document.createElement('button');
-                        removeBtn.className = 'personal-remove';
-                        removeBtn.textContent = '✕';
-                        removeBtn.onclick = () => {
-                            this.dedupe();
-                            this.state.widgets = this.state.widgets.filter(x => x.key !== w.key);
-                            this.render();
-                            this.save();
-                            this.setStarState(w.key, false);
-                            this._toast('Widget eliminado', false);
-                        };
-                        header.appendChild(titleSpan);
-                        header.appendChild(badge);
-                        header.appendChild(removeBtn);
-                        card.appendChild(header);
-                        const valEl = document.createElement('div');
-                        valEl.className = 'personal-card-value';
-                        valEl.textContent = this._formatValue(w, snap, kpi);
-                        card.appendChild(valEl);
-                        grid.appendChild(card);
+                        grid.appendChild(this._mountCard(w, idx, snap, kpi, labels));
                         idx++;
                     });
                     list.appendChild(section);
                 });
             } else {
+                const labels = { ventas: 'Ventas', compras: 'Compras', almacen: 'Existencias', financiera: 'Financiera', ratios: 'Ratios', tesoreria: 'Tesorería', presupuestos: 'Presupuestos', balances: 'Balances', anatomia: 'Anatomía' };
                 this.state.widgets.forEach((w, i) => {
-                    const card = document.createElement('div');
-                    card.className = 'personal-card';
-                    card.draggable = true;
-                    card.dataset.index = String(i);
-                    const header = document.createElement('div');
-                    header.className = 'personal-card-title';
-                    const badge = document.createElement('span');
-                    const labels = { ventas: 'Ventas', compras: 'Compras', almacen: 'Existencias', financiera: 'Financiera' };
-                    badge.className = 'personal-origin-badge origin-' + this._getOrigin(w);
-                    badge.textContent = labels[this._getOrigin(w)];
-                    const titleSpan = document.createElement('span');
-                    titleSpan.textContent = w.title;
-                    const removeBtn = document.createElement('button');
-                    removeBtn.className = 'personal-remove';
-                    removeBtn.textContent = '✕';
-                    removeBtn.onclick = () => {
-                        this.dedupe();
-                        this.state.widgets = this.state.widgets.filter(x => x.key !== w.key);
-                        this.render();
-                        this.save();
-                        this.setStarState(w.key, false);
-                        this._toast('Widget eliminado', false);
-                    };
-                    header.appendChild(titleSpan);
-                    header.appendChild(badge);
-                    header.appendChild(removeBtn);
-                    card.appendChild(header);
-                    const valEl = document.createElement('div');
-                    valEl.className = 'personal-card-value';
-                    valEl.textContent = this._formatValue(w, snap, kpi);
-                    card.appendChild(valEl);
-                    list.appendChild(card);
+                    list.appendChild(this._mountCard(w, i, snap, kpi, labels));
                 });
             }
+            this.paintCharts();
+            this.paintMirrors();
+        },
+        _mountCard(w, idx, snap, kpi, labels) {
+            const card = document.createElement('div');
+            card.className = 'personal-card';
+            card.draggable = true;
+            card.dataset.index = String(idx);
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'personal-remove';
+            removeBtn.type = 'button';
+            removeBtn.textContent = '✕';
+            removeBtn.onclick = (ev) => {
+                if (ev) ev.stopPropagation();
+                this.dedupe();
+                this.state.widgets = this.state.widgets.filter(x => x.key !== w.key);
+                this.render();
+                this.save();
+                this.setStarState(w.key, false);
+                this._toast('Widget eliminado', false);
+            };
+            if (this._appendMirror(card, w)) {
+                removeBtn.classList.add('personal-remove-float');
+                card.appendChild(removeBtn);
+                return card;
+            }
+            this._applyLayout(card, w);
+            const header = document.createElement('div');
+            header.className = 'personal-card-title';
+            const badge = document.createElement('span');
+            badge.className = 'personal-origin-badge origin-' + this._getOrigin(w);
+            badge.textContent = labels[this._getOrigin(w)] || this._getOrigin(w);
+            const titleSpan = document.createElement('span');
+            titleSpan.textContent = w.title;
+            header.appendChild(titleSpan);
+            header.appendChild(badge);
+            header.appendChild(removeBtn);
+            card.appendChild(header);
+            this._appendWidgetBody(card, w, snap, kpi);
+            return card;
+        },
+        _mirrorRoot(node) {
+            if (!node) return null;
+            const ratioItem = node.closest('.fin-ratio-item');
+            if (ratioItem) return ratioItem;
+            const flip = node.closest('.flip-card');
+            if (flip) return flip;
+            const chartBlock = node.closest('.alm-chart-block, .ratios-map-chart');
+            if (chartBlock) return chartBlock;
+            if (window.StarInjector && typeof window.StarInjector.cardOf === 'function') {
+                const card = window.StarInjector.cardOf(node);
+                if (card && card !== node) {
+                    const list = (window.WidgetRegistry && window.WidgetRegistry.list) || [];
+                    const shared = list.filter(it => {
+                        const other = document.getElementById(it.domId);
+                        return other && card.contains(other);
+                    });
+                    if (shared.length > 1) return node;
+                    return card;
+                }
+            }
+            return node;
+        },
+        _appendMirror(card, w) {
+            const src = w && w.domId ? document.getElementById(w.domId) : null;
+            const root = this._mirrorRoot(src);
+            if (!root) return false;
+            card.classList.add('personal-card-mirror');
+            this._applyLayout(card, w);
+            const host = document.createElement('div');
+            host.className = 'personal-mirror';
+            const clone = root.cloneNode(true);
+            const mark = (n) => {
+                if (!n || !n.getAttribute) return;
+                if (n.id) {
+                    n.setAttribute('data-mirror-of', n.id);
+                    n.removeAttribute('id');
+                }
+                if (n.hasAttribute('_echarts_instance_')) n.removeAttribute('_echarts_instance_');
+            };
+            mark(clone);
+            clone.querySelectorAll('[id], [_echarts_instance_]').forEach(mark);
+            clone.querySelectorAll('.act-fav-btn, .act-fav-overlay').forEach(n => n.remove());
+            host.appendChild(clone);
+            card.appendChild(host);
+            return true;
+        },
+        _ratioGaugesReady() {
+            const ratios = (this.state.widgets || []).filter(w => this._getOrigin(w) === 'ratios');
+            if (!ratios.length) return true;
+            if (!window.cachedRatiosData) return false;
+            return ratios.every(w => {
+                const el = w.domId && document.getElementById(w.domId);
+                if (!el) return false;
+                if (el.querySelector('.ratio-figure, .ratio-empty')) return true;
+                return typeof echarts !== 'undefined' && !!echarts.getInstanceByDom(el);
+            });
+        },
+        _ensureRatios() {
+            const needs = (this.state.widgets || []).some(w => this._getOrigin(w) === 'ratios');
+            if (!needs || this._ratioGaugesReady() || this._ratiosWait) return;
+            if (typeof window.loadActualidadRatios !== 'function') return;
+            this._ratiosWait = true;
+            setTimeout(() => {
+                try { window.loadActualidadRatios(); } catch (_) {}
+            }, 0);
+        },
+        _layoutClass(w) {
+            const kind = (w && (w.kind || (w.type === 'chart' ? 'chart' : 'kpi'))) || 'kpi';
+            const id = (w && w.domId) || '';
+            if (kind === 'block') return 'personal-card-wide';
+            if (kind === 'chart' || /chart-|ratios-radar|ratios-rentabilidad|ratios-map/.test(id)) {
+                if (/chart-clients|chart-products|chart-top-|ratios-radar|ratios-rentabilidad|ratios-map-chart/.test(id)) {
+                    return 'personal-card-half';
+                }
+                return 'personal-card-wide';
+            }
+            if (this._getOrigin(w) === 'ratios') return 'personal-card-ratio';
+            return '';
+        },
+        _applyLayout(card, w) {
+            const layout = this._layoutClass(w);
+            if (layout) card.classList.add(layout);
+        },
+        _sourceReady(w) {
+            const el = w && w.domId ? document.getElementById(w.domId) : null;
+            if (!el) return true;
+            const kind = w.kind || (w.type === 'chart' ? 'chart' : 'kpi');
+            if (kind === 'chart') {
+                if (typeof echarts !== 'undefined' && echarts.getInstanceByDom(el)) return true;
+                const chartText = (el.innerText || '').replace(/\s+/g, ' ').trim();
+                return !!chartText && chartText !== '--' && chartText !== '-' && chartText !== '...';
+            }
+            const txt = (el.innerText || '').replace(/\s+/g, ' ').trim();
+            return !!txt && txt !== '--' && txt !== '-' && txt !== '...' && txt !== 'Sin dato';
+        },
+        _ensureSources() {
+            if (this._sourcesWait || (this._sourcesAttempts || 0) >= 2) return;
+            const emp = (typeof currEmpresa !== 'undefined') ? currEmpresa : null;
+            const eje = (typeof currEjercicio !== 'undefined') ? currEjercicio : null;
+            if (!emp || !eje) return;
+            const pending = (this.state.widgets || []).filter(w => this._getOrigin(w) !== 'ratios' && !this._sourceReady(w));
+            if (!pending.length) return;
+            this._sourcesWait = true;
+            this._sourcesAttempts = (this._sourcesAttempts || 0) + 1;
+            const ids = pending.map(w => w.domId);
+            const origins = pending.map(w => this._getOrigin(w));
+            setTimeout(() => { this._loadSources(ids, origins); }, 0);
+        },
+        async _loadSalesActivity() {
+            const api = (typeof API !== 'undefined' && API) ? API : '/api/datia';
+            const q = '?empresa=' + encodeURIComponent(currEmpresa) + '&ejercicio=' + encodeURIComponent(currEjercicio);
+            const res = await fetch(api + '/widgets/actividad_mensual' + q);
+            const json = await res.json();
+            const data = json && (json.data || json);
+            window.cachedActivityData = data;
+            const style = localStorage.getItem('chart_style_activity') || 'bar';
+            if (typeof renderActivityChart === 'function') renderActivityChart(data, style);
+        },
+        async _loadComprasActivity() {
+            const api = (typeof API !== 'undefined' && API) ? API : '/api/datia';
+            const q = '?empresa=' + encodeURIComponent(currEmpresa) + '&ejercicio=' + encodeURIComponent(currEjercicio);
+            const res = await fetch(api + '/widgets/actividad_mensual_compra' + q);
+            const json = await res.json();
+            if (typeof renderComprasActivityChart === 'function') renderComprasActivityChart(json && (json.data || json));
+        },
+        async _loadSalesKpis() {
+            const api = (typeof API !== 'undefined' && API) ? API : '/api/datia';
+            const q = '?empresa=' + encodeURIComponent(currEmpresa) + '&ejercicio=' + encodeURIComponent(currEjercicio);
+            const res = await fetch(api + '/widgets/ventas_resumen' + q);
+            const json = await res.json();
+            const data = json && (json.data || json);
+            window.cachedKpiData = data;
+            if (typeof renderTopKpisSafe === 'function') renderTopKpisSafe(data);
+        },
+        async _loadSources(ids, origins) {
+            const idset = new Set(ids || []);
+            const originset = new Set(origins || []);
+            const jobs = [];
+            try {
+                if (idset.has('chart-activity')) jobs.push(this._loadSalesActivity());
+                if (idset.has('chart-clients') && typeof loadTopClients === 'function') jobs.push(loadTopClients());
+                if (idset.has('chart-products') && typeof loadTopProducts === 'function') jobs.push(loadTopProducts());
+                const salesCards = ['val-sales-1d', 'val-sales-7d', 'val-sales-30d', 'val-ticket-1d', 'val-ticket-7d', 'val-ticket-30d', 'val-margin-1d', 'val-margin-7d', 'val-margin-30d', 'kpi-neto', 'kpi-coste', 'kpi-margen', 'kpi-ticket'];
+                if (salesCards.some(id => idset.has(id))) {
+                    if (typeof load3x3Grid === 'function') jobs.push(load3x3Grid());
+                    jobs.push(this._loadSalesKpis());
+                }
+                if (originset.has('compras')) {
+                    if (typeof loadSnapshotCompras === 'function') jobs.push(loadSnapshotCompras());
+                    if (idset.has('chart-top-proveedores') && typeof loadTopProveedores === 'function') jobs.push(loadTopProveedores());
+                    if (idset.has('chart-top-articulos-compra') && typeof loadTopArticulosCompra === 'function') jobs.push(loadTopArticulosCompra());
+                    if (idset.has('chart-top-zonas-compra') && typeof loadTopZonasCompra === 'function') jobs.push(loadTopZonasCompra());
+                    if (idset.has('chart-activity-compras')) jobs.push(this._loadComprasActivity());
+                }
+                if ((originset.has('balances') || originset.has('financiera')) && typeof loadActualidadFinanciera === 'function') {
+                    jobs.push(loadActualidadFinanciera());
+                }
+                await Promise.all(jobs.map(job => Promise.resolve(job).catch(() => null)));
+            } finally {
+                this._sourcesWait = false;
+                this.render();
+            }
+        },
+        paintMirrors() {
+            if (typeof echarts === 'undefined') return;
+            document.querySelectorAll('#personal-widget-list [data-mirror-of]').forEach(el => {
+                const src = document.getElementById(el.getAttribute('data-mirror-of'));
+                if (!src) return;
+                const inst = echarts.getInstanceByDom(src);
+                if (!inst) return;
+                if (src.style && src.style.height) el.style.height = src.style.height;
+                if (src.style && src.style.width) el.style.width = src.style.width;
+                const prev = echarts.getInstanceByDom(el);
+                if (prev) {
+                    try { prev.dispose(); } catch (_) {}
+                }
+                el.innerHTML = '';
+                const chart = echarts.init(el, null, { renderer: 'svg' });
+                try { chart.setOption(inst.getOption(), true); } catch (_) {}
+                chart.resize();
+            });
+        },
+        _appendWidgetBody(card, w, snap, kpi) {
+            const kind = w.kind || (w.type === 'chart' ? 'chart' : 'kpi');
+            if (kind === 'chart') {
+                card.classList.add('personal-card-wide');
+                const host = document.createElement('div');
+                host.className = 'personal-card-chart';
+                host.setAttribute('data-source', w.domId || '');
+                card.appendChild(host);
+                return;
+            }
+            const valEl = document.createElement('div');
+            valEl.className = kind === 'block' ? 'personal-card-block' : 'personal-card-value';
+            valEl.textContent = this._formatValue(w, snap, kpi);
+            card.appendChild(valEl);
+        },
+        paintCharts() {
+            if (typeof echarts === 'undefined') return;
+            document.querySelectorAll('#personal-widget-list .personal-card-chart').forEach(host => {
+                const sourceId = host.getAttribute('data-source');
+                const src = sourceId ? document.getElementById(sourceId) : null;
+                const inst = src ? echarts.getInstanceByDom(src) : null;
+                if (!inst) {
+                    host.textContent = 'Abre la sección de origen para cargar esta gráfica.';
+                    return;
+                }
+                host.textContent = '';
+                const chart = echarts.getInstanceByDom(host) || echarts.init(host, null, { renderer: 'svg' });
+                try { chart.setOption(inst.getOption(), true); } catch (_) {}
+                chart.resize();
+            });
         },
         _formatValue(w, snap, kpi) {
             try {
@@ -727,7 +969,7 @@
                         const c = JSON.parse(cached);
                         if (c && typeof c === 'object') {
                             if (c.name) this.state.name = c.name;
-                            if (Array.isArray(c.widgets)) this.state.widgets = c.widgets;
+                            if (Array.isArray(c.widgets)) this.state.widgets = c.widgets.map(w => this.widgetFromKey((w && w.key) || w));
                         }
                     }
                 } catch (_) {}
@@ -738,14 +980,14 @@
                 if (ct) {
                     this.state.name = ct.name || this.state.name;
                     if (Array.isArray(ct.widgets)) {
-                        this.state.widgets = ct.widgets;
+                        this.state.widgets = ct.widgets.map(w => this.widgetFromKey((w && w.key) || w));
                     } else if (ct.widgets && typeof ct.widgets === 'object') {
                         const keys = Object.keys(ct.widgets).filter(k => ct.widgets[k]);
                         const map = {};
                         this.catalog.forEach(it => { map[it.key] = it; });
                         this.state.widgets = keys.map(k => {
                             const it = map[k];
-                            return it ? { key: it.key, title: it.title, type: it.type, period: it.period } : { key: k, title: k, type: 'sales', period: '1d' };
+                            return this.widgetFromKey(k);
                         });
                     } else if (Array.isArray(v.custom_tab_keys)) {
                         const keys = v.custom_tab_keys;
@@ -753,7 +995,7 @@
                         this.catalog.forEach(it => { map[it.key] = it; });
                         this.state.widgets = keys.map(k => {
                             const it = map[k];
-                            return it ? { key: it.key, title: it.title, type: it.type, period: it.period } : { key: k, title: k, type: 'sales', period: '1d' };
+                            return this.widgetFromKey(k);
                         });
                     } else {
                         this.state.widgets = [];
@@ -792,6 +1034,10 @@
                     await res.json();
                 }
                 try { localStorage.setItem('datia-personal-tab-layout', JSON.stringify({ name: this.state.name, widgets: this.state.widgets })); } catch (_) {}
+                if (window.FavoriteStore) {
+                    window.FavoriteStore.keys = keys.slice();
+                    window.FavoriteStore.name = this.state.name;
+                }
             } catch (e) { }
         }
     };

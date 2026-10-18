@@ -8,6 +8,7 @@ from django.db.models import Count
 import json
 import os
 from datia.services.dev.mobile_server_manager import start as mobile_start, stop as mobile_stop, status as mobile_status
+from datia.services.dev.ngrok_tunnel import current_url as ngrok_current_url, open_tunnel as ngrok_open_tunnel
 
 router = Router(tags=["System"])
 
@@ -94,6 +95,23 @@ def api_mobile_server_status(request):
     if not request.user.is_authenticated:
         return {"running": False}
     return mobile_status()
+
+def _staff_only(request):
+    user = getattr(request, "user", None)
+    return bool(user and user.is_authenticated and user.is_staff)
+
+@router.get("/ngrok/url")
+def api_ngrok_url(request):
+    if not _staff_only(request):
+        return {"status": "error", "message": "Solo un administrador puede ver el acceso móvil."}
+    url = ngrok_current_url()
+    return {"status": "ok", "url": url}
+
+@router.post("/ngrok/open")
+def api_ngrok_open(request):
+    if not _staff_only(request):
+        return {"status": "error", "message": "Solo un administrador puede abrir el acceso móvil."}
+    return ngrok_open_tunnel()
 
 @router.get("/initial_setup/status")
 def initial_setup_status(request):

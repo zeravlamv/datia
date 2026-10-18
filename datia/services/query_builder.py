@@ -86,28 +86,97 @@ class QueryBuilder:
             'metric_source': 'cabecera'
         }
     }
+    _INTENT_LEXICON = (
+        'ventas', 'compras', 'cliente', 'clientes', 'articulo', 'articulos', 'producto', 'productos',
+        'proveedor', 'proveedores', 'familia', 'familias', 'agente', 'agentes', 'zona', 'zonas',
+        'stock', 'existencias', 'existencia', 'inventario', 'unidades', 'ranking', 'mejores', 'mejor',
+        'peores', 'peor', 'mayores', 'mayor', 'principales', 'vendidos', 'vendido', 'mensual',
+        'mensuales', 'trimestre', 'trimestral', 'ultimo', 'ultimos', 'analisis', 'informe', 'resumen',
+        'albaran', 'albaranes', 'pedido', 'pedidos', 'margen', 'presupuesto', 'presupuestos',
+        'tesoreria', 'balance', 'balances', 'ejercicio', 'anual', 'evolucion', 'tendencia', 'gastos',
+        'ingresos', 'resultado', 'top',
+    )
+    _INTENT_SYNONYMS = {
+        'item': 'articulos', 'items': 'articulos', 'itens': 'articulos', 'itemes': 'articulos',
+        'venetes': 'ventas', 'vendes': 'ventas', 'ventes': 'ventas', 'bentas': 'ventas',
+        'compres': 'compras', 'conpras': 'compras',
+        'clienets': 'clientes', 'clietes': 'clientes', 'clienes': 'clientes',
+        'porductos': 'productos', 'prodcutos': 'productos',
+        'artiuclos': 'articulos', 'faimlias': 'familias',
+        'probveedor': 'proveedor', 'proweedor': 'proveedor',
+        'darrera': 'ultimo', 'ultimso': 'ultimos', 'trimesre': 'trimestre',
+        'mensul': 'mensual', 'mesual': 'mensual',
+    }
+
+    @staticmethod
+    def _edit_distance(left: str, right: str, limit: int) -> int:
+        if left == right:
+            return 0
+        if abs(len(left) - len(right)) > limit:
+            return limit + 1
+        prev_prev = None
+        prev = list(range(len(right) + 1))
+        for i, ca in enumerate(left, 1):
+            cur = [i]
+            row_min = i
+            for j, cb in enumerate(right, 1):
+                best = min(cur[j - 1] + 1, prev[j] + 1, prev[j - 1] + (0 if ca == cb else 1))
+                if i > 1 and j > 1 and ca == right[j - 2] and left[i - 2] == cb:
+                    best = min(best, prev_prev[j - 2] + 1)
+                cur.append(best)
+                if best < row_min:
+                    row_min = best
+            if row_min > limit:
+                return limit + 1
+            prev_prev = prev
+            prev = cur
+        return prev[-1]
+
+    @staticmethod
+    def _closest_intent_term(token: str):
+        if len(token) < 5 or any(ch.isdigit() for ch in token):
+            return None
+        limit = 2 if len(token) >= 8 else 1
+        best = None
+        best_distance = limit + 1
+        tied = False
+        terms = list(QueryBuilder._INTENT_LEXICON) + list(QueryBuilder._INTENT_SYNONYMS.keys())
+        for term in terms:
+            if abs(len(term) - len(token)) > limit:
+                continue
+            distance = QueryBuilder._edit_distance(token, term, limit)
+            if distance <= limit and distance < best_distance:
+                best = term
+                best_distance = distance
+                tied = False
+            elif distance == best_distance and term != best:
+                tied = True
+        if tied or best is None:
+            return None
+        return QueryBuilder._INTENT_SYNONYMS.get(best, best)
+
     @staticmethod
     def _normalize_tokens(text: str) -> str:
         """
-        Normalizes common typos and variations to canonical terms.
+        Quita tildes y corrige erratas cercanas al vocabulario del chat.
         """
-        nf = unicodedata.normalize('NFD', text)
-        text = ''.join(ch for ch in nf if unicodedata.category(ch) != 'Mn').lower()
-        replacements = {
-            'venetes': 'ventas', 'vendes': 'ventas', 'ventes': 'ventas', 'bentas': 'ventas',
-            'compres': 'compras', 'conpras': 'compras',
-            'clienets': 'clientes', 'clietes': 'clientes', 'clienes': 'clientes',
-            'porductos': 'productos', 'prodcutos': 'productos',
-            'articulos': 'articulos', 'artiuclos': 'articulos',
-            'familias': 'familias', 'faimlias': 'familias',
-            'probveedor': 'proveedor', 'proweedor': 'proveedor',
-            'ultimo': 'ultimo', 'ultimos': 'ultimos', 'darrera': 'ultimo', 'ultimso': 'ultimos',
-            'trimestre': 'trimestre', 'trimesre': 'trimestre',
-            'mensul': 'mensual', 'mesual': 'mensual'
-        }
-        for wrong, right in replacements.items():
-            text = text.replace(wrong, right)
-        return text
+        nf = unicodedata.normalize('NFD', text or '')
+        folded = ''.join(ch for ch in nf if unicodedata.category(ch) != 'Mn').lower()
+        parts = re.split(r'(\w+)', folded)
+        out = []
+        for part in parts:
+            if not part or not part[:1].isalnum():
+                out.append(part)
+                continue
+            if part in QueryBuilder._INTENT_SYNONYMS:
+                out.append(QueryBuilder._INTENT_SYNONYMS[part])
+                continue
+            if part in QueryBuilder._INTENT_LEXICON:
+                out.append(part)
+                continue
+            fixed = QueryBuilder._closest_intent_term(part)
+            out.append(fixed or part)
+        return ''.join(out)
 
     @staticmethod
     def _resolve_entity_semantics(entity_key: str, empresa: int) -> Dict[str, Any]:
@@ -1116,6 +1185,142 @@ class QueryBuilder:
         return amount.replace(',', 'X').replace('.', ',').replace('X', '.') + ' €'
 
     @staticmethod
+    def _qty_es(value) -> str:
+        try:
+            amount = f"{float(value):,.2f}"
+        except (TypeError, ValueError):
+            amount = "0.00"
+        return amount.replace(',', 'X').replace('.', ',').replace('X', '.')
+
+    @staticmethod
+    def _extract_stock_query(question: str) -> Optional[Dict[str, str]]:
+        q = QueryBuilder._fold_party(question)
+        stock_word = re.search(r'\b(stock|existencias|existencia|inventario|unidades)\b', q)
+        if not stock_word:
+            return None
+        found = re.search(
+            r'\b(?:stock|existencias|existencia|inventario|unidades)\b(?:\s+\w+){0,6}\s+(?:de|del|para)\s+(.+)$',
+            q,
+        )
+        if not found and stock_word.group(1) != 'unidades':
+            found = re.search(r'\b(?:stock|existencias|existencia|inventario)\s+([a-z0-9][\w.\-]{1,40})$', q)
+        if not found:
+            return None
+        raw = re.sub(r'\b20\d{2}\b', ' ', found.group(1))
+        stop = {
+            'articulo', 'articulos', 'producto', 'productos', 'codigo', 'referencia',
+            'tengo', 'hay', 'actual', 'disponible', 'unidades', 'unidad', 'almacen',
+        }
+        tokens = [tok for tok in raw.split() if tok not in stop and tok not in QueryBuilder._PARTY_STOP]
+        if not tokens:
+            return None
+        if stock_word.group(1) == 'unidades' and not any(any(ch.isdigit() for ch in tok) for tok in tokens):
+            return None
+        return {'name': ' '.join(tokens)}
+
+    @staticmethod
+    def _handle_stock_query(question: str, empresa, ejercicio, stock_query: Dict[str, str]) -> Dict[str, Any]:
+        try:
+            empresa_id = int(empresa)
+        except (TypeError, ValueError):
+            return QueryBuilder._party_reply("No puedo buscar el stock sin empresa.")
+        years = re.findall(r'\b(20\d{2})\b', question or '')
+        try:
+            target_year = int(years[0]) if years else int(ejercicio)
+        except (TypeError, ValueError):
+            target_year = datetime.datetime.now().year
+
+        name = stock_query['name']
+        tokens = name.split()
+        alias = 'analytics' if 'analytics' in connections.databases else 'default'
+        try:
+            with connections[alias].cursor() as cur:
+                if len(tokens) == 1 and re.fullmatch(r'[A-Za-z0-9._\-]{1,40}', tokens[0]):
+                    cur.execute(
+                        "SELECT articulo, descripcion FROM datia_articulos WHERE empresa = %s AND lower(articulo) = lower(%s) LIMIT 5",
+                        [empresa_id, tokens[0]],
+                    )
+                else:
+                    where = []
+                    params: List[Any] = [empresa_id]
+                    fold_from = QueryBuilder._PARTY_FOLD_FROM
+                    fold_to = QueryBuilder._PARTY_FOLD_TO
+                    desc_expr = f"translate(lower(descripcion), '{fold_from}', '{fold_to}')"
+                    for tok in tokens:
+                        safe = tok.replace('%', '').replace('_', '')
+                        if not safe:
+                            continue
+                        where.append(f"({desc_expr} LIKE %s OR lower(articulo) = %s)")
+                        params.extend([f"%{safe}%", safe])
+                    if not where:
+                        return QueryBuilder._party_reply("Dime el código o el nombre del artículo.")
+                    cur.execute(
+                        "SELECT articulo, descripcion FROM datia_articulos WHERE empresa = %s AND "
+                        + " AND ".join(where)
+                        + " LIMIT 8",
+                        params,
+                    )
+                articles = cur.fetchall()
+        except Exception:
+            logger.exception("QueryBuilder: no se pudo buscar el artículo")
+            return QueryBuilder._party_reply("No he podido consultar el catálogo de artículos.")
+
+        if not articles:
+            return QueryBuilder._party_reply(f"No encuentro el artículo «{name}» en esta empresa.")
+        if len(articles) > 1:
+            suggestions = [
+                {'label': f"{row[0]} {row[1] or ''}".strip(), 'query': f"stock del {row[0]}"}
+                for row in articles
+            ]
+            return QueryBuilder._party_reply(
+                "Hay varios artículos con ese nombre. Indica el código.",
+                suggestions,
+            )
+
+        code, description = articles[0][0], (articles[0][1] or '').replace('<', '').replace('>', '')
+        label = f"{code} {description}".strip()
+        try:
+            with connections[alias].cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT COALESCE(NULLIF(almacen_name, ''), NULLIF(almacen, ''), 'Sin almacén'),
+                           SUM(unidadsaldo),
+                           SUM(importesaldo),
+                           MAX(periodo)
+                    FROM datia_acumulados_stocks
+                    WHERE empresa = %s AND ejercicio = %s AND articulo = %s
+                      AND periodo = (
+                          SELECT MAX(periodo) FROM datia_acumulados_stocks
+                          WHERE empresa = %s AND ejercicio = %s AND articulo = %s AND periodo BETWEEN 0 AND 12
+                      )
+                    GROUP BY 1
+                    ORDER BY 2 DESC
+                    """,
+                    [empresa_id, target_year, code, empresa_id, target_year, code],
+                )
+                rows = cur.fetchall()
+        except Exception:
+            logger.exception("QueryBuilder: no se pudo leer el stock")
+            return QueryBuilder._party_reply(
+                f"El artículo {label} está en el catálogo, pero no he podido leer las existencias."
+            )
+
+        if not rows:
+            return QueryBuilder._party_reply(
+                f"El artículo {label} está en el catálogo. No hay existencias cargadas para el ejercicio {target_year}."
+            )
+
+        total_units = sum(float(row[1] or 0) for row in rows)
+        total_value = sum(float(row[2] or 0) for row in rows)
+        period = rows[0][3]
+        lines = [
+            f"Stock de {label} en {target_year}, período {period}: {QueryBuilder._qty_es(total_units)} unidades, {QueryBuilder._eur_es(total_value)}."
+        ]
+        for almacen, units, value, _period in rows:
+            lines.append(f"- {almacen}: {QueryBuilder._qty_es(units)} uds, {QueryBuilder._eur_es(value)}")
+        return QueryBuilder._party_reply("\n".join(lines))
+
+    @staticmethod
     def _handle_named_party(question: str, empresa, ejercicio, party: Dict[str, str]) -> Dict[str, Any]:
         kind = party['kind']
         tokens = party['name'].split()
@@ -1329,11 +1534,17 @@ class QueryBuilder:
             logger.info("QueryBuilder: ventas o compras de un tercero concreto")
             return QueryBuilder._handle_named_party(q_lower, empresa, ejercicio, party)
 
+        stock_query = QueryBuilder._extract_stock_query(q_lower)
+        if stock_query:
+            logger.info("QueryBuilder: stock de un artículo concreto")
+            return QueryBuilder._handle_stock_query(q_lower, empresa, ejercicio, stock_query)
+
         # --- STEP 1: INTENT ROUTING ---
         
         # A. RANKING INTENT
         ranking_triggers = ['top', 'ranking', 'mejores', 'mejor', 'peor', 'best', 'mayores', 'principales']
-        if any(t in q_lower for t in ranking_triggers):
+        sold_rank = bool(re.search(r'\bmas\s+vendid|\bvendidos?\b', q_lower))
+        if any(t in q_lower for t in ranking_triggers) or sold_rank:
             # Identify Entity
             for entity_key in QueryBuilder.ENTITIES.keys():
                 # Check singular and plural
@@ -1343,12 +1554,17 @@ class QueryBuilder:
                     if result: return result
                     
             # Synonym checks
-            if 'producto' in q_lower:
+            if 'producto' in q_lower or 'articulo' in q_lower:
                 return QueryBuilder._handle_ranking(q_lower, empresa, ejercicio, 'articulo')
             if 'vendedor' in q_lower or 'comercial' in q_lower:
                 return QueryBuilder._handle_ranking(q_lower, empresa, ejercicio, 'agente')
             if 'region' in q_lower:
                 return QueryBuilder._handle_ranking(q_lower, empresa, ejercicio, 'zona')
+            if sold_rank and 'cliente' not in q_lower and 'proveedor' not in q_lower:
+                logger.info("Router: Detected RANKING for articulo (mas vendidos)")
+                result = QueryBuilder._handle_ranking(q_lower, empresa, ejercicio, 'articulo')
+                if result:
+                    return result
 
         # A.1 RANKING HEURÍSTICO (Clientes que más ...)
         if (('cliente' in q_lower or 'clientes' in q_lower) and 

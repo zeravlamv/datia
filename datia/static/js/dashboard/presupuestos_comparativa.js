@@ -302,11 +302,12 @@ function renderBudgetDashboard(data, year) {
                     </div>
                 </div>
                 <div style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px;">
-                    <div class="glass-panel" style="padding:16px;"><div style="color:#a1a1aa; font-size:0.8rem;">Ingresos reales</div><div style="color:#fff; font-size:1.35rem; font-weight:700;">${money(realInc)}</div></div>
-                    <div class="glass-panel" style="padding:16px;"><div style="color:#a1a1aa; font-size:0.8rem;">Gastos reales</div><div style="color:#fff; font-size:1.35rem; font-weight:700;">${money(realExp)}</div></div>
-                    <div class="glass-panel" style="padding:16px;"><div style="color:#a1a1aa; font-size:0.8rem;">Resultado real</div><div style="color:#fff; font-size:1.35rem; font-weight:700;">${money(realNet)}</div></div>
+                    <div class="glass-panel" style="padding:16px;"><div style="color:#a1a1aa; font-size:0.8rem;">Ingresos reales</div><div id="budget-dash-ingresos" style="color:#fff; font-size:1.35rem; font-weight:700;">${money(realInc)}</div></div>
+                    <div class="glass-panel" style="padding:16px;"><div style="color:#a1a1aa; font-size:0.8rem;">Gastos reales</div><div id="budget-dash-gastos" style="color:#fff; font-size:1.35rem; font-weight:700;">${money(realExp)}</div></div>
+                    <div class="glass-panel" style="padding:16px;"><div style="color:#a1a1aa; font-size:0.8rem;">Resultado real</div><div id="budget-dash-resultado" style="color:#fff; font-size:1.35rem; font-weight:700;">${money(realNet)}</div></div>
                 </div>
             </div>`;
+        if (window.StarInjector) window.StarInjector.run();
         return;
     }
 
@@ -318,9 +319,9 @@ function renderBudgetDashboard(data, year) {
                 <div style="color:#a1a1aa; margin-top:6px;">Real contra presupuesto del ejercicio seleccionado.</div>
             </div>
             <div style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px;">
-                <div class="glass-panel" style="padding:16px;"><div style="color:#a1a1aa; font-size:0.8rem;">Ingresos</div><div style="color:#fff; font-size:1.35rem; font-weight:700;">${money(realInc)}</div><div style="color:#a1a1aa; font-size:0.8rem;">Presupuesto ${money(budInc)}</div>${gap(realInc, budInc, true)}</div>
-                <div class="glass-panel" style="padding:16px;"><div style="color:#a1a1aa; font-size:0.8rem;">Gastos</div><div style="color:#fff; font-size:1.35rem; font-weight:700;">${money(realExp)}</div><div style="color:#a1a1aa; font-size:0.8rem;">Presupuesto ${money(budExp)}</div>${gap(realExp, budExp, false)}</div>
-                <div class="glass-panel" style="padding:16px;"><div style="color:#a1a1aa; font-size:0.8rem;">Resultado</div><div style="color:#fff; font-size:1.35rem; font-weight:700;">${money(realNet)}</div><div style="color:#a1a1aa; font-size:0.8rem;">Presupuesto ${money(budNet)}</div>${gap(realNet, budNet, true)}</div>
+                <div class="glass-panel" style="padding:16px;"><div style="color:#a1a1aa; font-size:0.8rem;">Ingresos</div><div id="budget-dash-ingresos" style="color:#fff; font-size:1.35rem; font-weight:700;">${money(realInc)}</div><div style="color:#a1a1aa; font-size:0.8rem;">Presupuesto ${money(budInc)}</div>${gap(realInc, budInc, true)}</div>
+                <div class="glass-panel" style="padding:16px;"><div style="color:#a1a1aa; font-size:0.8rem;">Gastos</div><div id="budget-dash-gastos" style="color:#fff; font-size:1.35rem; font-weight:700;">${money(realExp)}</div><div style="color:#a1a1aa; font-size:0.8rem;">Presupuesto ${money(budExp)}</div>${gap(realExp, budExp, false)}</div>
+                <div class="glass-panel" style="padding:16px;"><div style="color:#a1a1aa; font-size:0.8rem;">Resultado</div><div id="budget-dash-resultado" style="color:#fff; font-size:1.35rem; font-weight:700;">${money(realNet)}</div><div style="color:#a1a1aa; font-size:0.8rem;">Presupuesto ${money(budNet)}</div>${gap(realNet, budNet, true)}</div>
             </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
                 <div class="glass-panel" style="padding:16px;"><h3 style="margin:0 0 10px; color:#fff; font-size:1rem;">Mes a mes</h3><div id="chart-dash-monthly" style="height:280px;"></div></div>
@@ -340,6 +341,7 @@ function renderBudgetDashboard(data, year) {
             </div>
         </div>`;
     renderDashCharts(data);
+    if (window.StarInjector) window.StarInjector.run();
 }
 
 function renderDashCharts(data) {

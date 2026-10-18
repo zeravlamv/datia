@@ -1,7 +1,7 @@
 {% load static %}
 {% load i18n %}
 <div id="tab-actualidad-movil" style="height: 100%;">
-    <link rel="stylesheet" href="{% static 'css/mobile_builder.css' %}">
+    <link rel="stylesheet" href="{% static 'css/mobile_builder.css' %}?v=2">
     <div class="mobile-builder-container">
 
         <!-- LEFT: SOURCE (Available Widgets) -->
@@ -35,6 +35,19 @@
             <div class="mb-controls">
                 <p>{% trans "Vista Previa en Vivo" %}</p>
                 <small>{% trans "Los cambios se guardan automáticamente" %}</small>
+                <button type="button" id="btn-ngrok-open" class="mb-ngrok-btn" onclick="MobileManager.openNgrok()">
+                    {% trans "Abrir acceso desde el móvil" %}
+                </button>
+                <div id="ngrok-url-box" class="mb-ngrok-box" hidden>
+                    <label for="ngrok-url-value">{% trans "Dirección para el móvil" %}</label>
+                    <div class="mb-ngrok-row">
+                        <input id="ngrok-url-value" type="text" readonly>
+                        <button type="button" class="mb-ngrok-copy" onclick="MobileManager.copyNgrokUrl()">
+                            {% trans "Copiar" %}
+                        </button>
+                    </div>
+                    <small id="ngrok-url-status"></small>
+                </div>
             </div>
         </div>
 

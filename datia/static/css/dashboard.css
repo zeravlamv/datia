@@ -2174,6 +2174,17 @@ th.comp-col-var {
     color: #a1a1aa;
 }
 
+.fin-kpi-title,
+.fin-kpi-label,
+.alm-card-title,
+.alm-chart-title,
+.fin-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
 .v2-kpi-title {
     color: var(--text-muted);
     font-size: 0.9rem;
@@ -3312,8 +3323,8 @@ select:focus {
 /* Ensure mobile views are hidden on desktop unless explicitly active */
 @media (min-width: 769px) {
 
-    #actualidad-mobile-view,
-    .mobile-runtime-widget {
+    html:not(.is-phone) #actualidad-mobile-view,
+    html:not(.is-phone) .mobile-runtime-widget {
         display: none !important;
     }
 }
@@ -3372,6 +3383,146 @@ select:focus {
         margin-bottom: 10px;
     }
 
+    html.is-phone body {
+        padding-top: 0;
+    }
+
+    html.is-phone .sticky-header {
+        position: sticky;
+        height: auto;
+        flex-wrap: wrap;
+        align-items: center;
+        padding: 10px 12px;
+        gap: 8px;
+    }
+
+    html.is-phone .header-tabs,
+    html.is-phone #btn-settings,
+    html.is-phone .user-dropdown-container,
+    html.is-phone .header-separator,
+    html.is-phone #erp-label-container,
+    html.is-phone #sys-date {
+        display: none !important;
+    }
+
+    html.is-phone .header-branding-text {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    html.is-phone #header-datia-logo {
+        height: 32px !important;
+        max-width: 42px !important;
+    }
+
+    html.is-phone .header-right {
+        margin-left: auto;
+        gap: 0;
+    }
+
+    html.is-phone .info-bar {
+        flex-wrap: wrap !important;
+        align-items: stretch !important;
+        padding: 8px 12px 12px !important;
+        gap: 8px !important;
+    }
+
+    html.is-phone #status-filters {
+        display: flex !important;
+        width: 100%;
+        gap: 8px;
+    }
+
+    html.is-phone #sel-empresa,
+    html.is-phone #sel-ejercicio {
+        display: block !important;
+        min-height: 42px;
+        max-width: none !important;
+        background: #18181b;
+        color: #fff;
+        border: 1px solid #3f3f46;
+        border-radius: 10px;
+        padding: 8px 10px;
+    }
+
+    html.is-phone #sel-empresa {
+        flex: 1 1 auto;
+        width: auto !important;
+    }
+
+    html.is-phone #sel-ejercicio {
+        flex: 0 0 96px;
+        width: 96px !important;
+    }
+
+    html.is-phone .last-updated-text {
+        width: 100%;
+        text-align: left !important;
+    }
+
+    html.is-phone .tab-panel:not(#tab-actualidad) {
+        display: none !important;
+    }
+
+    html.is-phone #tab-actualidad {
+        display: block !important;
+        height: auto !important;
+        min-height: calc(100vh - 140px);
+        overflow: visible !important;
+    }
+
+    html.is-phone #actualidad-standard-view,
+    html.is-phone .actualidad-sidebar {
+        display: none !important;
+    }
+
+    html.is-phone #actualidad-mobile-view {
+        display: block !important;
+        padding: 4px 12px 28px !important;
+    }
+
+    html.is-phone .mobile-section-nav {
+        display: flex;
+        gap: 8px;
+        margin: 4px 0 14px;
+    }
+
+    html.is-phone .mobile-section-nav button {
+        flex: 1;
+        border: 1px solid #3f3f46;
+        background: #18181b;
+        color: #e4e4e7;
+        border-radius: 999px;
+        padding: 10px 8px;
+        font-weight: 600;
+    }
+
+    html.is-phone .mobile-section-nav button.is-on {
+        background: #a855f7;
+        border-color: #a855f7;
+        color: #fff;
+    }
+
+    html.is-phone .mobile-runtime-widget {
+        display: flex !important;
+    }
+
+    html.is-phone .mobile-runtime-widget:has(.mrw-chart-container) {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    html.is-phone .mrw-value {
+        font-size: 1.25rem;
+        text-align: right;
+    }
+
+    html.is-phone .mrw-chart-container {
+        height: 220px;
+        width: 100%;
+    }
+
     /* Ensure Container fits */
     #mobile-runtime-content {
         width: 100%;
@@ -3384,6 +3535,151 @@ select:focus {
         flex-direction: column;
         align-items: flex-end;
     }
+}
+
+.mobile-section-nav {
+    display: none;
+}
+
+html.is-phone body {
+    padding-top: 0;
+}
+
+html.is-phone .sticky-header {
+    position: sticky;
+    height: auto;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 10px 12px;
+    gap: 8px;
+}
+
+html.is-phone .header-tabs,
+html.is-phone #btn-settings,
+html.is-phone .user-dropdown-container,
+html.is-phone .header-separator,
+html.is-phone #erp-label-container,
+html.is-phone #sys-date {
+    display: none !important;
+}
+
+html.is-phone .header-branding-text {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+html.is-phone #header-datia-logo {
+    height: 32px !important;
+    max-width: 42px !important;
+}
+
+html.is-phone .header-right {
+    margin-left: auto;
+    gap: 0;
+}
+
+html.is-phone .info-bar {
+    flex-wrap: wrap !important;
+    align-items: stretch !important;
+    padding: 8px 12px 12px !important;
+    gap: 8px !important;
+}
+
+html.is-phone #status-filters {
+    display: flex !important;
+    width: 100%;
+    gap: 8px;
+}
+
+html.is-phone #sel-empresa,
+html.is-phone #sel-ejercicio {
+    display: block !important;
+    min-height: 42px;
+    max-width: none !important;
+    background: #18181b;
+    color: #fff;
+    border: 1px solid #3f3f46;
+    border-radius: 10px;
+    padding: 8px 10px;
+}
+
+html.is-phone #sel-empresa {
+    flex: 1 1 auto;
+    width: auto !important;
+}
+
+html.is-phone #sel-ejercicio {
+    flex: 0 0 96px;
+    width: 96px !important;
+}
+
+html.is-phone .last-updated-text {
+    width: 100%;
+    text-align: left !important;
+}
+
+html.is-phone .tab-panel:not(#tab-actualidad) {
+    display: none !important;
+}
+
+html.is-phone #tab-actualidad {
+    display: block !important;
+    height: auto !important;
+    min-height: calc(100vh - 140px);
+    overflow: visible !important;
+}
+
+html.is-phone #actualidad-standard-view,
+html.is-phone .actualidad-sidebar {
+    display: none !important;
+}
+
+html.is-phone #actualidad-mobile-view {
+    display: block !important;
+    padding: 4px 12px 28px !important;
+}
+
+html.is-phone .mobile-section-nav {
+    display: flex;
+    gap: 8px;
+    margin: 4px 0 14px;
+}
+
+html.is-phone .mobile-section-nav button {
+    flex: 1;
+    border: 1px solid #3f3f46;
+    background: #18181b;
+    color: #e4e4e7;
+    border-radius: 999px;
+    padding: 10px 8px;
+    font-weight: 600;
+}
+
+html.is-phone .mobile-section-nav button.is-on {
+    background: #a855f7;
+    border-color: #a855f7;
+    color: #fff;
+}
+
+html.is-phone .mobile-runtime-widget {
+    display: flex !important;
+}
+
+html.is-phone .mobile-runtime-widget:has(.mrw-chart-container),
+html.is-phone .mobile-runtime-chart {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+}
+
+html.is-phone .mrw-value {
+    font-size: 1.25rem;
+    text-align: right;
+}
+
+html.is-phone .mrw-chart-container {
+    height: 220px;
+    width: 100%;
 }
 
 
@@ -3803,23 +4099,23 @@ body.show-fav-tooltip .fav-star:hover::before {
     max-width: 100% !important;
 }
 
-#tab-actualidad-ratios .flip-card {
+:is(#tab-actualidad-ratios, .personal-mirror) .flip-card {
     height: 236px;
 }
 
-#tab-actualidad-ratios .flip-card-front {
+:is(#tab-actualidad-ratios, .personal-mirror) .flip-card-front {
     padding: 12px 12px 40px;
     align-items: stretch;
     background: transparent;
 }
 
-#tab-actualidad-ratios .fin-ratio-item {
+:is(#tab-actualidad-ratios, .personal-mirror) .fin-ratio-item {
     padding: 0;
     overflow: hidden;
     background: #12141c;
 }
 
-#tab-actualidad-ratios .fin-kpi-label {
+:is(#tab-actualidad-ratios, .personal-mirror) .fin-kpi-label {
     margin: 0;
     font-size: 0.68rem;
     letter-spacing: 0.03em;
@@ -3827,7 +4123,7 @@ body.show-fav-tooltip .fav-star:hover::before {
     white-space: normal;
 }
 
-#tab-actualidad-ratios .ratio-header-inline {
+:is(#tab-actualidad-ratios, .personal-mirror) .ratio-header-inline {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -3836,20 +4132,20 @@ body.show-fav-tooltip .fav-star:hover::before {
     z-index: 2;
 }
 
-#tab-actualidad-ratios .ratio-detail-btn {
+:is(#tab-actualidad-ratios, .personal-mirror) .ratio-detail-btn {
     position: static;
     flex-shrink: 0;
 }
 
-#tab-actualidad-ratios .fin-ratio-val {
+:is(#tab-actualidad-ratios, .personal-mirror) .fin-ratio-val {
     height: 148px !important;
     margin: 0;
     font-size: 1.7rem;
     text-shadow: none;
 }
 
-#tab-actualidad-ratios .ratio-figure,
-#tab-actualidad-ratios .ratio-empty {
+:is(#tab-actualidad-ratios, .personal-mirror) .ratio-figure,
+:is(#tab-actualidad-ratios, .personal-mirror) .ratio-empty {
     height: 148px;
     display: flex;
     align-items: center;
@@ -3858,26 +4154,26 @@ body.show-fav-tooltip .fav-star:hover::before {
     letter-spacing: 0;
 }
 
-#tab-actualidad-ratios .ratio-figure {
+:is(#tab-actualidad-ratios, .personal-mirror) .ratio-figure {
     font-size: 1.55rem;
 }
 
-#tab-actualidad-ratios .ratio-figure-pos {
+:is(#tab-actualidad-ratios, .personal-mirror) .ratio-figure-pos {
     color: #6ee7b7;
 }
 
-#tab-actualidad-ratios .ratio-figure-neg,
-#tab-actualidad-ratios .ratio-empty {
+:is(#tab-actualidad-ratios, .personal-mirror) .ratio-figure-neg,
+:is(#tab-actualidad-ratios, .personal-mirror) .ratio-empty {
     color: #fca5a5;
 }
 
-#tab-actualidad-ratios .ratio-empty {
+:is(#tab-actualidad-ratios, .personal-mirror) .ratio-empty {
     font-size: 1rem;
     font-weight: 600;
     color: #a1a1aa;
 }
 
-#tab-actualidad-ratios .ratio-zone {
+:is(#tab-actualidad-ratios, .personal-mirror) .ratio-zone {
     position: absolute;
     left: 10px;
     right: 92px;
@@ -3894,27 +4190,27 @@ body.show-fav-tooltip .fav-star:hover::before {
     text-overflow: ellipsis;
 }
 
-#tab-actualidad-ratios .fin-ratio-lever {
+:is(#tab-actualidad-ratios, .personal-mirror) .fin-ratio-lever {
     bottom: 8px;
     right: 10px;
 }
 
-#tab-actualidad-ratios .ratios-map {
+:is(#tab-actualidad-ratios, .personal-mirror) .ratios-map {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 8px;
 }
 
-#tab-actualidad-ratios .ratios-map-chart {
+:is(#tab-actualidad-ratios, .personal-mirror) .ratios-map-chart {
     width: 100%;
     height: 320px;
 }
 
 @media (max-width: 1280px) {
-    #tab-actualidad-ratios .fin-ratios-grid {
+    :is(#tab-actualidad-ratios, .personal-mirror) .fin-ratios-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-    #tab-actualidad-ratios .ratios-map {
+    :is(#tab-actualidad-ratios, .personal-mirror) .ratios-map {
         grid-template-columns: 1fr;
     }
 }

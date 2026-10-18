@@ -8,7 +8,7 @@
         btn.title = initialActive ? 'Añadido a Pestaña Personal' : 'Añadir a Pestaña Personal';
         btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" fill="currentColor"/></svg>';
         btn.onclick = async function (e) {
-            try { e.preventDefault(); } catch (_) { }
+            try { e.preventDefault(); e.stopPropagation(); } catch (_) { }
             var favs = FavoriteStore.getFavorites();
             var isActive = favs.indexOf(key) >= 0;
             var nextActive = !isActive;
@@ -69,7 +69,82 @@
             { key: 'alm_end', type: 'alm_end', period: 'year', domId: 'alm-sum-end', origin: 'almacen' },
             { key: 'fin_ingresos', type: 'fin_ingresos', period: 'year', domId: 'fin-val-ingresos', origin: 'financiera' },
             { key: 'fin_gastos', type: 'fin_gastos', period: 'year', domId: 'fin-val-gastos', origin: 'financiera' },
-            { key: 'fin_resultado', type: 'fin_resultado', period: 'year', domId: 'fin-val-resultado', origin: 'financiera' }
+            { key: 'fin_resultado', type: 'fin_resultado', period: 'year', domId: 'fin-val-resultado', origin: 'financiera' },
+            { key: 'fin_otros_ingresos', type: 'fin_otros_ingresos', period: 'year', domId: 'fin-val-otros-ingresos', origin: 'financiera', kind: 'kpi', title: 'Otros ingresos' },
+            { key: 'fin_otros_gastos', type: 'fin_otros_gastos', period: 'year', domId: 'fin-val-otros-gastos', origin: 'financiera', kind: 'kpi', title: 'Otros gastos' },
+            { key: 'fin_exec_chart', type: 'chart', period: 'year', domId: 'fin-exec-chart', origin: 'financiera', kind: 'chart', title: 'Gráfico ejecutivo' },
+            { key: 'chart_activity', type: 'chart', period: 'month', domId: 'chart-activity', origin: 'ventas', kind: 'chart', title: 'Evolución de ventas' },
+            { key: 'chart_clients', type: 'chart', period: 'year', domId: 'chart-clients', origin: 'ventas', kind: 'chart', title: 'Top clientes' },
+            { key: 'chart_products', type: 'chart', period: 'year', domId: 'chart-products', origin: 'ventas', kind: 'chart', title: 'Top artículos' },
+            { key: 'sales_uninv_albaranes', type: 'kpi', period: 'year', domId: 'sales-uninv-albaranes', origin: 'ventas', kind: 'kpi', title: 'Albaranes no facturados' },
+            { key: 'sales_uninv_lineas', type: 'kpi', period: 'year', domId: 'sales-uninv-lineas', origin: 'ventas', kind: 'kpi', title: 'Líneas no facturadas' },
+            { key: 'sales_uninv_importe', type: 'kpi', period: 'year', domId: 'sales-uninv-importe', origin: 'ventas', kind: 'kpi', title: 'Importe no facturado' },
+            { key: 'ops_compra_year', type: 'ops_compra_year', period: 'year', domId: 'val-ops-compra-year', origin: 'compras', kind: 'kpi', title: 'Operaciones de compra (año)' },
+            { key: 'chart_activity_compras', type: 'chart', period: 'month', domId: 'chart-activity-compras', origin: 'compras', kind: 'chart', title: 'Evolución de compras' },
+            { key: 'top_zonas_compra', type: 'chart', period: 'year', domId: 'chart-top-zonas-compra', origin: 'compras', kind: 'chart', title: 'Top zonas de compra' },
+            { key: 'top_proveedores', type: 'chart', period: 'year', domId: 'chart-top-proveedores', origin: 'compras', kind: 'chart', title: 'Top proveedores' },
+            { key: 'top_articulos_compra', type: 'chart', period: 'year', domId: 'chart-top-articulos-compra', origin: 'compras', kind: 'chart', title: 'Top artículos de compra' },
+            { key: 'alm_total_valor', type: 'kpi', period: 'year', domId: 'alm-total-valor', origin: 'almacen', kind: 'kpi', title: 'Stock valorado' },
+            { key: 'alm_total_unidades', type: 'kpi', period: 'year', domId: 'alm-total-unidades', origin: 'almacen', kind: 'kpi', title: 'Unidades de stock' },
+            { key: 'alm_expiring', type: 'kpi', period: 'year', domId: 'alm-expiring', origin: 'almacen', kind: 'kpi', title: 'Próximos a caducar' },
+            { key: 'alm_critical', type: 'kpi', period: 'year', domId: 'alm-critical', origin: 'almacen', kind: 'kpi', title: 'Stock crítico' },
+            { key: 'chart_alm_variacion', type: 'chart', period: 'year', domId: 'chart-alm-variacion', origin: 'almacen', kind: 'chart', title: 'Variación de existencias' },
+            { key: 'chart_alm_almacen', type: 'chart', period: 'year', domId: 'chart-alm-almacen', origin: 'almacen', kind: 'chart', title: 'Stock por almacén' },
+            { key: 'chart_alm_abc', type: 'chart', period: 'year', domId: 'chart-alm-abc', origin: 'almacen', kind: 'chart', title: 'Pareto ABC' },
+            { key: 'ratios_core_liquidez', type: 'kpi', period: 'year', domId: 'ratios-core-liquidez', origin: 'ratios', kind: 'kpi', title: 'Liquidez' },
+            { key: 'ratios_core_margen', type: 'kpi', period: 'year', domId: 'ratios-core-margen', origin: 'ratios', kind: 'kpi', title: 'Margen EBITDA' },
+            { key: 'ratios_core_solvencia', type: 'kpi', period: 'year', domId: 'ratios-core-solvencia', origin: 'ratios', kind: 'kpi', title: 'Solvencia' },
+            { key: 'ratios_core_endeudamiento', type: 'kpi', period: 'year', domId: 'ratios-core-endeudamiento', origin: 'ratios', kind: 'kpi', title: 'Endeudamiento' },
+            { key: 'ratios_radar', type: 'chart', period: 'year', domId: 'ratios-radar-chart', origin: 'ratios', kind: 'chart', title: 'Mapa de ratios' },
+            { key: 'ratios_rentabilidad', type: 'chart', period: 'year', domId: 'ratios-rentabilidad-chart', origin: 'ratios', kind: 'chart', title: 'Rentabilidad' },
+            { key: 'ratio_liquidez_corriente', type: 'kpi', period: 'year', domId: 'ratio-liquidez-corriente-val', origin: 'ratios', kind: 'kpi', title: 'Liquidez corriente' },
+            { key: 'ratio_test_acido', type: 'kpi', period: 'year', domId: 'ratio-test-acido-val', origin: 'ratios', kind: 'kpi', title: 'Test ácido' },
+            { key: 'ratio_disponibilidad', type: 'kpi', period: 'year', domId: 'ratio-disponibilidad-val', origin: 'ratios', kind: 'kpi', title: 'Disponibilidad' },
+            { key: 'ratio_fondo_maniobra', type: 'kpi', period: 'year', domId: 'ratio-fondo-maniobra-val', origin: 'ratios', kind: 'kpi', title: 'Fondo de maniobra' },
+            { key: 'ratio_endeudamiento', type: 'kpi', period: 'year', domId: 'ratio-endeudamiento-val', origin: 'ratios', kind: 'kpi', title: 'Endeudamiento' },
+            { key: 'ratio_autonomia', type: 'kpi', period: 'year', domId: 'ratio-autonomia-val', origin: 'ratios', kind: 'kpi', title: 'Autonomía' },
+            { key: 'ratio_garantia', type: 'kpi', period: 'year', domId: 'ratio-garantia-val', origin: 'ratios', kind: 'kpi', title: 'Garantía' },
+            { key: 'ratio_calidad_deuda', type: 'kpi', period: 'year', domId: 'ratio-calidad-deuda-val', origin: 'ratios', kind: 'kpi', title: 'Calidad de la deuda' },
+            { key: 'ratio_rotacion_activos', type: 'kpi', period: 'year', domId: 'ratio-rotacion-activos-val', origin: 'ratios', kind: 'kpi', title: 'Rotación de activos' },
+            { key: 'ratio_rotacion_stock', type: 'kpi', period: 'year', domId: 'ratio-rotacion-stock-val', origin: 'ratios', kind: 'kpi', title: 'Rotación de stock' },
+            { key: 'ratio_periodo_cobro', type: 'kpi', period: 'year', domId: 'ratio-periodo-cobro-val', origin: 'ratios', kind: 'kpi', title: 'Período de cobro' },
+            { key: 'ratio_periodo_pago', type: 'kpi', period: 'year', domId: 'ratio-periodo-pago-val', origin: 'ratios', kind: 'kpi', title: 'Período de pago' },
+            { key: 'ratio_margen_bruto', type: 'kpi', period: 'year', domId: 'ratio-margen-bruto-val', origin: 'ratios', kind: 'kpi', title: 'Margen bruto' },
+            { key: 'ratio_margen_neto', type: 'kpi', period: 'year', domId: 'ratio-margen-neto-val', origin: 'ratios', kind: 'kpi', title: 'Margen neto' },
+            { key: 'ratio_roa', type: 'kpi', period: 'year', domId: 'ratio-roa-val', origin: 'ratios', kind: 'kpi', title: 'ROA' },
+            { key: 'ratio_roe', type: 'kpi', period: 'year', domId: 'ratio-roe-val', origin: 'ratios', kind: 'kpi', title: 'ROE' },
+            { key: 'ratio_cobertura_interes', type: 'kpi', period: 'year', domId: 'ratio-cobertura-interes-val', origin: 'ratios', kind: 'kpi', title: 'Cobertura de intereses' },
+            { key: 'ratio_cobertura_deuda', type: 'kpi', period: 'year', domId: 'ratio-cobertura-deuda-val', origin: 'ratios', kind: 'kpi', title: 'Cobertura de deuda' },
+            { key: 'ratio_margen_ebitda', type: 'kpi', period: 'year', domId: 'ratio-margen-ebitda-val', origin: 'ratios', kind: 'kpi', title: 'Margen EBITDA' },
+            { key: 'tes_pendiente_cobro', type: 'kpi', period: 'year', domId: 'kpi-pendiente-cobro', origin: 'tesoreria', kind: 'kpi', title: 'Pendiente de cobro' },
+            { key: 'tes_impagados', type: 'kpi', period: 'year', domId: 'kpi-impagados', origin: 'tesoreria', kind: 'kpi', title: 'Períodos de cobro' },
+            { key: 'tes_dias_cobro', type: 'kpi', period: 'year', domId: 'kpi-dias-cobro', origin: 'tesoreria', kind: 'kpi', title: 'Días de cobro' },
+            { key: 'tes_pendiente_pago', type: 'kpi', period: 'year', domId: 'kpi-pendiente-pago', origin: 'tesoreria', kind: 'kpi', title: 'Pendiente de pago' },
+            { key: 'tes_ratio_cobro', type: 'kpi', period: 'year', domId: 'kpi-ratio-cobro', origin: 'tesoreria', kind: 'kpi', title: 'Ratio de cobro' },
+            { key: 'tes_ratio_pago', type: 'kpi', period: 'year', domId: 'kpi-ratio-pago', origin: 'tesoreria', kind: 'kpi', title: 'Ratio de pago' },
+            { key: 'tes_ratio_tesoreria', type: 'kpi', period: 'year', domId: 'kpi-ratio-tesoreria', origin: 'tesoreria', kind: 'kpi', title: 'Ratio de tesorería' },
+            { key: 'tes_ratio_endeudamiento', type: 'kpi', period: 'year', domId: 'kpi-ratio-endeudamiento', origin: 'tesoreria', kind: 'kpi', title: 'Ratio de endeudamiento' },
+            { key: 'tes_cash', type: 'kpi', period: 'year', domId: 'kpi-cash', origin: 'tesoreria', kind: 'kpi', title: 'Tesorería disponible' },
+            { key: 'tes_wc', type: 'kpi', period: 'year', domId: 'kpi-wc', origin: 'tesoreria', kind: 'kpi', title: 'Fondo de maniobra' },
+            { key: 'chart_aging_cobros', type: 'chart', period: 'year', domId: 'chart-aging-cobros', origin: 'tesoreria', kind: 'chart', title: 'Cobros por período' },
+            { key: 'chart_aging_pagos', type: 'chart', period: 'year', domId: 'chart-aging-pagos', origin: 'tesoreria', kind: 'chart', title: 'Pagos por período' },
+            { key: 'chart_tes_clientes', type: 'chart', period: 'year', domId: 'chart-tesoreria-clientes', origin: 'tesoreria', kind: 'chart', title: 'Saldos de clientes' },
+            { key: 'chart_tes_proveedores', type: 'chart', period: 'year', domId: 'chart-tesoreria-proveedores', origin: 'tesoreria', kind: 'chart', title: 'Saldos de proveedores' },
+            { key: 'chart_tes_bancos', type: 'chart', period: 'year', domId: 'chart-tesoreria-bancos', origin: 'tesoreria', kind: 'chart', title: 'Saldos de bancos' },
+            { key: 'chart_tes_evolucion', type: 'chart', period: 'year', domId: 'chart-tesoreria-evolucion', origin: 'tesoreria', kind: 'chart', title: 'Ingresos y gastos' },
+            { key: 'chart_tes_forecast', type: 'chart', period: 'year', domId: 'tes-chart-forecast', origin: 'tesoreria', kind: 'chart', title: 'Previsión de caja' },
+            { key: 'balance_summary', type: 'kpi', period: 'year', domId: 'fin-balance-summary', origin: 'balances', kind: 'block', title: 'Resumen del balance' },
+            { key: 'balance_chart', type: 'chart', period: 'year', domId: 'fin-balance-detail', origin: 'balances', kind: 'chart', title: 'Gráfico del balance' },
+            { key: 'pl_summary', type: 'kpi', period: 'year', domId: 'fin-pl-summary', origin: 'balances', kind: 'block', title: 'Resumen de explotación' },
+            { key: 'quarter_chart', type: 'chart', period: 'year', domId: 'fin-quarter-chart', origin: 'balances', kind: 'chart', title: 'Comparativa trimestral' },
+            { key: 'anatomy_waffle', type: 'chart', period: 'year', domId: 'fin-anatomy-waffle', origin: 'anatomia', kind: 'chart', title: 'Mapa de gastos' },
+            { key: 'anatomy_per100', type: 'chart', period: 'year', domId: 'fin-anatomy-per100-pie', origin: 'anatomia', kind: 'chart', title: 'Por cada 100 €' },
+            { key: 'anatomy_forecast', type: 'chart', period: 'year', domId: 'fin-anatomy-forecast-chart', origin: 'anatomia', kind: 'chart', title: 'Previsión' },
+            { key: 'budget_ingresos', type: 'kpi', period: 'year', domId: 'budget-dash-ingresos', origin: 'presupuestos', kind: 'kpi', title: 'Ingresos del ejercicio' },
+            { key: 'budget_gastos', type: 'kpi', period: 'year', domId: 'budget-dash-gastos', origin: 'presupuestos', kind: 'kpi', title: 'Gastos del ejercicio' },
+            { key: 'budget_resultado', type: 'kpi', period: 'year', domId: 'budget-dash-resultado', origin: 'presupuestos', kind: 'kpi', title: 'Resultado del ejercicio' },
+            { key: 'budget_monthly', type: 'chart', period: 'year', domId: 'chart-dash-monthly', origin: 'presupuestos', kind: 'chart', title: 'Presupuesto mes a mes' },
+            { key: 'budget_cumulative', type: 'chart', period: 'year', domId: 'chart-dash-cumulative', origin: 'presupuestos', kind: 'chart', title: 'Resultado acumulado' }
         ],
         init: function () {
             var self = this;
@@ -126,6 +201,11 @@
                 if (type === 'alm_base') return fmtPlain(inv.valor_inicial || 0);
                 if (type === 'alm_variacion') return fmtPlain(inv.variacion_total || 0);
                 if (type === 'alm_end') return fmtPlain(inv.existencia_fin || 0);
+            }
+            var node = it && it.domId ? document.getElementById(it.domId) : null;
+            if (node && it.kind !== 'chart') {
+                var txt = (node.innerText || '').replace(/\s+/g, ' ').trim();
+                if (txt && txt !== '--' && txt !== '...' && txt !== '-') return txt.length > 180 ? txt.slice(0, 180) : txt;
             }
             FavoriteStore.ensureCaches();
             return '-';
@@ -301,59 +381,59 @@
                 });
             } catch (_) { }
         },
-        injectInContainer: function (container) {
-            var map = {};
-            WidgetRegistry.list.forEach(function (it) { map[it.domId] = it; });
-            var candidates = Array.from(container.querySelectorAll('[id^="val-"], [id^="alm-"], [id^="fin-"]'));
-            candidates.forEach(function (el) {
-                var id = el.id;
-                var w = map[id];
-                if (!w) return;
-                var header = null;
-                var front = el.closest('.flip-card-front') || el.closest('.flip-card') || el.closest('.alm-card') || el.closest('.fin-card');
-                if (front) {
-                    header = front.querySelector('.v2-kpi-header') || front.querySelector('.fin-card-header') || front.querySelector('.alm-card-title') || front.querySelector('.alm-card-header') || front.querySelector('.fin-kpi-label');
-                } else {
-                    header = el.closest('.v2-kpi-header') || el.closest('.fin-card-header') || el.closest('.alm-card-title') || el.closest('.alm-card-header') || el.closest('.fin-kpi-label');
-                }
-                if (!header && front) {
-                    var hasOverlay = front.querySelector('.act-fav-overlay');
-                    if (!hasOverlay) {
-                        var overlay = document.createElement('div');
-                        overlay.className = 'act-fav-overlay';
-                        var favsNow = FavoriteStore.getFavorites();
-                        var activeNow = favsNow.indexOf(w.key) >= 0;
-                        var btn2 = createStarButton(w.key, activeNow);
-                        overlay.appendChild(btn2);
-                        front.appendChild(overlay);
-                    }
-                    return;
-                }
-                if (!header) return;
-                var actions = header.querySelector('.kpi-actions');
-                if (!actions) {
-                    actions = document.createElement('div');
-                    actions.className = 'kpi-actions';
-                    header.appendChild(actions);
-                }
-                var existing = actions.querySelector('.act-fav-btn[data-key="' + w.key + '"]');
-                if (existing) return;
-                var favsNow2 = FavoriteStore.getFavorites();
-                var activeNow2 = favsNow2.indexOf(w.key) >= 0;
-                var btn = createStarButton(w.key, activeNow2);
-                actions.appendChild(btn);
+        cardOf: function (el) {
+            return el.closest('.flip-card-front')
+                || el.closest('.fin-kpi-card')
+                || el.closest('.alm-card')
+                || el.closest('.alm-chart-block')
+                || el.closest('.glass-panel')
+                || el.closest('.fin-card-simple')
+                || el.closest('.fin-grid-item')
+                || el;
+        },
+        injectOne: function (item) {
+            var el = document.getElementById(item.domId);
+            if (!el) return;
+            if (el.querySelector('.act-fav-btn[data-key="' + item.key + '"]')) return;
+            var card = this.cardOf(el);
+            if (card.querySelector('.act-fav-btn[data-key="' + item.key + '"]')) return;
+            var shared = WidgetRegistry.list.filter(function (it) {
+                var node = document.getElementById(it.domId);
+                return node && card.contains(node);
             });
-            this.updateStars();
+            var favs = FavoriteStore.getFavorites();
+            var active = favs.indexOf(item.key) >= 0;
+            var btn = createStarButton(item.key, active);
+            if (shared.length > 1 || card === el) {
+                var host = el;
+                if (window.getComputedStyle(host).position === 'static') host.style.position = 'relative';
+                var overlay = document.createElement('div');
+                overlay.className = 'act-fav-overlay';
+                overlay.appendChild(btn);
+                host.appendChild(overlay);
+                return;
+            }
+            var header = card.querySelector('.v2-kpi-header, .fin-card-header, .fin-kpi-title, .alm-card-title, .alm-chart-title, .fin-kpi-label, h3');
+            if (!header) {
+                if (window.getComputedStyle(card).position === 'static') card.style.position = 'relative';
+                var overlay2 = document.createElement('div');
+                overlay2.className = 'act-fav-overlay';
+                overlay2.appendChild(btn);
+                card.appendChild(overlay2);
+                return;
+            }
+            var actions = header.querySelector('.kpi-actions');
+            if (!actions) {
+                actions = document.createElement('div');
+                actions.className = 'kpi-actions';
+                header.appendChild(actions);
+            }
+            actions.appendChild(btn);
         },
         run: function () {
-            var ventas = document.getElementById('sub-ventas');
-            var compras = document.getElementById('sub-compras');
-            var almacen = document.getElementById('almacen-panel') || document.getElementById('sub-almacen');
-            var fin = document.getElementById('sub-financiera') || document.getElementById('tab-actualidad-financiera');
-            if (ventas) this.injectInContainer(ventas);
-            if (compras) this.injectInContainer(compras);
-            if (almacen) this.injectInContainer(almacen);
-            if (fin) this.injectInContainer(fin);
+            var self = this;
+            WidgetRegistry.list.forEach(function (item) { self.injectOne(item); });
+            this.updateStars();
         },
         init: function () {
             this.run();

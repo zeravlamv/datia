@@ -1,0 +1,141 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Datia · El negocio, claro</title>
+    <meta name="description" content="Datia convierte los datos de Sage en un panel de ventas, compras, existencias, tesorería, ratios y presupuestos. La inteligencia artificial responde con las cifras de tu empresa.">
+    <link rel="stylesheet" href="{% static 'css/comercial.css' %}?v=1">
+</head>
+<body>
+    <div class="wrap">
+        <header class="nav">
+            <a class="brand" href="{% url 'comercial' %}">
+                <span class="brand-mark" aria-hidden="true"></span>
+                Datia
+            </a>
+            <nav class="nav-links">
+                <a href="#virtudes">Virtudes</a>
+                <a href="#como">Cómo funciona</a>
+                <a class="btn btn-primary" href="{% url 'login' %}">Entrar</a>
+            </nav>
+        </header>
+
+        <section class="hero">
+            <div>
+                <p class="kicker">Analítica sobre Sage</p>
+                <h1>El negocio, claro. En una sola pantalla.</h1>
+                <p class="lead">
+                    Datia lee el ERP y lo deja listo para decidir: ventas, compras, existencias,
+                    tesorería, ratios y presupuestos. La inteligencia artificial responde
+                    con las cifras de tu empresa, en lenguaje natural, y cada directivo
+                    abre su propia pestaña.
+                </p>
+                <div class="hero-actions">
+                    <a class="btn btn-primary" href="{% url 'login' %}">Entrar en Datia</a>
+                    <a class="btn btn-ghost" href="#virtudes">Ver qué incluye</a>
+                </div>
+                <div class="stats">
+                    <div><strong>Sage</strong><span>origen en lectura</span></div>
+                    <div><strong>Un panel</strong><span>para toda la empresa</span></div>
+                    <div><strong>IA</strong><span>preguntas sobre tus datos</span></div>
+                </div>
+            </div>
+            <div class="stage" aria-hidden="true">
+                <div class="glow"></div>
+                <div class="panel">
+                    <div class="panel-top"><span>Ejercicio en curso</span><span>Ejemplo visual</span></div>
+                    <div class="kpi-row">
+                        <div class="kpi"><em>Ventas</em><b>8,6 M€</b><span class="up">ejercicio</span></div>
+                        <div class="kpi"><em>Margen</em><b>34 %</b><span class="up">neto</span></div>
+                        <div class="kpi"><em>Liquidez</em><b>1,0</b><span class="up">en zona</span></div>
+                    </div>
+                    <div class="bars"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+                    <p class="note">Ilustración comercial. Las cifras reales salen de tu empresa al entrar.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="virtudes">
+            <p class="section-label">Qué resuelve</p>
+            <h2>Ocho virtudes, un solo sitio.</h2>
+            <p class="section-lead">Deja de perseguir listados. Datia junta la cifra, la gráfica y la pregunta.</p>
+            <div class="grid">
+                <article class="card">
+                    <i>01</i>
+                    <h3>Ventas</h3>
+                    <p>Evolución del año, ticket, margen, y los clientes y artículos que más venden.</p>
+                </article>
+                <article class="card">
+                    <i>02</i>
+                    <h3>Compras</h3>
+                    <p>Gasto, operaciones y proveedores, con el mismo lenguaje que las ventas.</p>
+                </article>
+                <article class="card">
+                    <i>03</i>
+                    <h3>Existencias</h3>
+                    <p>El artículo, su nombre y el stock por almacén cuando las existencias están cargadas.</p>
+                </article>
+                <article class="card">
+                    <i>04</i>
+                    <h3>Ratios</h3>
+                    <p>Liquidez, margen, rotación y el resto, con la zona en la que se encuentra cada uno.</p>
+                </article>
+                <article class="card">
+                    <i>05</i>
+                    <h3>Tesorería</h3>
+                    <p>Cobros, pagos y la posición de caja para ver la tensión antes de que llegue.</p>
+                </article>
+                <article class="card">
+                    <i>06</i>
+                    <h3>Presupuestos</h3>
+                    <p>Lo previsto frente a lo real, mes a mes, sin rehacer la hoja de cálculo.</p>
+                </article>
+                <article class="card">
+                    <i>07</i>
+                    <h3>Balances</h3>
+                    <p>El informe del ejercicio y la comparativa trimestral, listos para la reunión.</p>
+                </article>
+                <article class="card">
+                    <i>08</i>
+                    <h3>Inteligencia artificial</h3>
+                    <p>«Artículos más vendidos en 2024» o «ventas a un cliente». La IA responde con las cifras de tu empresa.</p>
+                </article>
+            </div>
+        </section>
+
+        <section id="como">
+            <p class="section-label">Cómo se usa</p>
+            <h2>De Sage a tu pantalla, en tres pasos.</h2>
+            <div class="steps">
+                <article class="step">
+                    <b>01</b>
+                    <h3>Sage sigue siendo el origen</h3>
+                    <p>Los datos salen del ERP en lectura. Datia no sustituye la contabilidad: la explica.</p>
+                </article>
+                <article class="step">
+                    <b>02</b>
+                    <h3>El panel reúne el ejercicio</h3>
+                    <p>Ventas, compras, ratios y balances comparten empresa y año. Cambias de sección sin perder el contexto.</p>
+                </article>
+                <article class="step">
+                    <b>03</b>
+                    <h3>La IA responde con tus cifras</h3>
+                    <p>Pregunta en lenguaje natural. La inteligencia artificial usa los datos de tu empresa y devuelve la cifra, no una respuesta genérica.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="close">
+            <div>
+                <h2>Abre el panel de tu empresa.</h2>
+                <p>Entra con tu usuario. El panel y la inteligencia artificial trabajan con las cifras de tu ejercicio, no con las de este ejemplo.</p>
+            </div>
+            <a class="btn btn-primary" href="{% url 'login' %}">Entrar en Datia</a>
+        </section>
+
+        <footer>Datia Analytics · Consulta comercial. El acceso a los datos requiere usuario.</footer>
+    </div>
+</body>
+</html>
