@@ -564,6 +564,27 @@ class TotalsService:
         except Exception:
             pass
 
+    def _importe_con_datos(self, cur, table, pick, candidatos, emp_col, empresa, periodo_col, ejercicio, periodo_es_anio):
+        existentes = [col for col in candidatos if pick([col])]
+        if not existentes or not emp_col or not periodo_col:
+            return existentes[0] if existentes else None
+        if periodo_es_anio:
+            filtro = f"{periodo_col} = %s"
+        else:
+            filtro = f"CAST(EXTRACT(YEAR FROM {periodo_col}) AS INTEGER) = %s"
+        for col in existentes:
+            cur.execute(
+                f"SELECT COALESCE(SUM({col}), 0) FROM {table} WHERE {emp_col} = %s AND {filtro}",
+                [empresa, ejercicio],
+            )
+            total = cur.fetchone()[0]
+            try:
+                if float(total or 0) != 0:
+                    return col
+            except (TypeError, ValueError):
+                continue
+        return existentes[0]
+
     def aggregate_from_datiadb_purchases(self, empresa, ejercicio):
         from django.db import connections
         from django.utils import timezone
@@ -587,7 +608,11 @@ class TotalsService:
         date_col = pick(['fechaalbaran','fecha'])
         prov_col = pick(['codigoproveedor','proveedor','id_proveedor'])
         num_col = pick(['numeroalbaran','numero'])
-        net_col = pick(['importeliquido','importeneto','baseimponible','importebruto'])
+        net_col = self._importe_con_datos(
+            cur, table, pick,
+            ['importeliquido', 'importeneto', 'baseimponible', 'importebruto'],
+            emp_col, empresa, year_col or date_col, ejercicio, year_col is not None,
+        )
         coniva_col = pick(['importetotal','importeconiva','totalconiva'])
         if not emp_col or (not year_col and not date_col) or not net_col:
             return
@@ -657,7 +682,11 @@ class TotalsService:
                 l_date = l_pick(['fechaalbaran','fecha'])
                 l_art = l_pick(['codigoarticulo','articulo'])
                 l_num = l_pick(['numeroalbaran','numero'])
-                l_net = l_pick(['importeneto','importeliquido','baseimponible','importebruto'])
+                l_net = self._importe_con_datos(
+                    cur, l_table, l_pick,
+                    ['importeneto', 'importeliquido', 'baseimponible', 'importebruto'],
+                    l_emp, empresa, l_year or l_date, ejercicio, l_year is not None,
+                )
                 l_coniva = l_pick(['importefactura','importetotal','importeconiva','totalconiva'])
                 if l_emp and (l_year or l_date) and l_art and l_net:
                     cur.execute("DELETE FROM metrics_totales_empresa_ejercicio_articulo_compra WHERE empresa = %s AND ejercicio = %s", [empresa, ejercicio])

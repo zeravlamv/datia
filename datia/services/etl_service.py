@@ -1619,9 +1619,9 @@ class ETLService:
             ]
             for name, src in default_sources:
                 try:
-                    DataSource.objects.get_or_create(
-                        empresa_id=emp_int,
-                        source_table=src,
+                    DataSource.resolver(
+                        emp_int,
+                        src,
                         defaults={
                             'name': name,
                             'description': '',
@@ -1639,7 +1639,7 @@ class ETLService:
         else:
             log_debug(f"Auto-selecting tables for empresa_id={empresa_id}")
             # Migrar todas las fuentes definidas para la empresa, aunque todavía no tengan campos
-            sources = DataSource.objects.filter(empresa_id=empresa_id).distinct()
+            sources = DataSource.objects.all().order_by('id')
         
         total_sources = sources.count()
         if total_sources == 0:

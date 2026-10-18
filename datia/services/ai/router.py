@@ -212,6 +212,9 @@ class IntentRouter:
         try:
             # We pass 'training_enabled' to QueryBuilder so it knows whether to attempt Generation or just Recall.
             dynamic_match = QueryBuilder.build_from_nl(q_lower, context)
+            if not dynamic_match:
+                from datia.services.ai.auto_learn import AutoLearn
+                dynamic_match = AutoLearn.aprender(question, empresa, ejercicio)
             
             if dynamic_match:
                 if dynamic_match.get('reply'):
@@ -295,7 +298,7 @@ class IntentRouter:
             return None, {
                 'type': 'training_ask',
                 'question': question,
-                'text': "No sé responder a esta consulta con mi memoria actual."
+                'text': "He intentado aprender esta consulta con los totales de la empresa y no he podido dejarla lista."
             }
 
         try:

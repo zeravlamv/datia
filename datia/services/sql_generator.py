@@ -209,6 +209,7 @@ Formato de salida JSON (CRÍTICO: devuelve SOLO el JSON, sin texto adicional):
             Number of queries successfully saved
         """
         saved_count = 0
+        self.last_error = ''
         
         for idx, query in enumerate(queries):
             try:
@@ -216,23 +217,23 @@ Formato de salida JSON (CRÍTICO: devuelve SOLO el JSON, sin texto adicional):
                 embedding_service = ServiceFactory.get_embedding_service()
                 
                 if not embedding_service:
+                    self.last_error = 'No hay servicio de vectores.'
                     print("❌ ERROR: No Embedding Service available (Check Providers/Keys)")
                     continue
 
-                embedding = embedding_service.embed_text(query['description'])
-                
-                if not embedding:
-                     continue
-
-                # SANITIZE: Ensure description is a string (LLM sometimes returns list)
                 description_text = query.get('description', '')
                 if isinstance(description_text, list):
                     description_text = " ".join([str(x) for x in description_text])
                 elif not isinstance(description_text, str):
                     description_text = str(description_text)
-                
-                # Update query object for consistency
+                description_text = description_text.strip() or f'Consulta de {table_name}'
                 query['description'] = description_text
+
+                embedding = embedding_service.embed_text(description_text)
+                
+                if not embedding:
+                     self.last_error = 'El modelo de vectores no devolvió un vector.'
+                     continue
 
                 digest = hashlib.sha256(
                     f"{empresa_id}:{table_name}:{description_text}:{query.get('sql', '')}".encode('utf-8')
@@ -267,6 +268,7 @@ Formato de salida JSON (CRÍTICO: devuelve SOLO el JSON, sin texto adicional):
                 saved_count += 1
                 
             except Exception as e:
+                self.last_error = str(e)
                 import traceback
                 print(f"❌ CRITICAL ERROR saving query to knowledge base: {e}")
                 print(traceback.format_exc())

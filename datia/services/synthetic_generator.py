@@ -9,6 +9,29 @@ import itertools
 import logging
 logger = logging.getLogger(__name__)
 
+_ROLES_MINIMOS = {
+    'codigocliente': 'dimension',
+    'codigoarticulo': 'dimension',
+    'codigoproveedor': 'dimension',
+    'codigofamilia': 'dimension',
+    'codigocomisionista': 'dimension',
+    'descripcionarticulo': 'dimension',
+    'fechaalbaran': 'date',
+    'fechapedido': 'date',
+    'fecha': 'date',
+    'importeneto': 'metric',
+    'importeliquido': 'metric',
+    'importebruto': 'metric',
+    'baseimponible': 'metric',
+    'unidades': 'metric',
+    'unidades2_': 'metric',
+    'codigoempresa': 'data',
+    'ejercicio': 'data',
+    'numeroalbaran': 'data',
+    'numeropedido': 'data',
+}
+
+
 class SyntheticSQLGenerator:
     """
     Generates deterministic, syntactically valid SQL queries based on table schema.
@@ -32,6 +55,21 @@ class SyntheticSQLGenerator:
             concepts = ", ".join(matches)
             return f"({concepts})"
         return ""
+
+    def preparar_roles(self, datasource: DataSource) -> int:
+        """Si la tabla no tiene agrupador activo, marca las columnas de negocio que ya existen."""
+        if datasource.fields.filter(usage_type='dimension', is_active=True).exists():
+            return 0
+        marked = 0
+        for field in datasource.fields.all():
+            role = _ROLES_MINIMOS.get((field.field_name or '').strip().lower())
+            if not role:
+                continue
+            field.usage_type = role
+            field.is_active = True
+            field.save(update_fields=['usage_type', 'is_active', 'updated_at'])
+            marked += 1
+        return marked
 
     def generate_batch(self, datasource: DataSource, count: int = 150) -> List[Dict]:
         """

@@ -40,6 +40,9 @@ class ResponseFormatter:
         if count_only:
             return count_only
 
+        if response_type == 'cantidad':
+            return ResponseFormatter._format_cantidad(rows, match_meta, ejercicio)
+
         # A) CARD / RESUMEN
         if response_type == 'card':
             return ResponseFormatter._format_card(label, rows[0] if rows else {}, match_meta['sql'], lang, match_meta)
@@ -96,6 +99,33 @@ class ResponseFormatter:
         except (TypeError, ValueError):
             shown = str(count)
         msg = f"El resultado es un conteo de {shown} registros. No es el importe del ejercicio."
+        return {
+            "text": msg,
+            "answer": msg,
+            "sql": match_meta.get('sql'),
+            "type": "text",
+            "source": match_meta.get('source'),
+        }
+
+    @staticmethod
+    def _format_cantidad(rows: List[Dict], match_meta: Dict, ejercicio: int) -> Dict:
+        meta = match_meta.get('intent_meta') or {}
+        unidad = meta.get('unidad') or 'unidades'
+        producto = meta.get('producto') or ''
+        year = meta.get('ejercicio') or ejercicio
+        verbo = 'comprado' if meta.get('compras') else 'vendido'
+        raw = 0
+        if rows:
+            lower = {str(clave).lower(): valor for clave, valor in rows[0].items()}
+            raw = lower.get('cantidad') or 0
+        try:
+            numero = f"{float(raw):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+        except (TypeError, ValueError):
+            numero = str(raw)
+        if producto:
+            msg = f"En {year} se han {verbo} {numero} {unidad} de {producto}."
+        else:
+            msg = f"En {year} se han {verbo} {numero} {unidad}."
         return {
             "text": msg,
             "answer": msg,

@@ -9,23 +9,24 @@ async function loadMappedTables() {
     container.innerHTML = '<div style="color: #a1a1aa; font-size: 0.8rem; text-align: center; padding: 1rem;">Cargando...</div>';
 
     try {
-        const res = await fetch('/api/semantic/mapped-sources');
+        const empresaQuery = (typeof empresaListQuery === 'function') ? empresaListQuery() : '';
+        const res = await fetch('/api/semantic/mapped-sources' + (empresaQuery ? `?${empresaQuery}` : ''));
         const data = await res.json();
 
         if (data.status === 'ok' && data.sources.length > 0) {
-            window._mappedSources = data.sources;
+            const seen = new Set();
+            window._mappedSources = data.sources.filter(s => {
+                const key = String(s.table || s.name || '').trim().toLowerCase();
+                if (!key || seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
             renderMappedList();
         } else {
             // Empty state
             container.innerHTML = `
                     <div style="text-align: center; padding: 2rem 1rem; color: #71717a; font-size: 0.85rem;">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto 1rem; opacity: 0.5;">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                            <line x1="3" y1="9" x2="21" y2="9"/>
-                            <line x1="9" y1="21" x2="9" y2="9"/>
-                        </svg>
-                        <div style="font-style: italic;">No hay tablas mapeadas aún.</div>
-                        <div style="font-size: 0.75rem; margin-top: 0.5rem; color: #52525b;">Selecciona una tabla para empezar</div>
+                        <div style="font-style: italic;">${data.message || 'No hay tablas mapeadas aún.'}</div>
                     </div>
                 `;
         }

@@ -148,6 +148,7 @@ async function init() {
         if (typeof loadDashboard === 'function') await loadDashboard();
         if (typeof loadSnapshot === 'function') loadSnapshot(); // non-blocking
         if (typeof loadHistory === 'function') loadHistory(); // Load saved queries
+        if (typeof cargarConversaciones === 'function') cargarConversaciones();
         initWidgetSelection();
     } finally {
         // La pestaña favorita se aplica al final para que el arranque no la sustituya

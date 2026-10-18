@@ -12,6 +12,9 @@ DEBUG = env.bool('DEBUG', default=False)
 #ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['127.0.0.1', 'localhost'])
 ALLOWED_HOSTS = ['*']
 DATIA_LOG_FILE = env('DATIA_LOG_FILE', default=None)
+# Embeddings locales de clientes, artículos y cuentas. No cambian el modelo de chat.
+DATIA_EMBED_PROVIDER = env('DATIA_EMBED_PROVIDER', default='ollama')
+OLLAMA_EMBED_MODEL = env('OLLAMA_EMBED_MODEL', default='nomic-embed-text')
 
 # CSRF Configuration for Mobile/Tunnel Access
 CSRF_TRUSTED_ORIGINS = [

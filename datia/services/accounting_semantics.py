@@ -318,60 +318,57 @@ TABLES = {
 
 
 def apply_accounting_semantics():
-    """Crea las vistas locales y aplica el mapeo semántico en cada empresa que ya tiene fuentes."""
+    """Crea las vistas locales y deja un único mapeo de cada tabla contable."""
     with connection.cursor() as cursor:
         for spec in TABLES.values():
             if spec["view"]:
                 cursor.execute(spec["view"])
 
-    empresas = list(DataSource.objects.order_by().values_list("empresa_id", flat=True).distinct())
     summary = []
-    for empresa_id in empresas:
-        for table_name, spec in TABLES.items():
-            source = DataSource.objects.filter(empresa_id=empresa_id, source_table=table_name).order_by("id").first()
-            if source is None:
-                source = DataSource.objects.create(
-                    empresa_id=empresa_id,
-                    name=table_name,
-                    source_table=table_name,
-                    description=spec["description"],
-                    table_context=spec["table_context"],
-                    keywords=spec["keywords"],
-                    is_active=False,
-                    is_virtual=False,
-                    sync_mode="full",
-                )
-            else:
-                source.description = spec["description"]
-                source.table_context = spec["table_context"]
-                if not source.keywords:
-                    source.keywords = spec["keywords"]
-                source.save(update_fields=["description", "table_context", "keywords", "updated_at"])
+    for table_name, spec in TABLES.items():
+        source, _created = DataSource.resolver(
+            0,
+            table_name,
+            defaults={
+                "name": table_name,
+                "description": spec["description"],
+                "table_context": spec["table_context"],
+                "keywords": spec["keywords"],
+                "is_active": False,
+                "is_virtual": False,
+                "sync_mode": "full",
+            },
+        )
+        source.description = spec["description"]
+        source.table_context = spec["table_context"]
+        if not source.keywords:
+            source.keywords = spec["keywords"]
+        source.save(update_fields=["description", "table_context", "keywords", "updated_at"])
 
-            for field in spec["fields"]:
-                obj, created = DataField.objects.get_or_create(
-                    source=source,
-                    field_name=field["field_name"],
-                    defaults={
-                        "source_table_name": table_name,
-                        "business_name": field["business_name"],
-                        "description": field["description"],
-                        "data_type": field["data_type"],
-                        "usage_type": field["usage_type"],
-                        "metadata_tag": "Finanzas",
-                        "is_active": True,
-                        "is_key": field["is_key"],
-                    },
-                )
-                if not created:
-                    obj.source_table_name = table_name
-                    obj.business_name = field["business_name"]
-                    obj.description = field["description"]
-                    obj.data_type = field["data_type"]
-                    obj.usage_type = field["usage_type"]
-                    obj.metadata_tag = "Finanzas"
-                    obj.is_active = True
-                    obj.is_key = field["is_key"]
-                    obj.save()
-            summary.append((empresa_id, table_name, source.id, len(spec["fields"])))
+        for field in spec["fields"]:
+            obj, created = DataField.objects.get_or_create(
+                source=source,
+                field_name=field["field_name"],
+                defaults={
+                    "source_table_name": table_name,
+                    "business_name": field["business_name"],
+                    "description": field["description"],
+                    "data_type": field["data_type"],
+                    "usage_type": field["usage_type"],
+                    "metadata_tag": "Finanzas",
+                    "is_active": True,
+                    "is_key": field["is_key"],
+                },
+            )
+            if not created:
+                obj.source_table_name = table_name
+                obj.business_name = field["business_name"]
+                obj.description = field["description"]
+                obj.data_type = field["data_type"]
+                obj.usage_type = field["usage_type"]
+                obj.metadata_tag = "Finanzas"
+                obj.is_active = True
+                obj.is_key = field["is_key"]
+                obj.save()
+        summary.append((table_name, source.id, len(spec["fields"])))
     return summary

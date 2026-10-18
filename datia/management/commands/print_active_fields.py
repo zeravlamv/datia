@@ -11,9 +11,9 @@ class Command(BaseCommand):
     def handle(self, *args, **opts):
         empresa = int(opts['empresa'])
         table = opts['table']
-        ds = DataSource.objects.filter(empresa_id=empresa, source_table=table).first()
+        ds = DataSource.objects.filter(source_table__iexact=table).order_by('id').first()
         if not ds:
-            self.stderr.write(self.style.ERROR(f"No existe DataSource para empresa={empresa}, table={table}"))
+            self.stderr.write(self.style.ERROR(f"No existe el mapeo de la tabla {table}"))
             return
         self.stdout.write(self.style.SUCCESS(f"DataSource: id={ds.id}, name={ds.name}, source_table={ds.source_table}, is_virtual={ds.is_virtual}"))
         fields = DataField.objects.filter(source=ds).order_by('field_name')

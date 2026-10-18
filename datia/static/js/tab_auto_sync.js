@@ -161,7 +161,8 @@ async function triggerSync() {
 async function loadSyncTables() {
     const container = document.getElementById('sync-tables-list');
     try {
-        const res = await fetch('/api/semantic/active-tables');
+        const empresaQuery = (typeof empresaListQuery === 'function') ? empresaListQuery() : '';
+        const res = await fetch('/api/semantic/active-tables' + (empresaQuery ? `?${empresaQuery}` : ''));
         const data = await res.json();
 
         if (data.status === 'ok' && data.tables.length > 0) {
@@ -407,7 +408,8 @@ async function performSync() {
         let resetIds = tableIds;
         if (forceReset && !resetIds && (syncType === 'trained' || syncType === 'all') && document.querySelectorAll('.chk-sync-table').length === 0) {
             try {
-                const listRes = await fetch('/api/semantic/active-tables');
+                const empresaQuery = (typeof empresaListQuery === 'function') ? empresaListQuery() : '';
+                const listRes = await fetch('/api/semantic/active-tables' + (empresaQuery ? `?${empresaQuery}` : ''));
                 const listData = await listRes.json();
                 resetIds = (listData.tables || []).filter(t => t.physical_name).map(t => t.id).join(',');
             } catch (_) {}

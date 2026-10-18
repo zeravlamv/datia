@@ -2133,6 +2133,126 @@ def delete_history(request, query_id: int):
     except MetricsSavedQuery.DoesNotExist:
         return {"status": "error", "message": "Query not found"}
 
+
+class ConversacionInput(Schema):
+    empresa: int
+    ejercicio: int
+    pregunta: str
+    respuesta: Dict[str, Any]
+    conversacion_id: int = 0
+
+
+def _usuario_chat(request):
+    user = getattr(request, 'user', None)
+    if not user or not getattr(user, 'is_authenticated', False):
+        return None
+    return user
+
+
+def _titulo_consulta(pregunta: str) -> str:
+    texto = " ".join((pregunta or "").split())
+    return (texto[:177] + "...") if len(texto) > 180 else (texto or "Consulta")
+
+
+@router.get("/ai/conversaciones")
+def listar_conversaciones(request, empresa: int = 0, ejercicio: int = 0):
+    from datia.models import ConsultaConversacion
+
+    user = _usuario_chat(request)
+    if not user:
+        return {"conversaciones": []}
+    filas = ConsultaConversacion.objects.filter(
+        usuario_id=user.id,
+        empresa=int(empresa),
+        ejercicio=int(ejercicio),
+    )
+    return {
+        "conversaciones": [
+            {
+                "id": fila.id,
+                "titulo": fila.titulo,
+                "actualizado_at": fila.actualizado_at.isoformat(),
+                "mensajes": len(fila.mensajes or []),
+            }
+            for fila in filas
+        ]
+    }
+
+
+@router.get("/ai/conversaciones/{conversacion_id}")
+def abrir_conversacion(request, conversacion_id: int):
+    from datia.models import ConsultaConversacion
+
+    user = _usuario_chat(request)
+    if not user:
+        return {"status": "error", "message": "Authentication required"}
+    try:
+        fila = ConsultaConversacion.objects.get(id=conversacion_id, usuario_id=user.id)
+    except ConsultaConversacion.DoesNotExist:
+        return {"status": "error", "message": "No encontrada"}
+    return {
+        "id": fila.id,
+        "titulo": fila.titulo,
+        "empresa": fila.empresa,
+        "ejercicio": fila.ejercicio,
+        "mensajes": fila.mensajes or [],
+    }
+
+
+@router.post("/ai/conversaciones")
+def guardar_conversacion(request, payload: ConversacionInput):
+    from datia.models import ConsultaConversacion
+    from django.utils import timezone
+
+    user = _usuario_chat(request)
+    if not user:
+        return {"status": "error", "message": "Authentication required"}
+    pregunta = (payload.pregunta or "").strip()
+    if not pregunta:
+        return {"status": "error", "message": "Consulta vacía"}
+    mensaje = {
+        "pregunta": pregunta,
+        "respuesta": payload.respuesta or {},
+        "ts": timezone.now().isoformat(),
+    }
+    fila = None
+    if payload.conversacion_id:
+        fila = ConsultaConversacion.objects.filter(
+            id=payload.conversacion_id,
+            usuario_id=user.id,
+        ).first()
+    if fila is None:
+        fila = ConsultaConversacion.objects.create(
+            usuario_id=user.id,
+            empresa=int(payload.empresa),
+            ejercicio=int(payload.ejercicio),
+            titulo=_titulo_consulta(pregunta),
+            mensajes=[mensaje],
+        )
+    else:
+        mensajes = list(fila.mensajes or [])
+        mensajes.append(mensaje)
+        fila.mensajes = mensajes[-40:]
+        fila.save(update_fields=['mensajes', 'actualizado_at'])
+    return {"status": "saved", "id": fila.id, "titulo": fila.titulo}
+
+
+@router.delete("/ai/conversaciones/{conversacion_id}")
+def borrar_conversacion(request, conversacion_id: int):
+    from datia.models import ConsultaConversacion
+
+    user = _usuario_chat(request)
+    if not user:
+        return {"status": "error", "message": "Authentication required"}
+    borradas, _ = ConsultaConversacion.objects.filter(
+        id=conversacion_id,
+        usuario_id=user.id,
+    ).delete()
+    if not borradas:
+        return {"status": "error", "message": "No encontrada"}
+    return {"status": "deleted", "id": conversacion_id}
+
+
 @router.post("/ai/history/{query_id}/refresh")
 def refresh_history(request, query_id: int):
     """

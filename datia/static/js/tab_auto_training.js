@@ -45,7 +45,8 @@ async function startMassTraining() {
     isTrainingActive = true;
 
     try {
-        const res = await fetch('/api/semantic/active-tables');
+        const empresaQuery = (typeof empresaListQuery === 'function') ? empresaListQuery() : '';
+        const res = await fetch('/api/semantic/active-tables' + (empresaQuery ? `?${empresaQuery}` : ''));
         const data = await res.json();
 
         if (data.status !== 'ok' || data.tables.length === 0) {

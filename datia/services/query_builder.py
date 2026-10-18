@@ -94,7 +94,8 @@ class QueryBuilder:
         'mensuales', 'trimestre', 'trimestral', 'ultimo', 'ultimos', 'analisis', 'informe', 'resumen',
         'albaran', 'albaranes', 'pedido', 'pedidos', 'margen', 'presupuesto', 'presupuestos',
         'tesoreria', 'balance', 'balances', 'ejercicio', 'anual', 'evolucion', 'tendencia', 'gastos',
-        'ingresos', 'resultado', 'top',
+        'ingresos', 'resultado', 'top', 'popular', 'populares', 'famoso', 'famosos',
+        'estrella', 'estrellas', 'consumido', 'consumidos', 'demandado', 'demandados', 'cafe', 'cafes',
     )
     _INTENT_SYNONYMS = {
         'item': 'articulos', 'items': 'articulos', 'itens': 'articulos', 'itemes': 'articulos',
@@ -198,7 +199,7 @@ class QueryBuilder:
         ds = None
         for s in syns:
             try:
-                ds = DataSource.objects.filter(is_active=True, empresa_id=empresa, keywords__contains=[s]).first()
+                ds = DataSource.objects.filter(is_active=True, keywords__contains=[s]).first()
             except Exception:
                 ds = None
             if ds:
@@ -437,11 +438,147 @@ class QueryBuilder:
         return join_sql, label_expr, group_by_expr
 
     @staticmethod
+    def _ranking_period(question: str, ejercicio):
+        folded = QueryBuilder._fold_party(question or '')
+        month_range = None
+        meses = {
+            'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4, 'mayo': 5, 'junio': 6,
+            'julio': 7, 'agosto': 8, 'septiembre': 9, 'octubre': 10, 'noviembre': 11, 'diciembre': 12,
+            'ene': 1, 'feb': 2, 'mar': 3, 'abr': 4, 'may': 5, 'jun': 6, 'jul': 7, 'ago': 8,
+            'sep': 9, 'oct': 10, 'nov': 11, 'dic': 12, 'setiembre': 9,
+        }
+
+        def to_m(tok: str):
+            tok = (tok or '').lower()
+            if tok.isdigit():
+                value = int(tok)
+                return value if 1 <= value <= 12 else None
+            return meses.get(tok)
+
+        m_between = re.search(r'\b(entre|desde|de)\s+([a-z]+|\d{1,2})\s+(?:y|a|hasta)\s+([a-z]+|\d{1,2})\b', folded)
+        if m_between:
+            start = to_m(m_between.group(2))
+            end = to_m(m_between.group(3))
+            if start and end:
+                month_range = (start, end)
+        if not month_range:
+            m_one = re.search(r'\b(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre|ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic|setiembre)\b', folded)
+            if m_one:
+                value = meses.get(m_one.group(1))
+                if value:
+                    month_range = (value, value)
+        quarter = None
+        m_q = re.search(r'\bq\s*([1-4])\b', folded) or re.search(r'\btrimestre\s*([1-4])\b', folded)
+        if m_q:
+            quarter = int(m_q.group(1))
+        elif re.search(r'\bultimo trimestre\b', folded):
+            quarter = 4
+        semester = None
+        m_s = re.search(r'\bsemestre\s*([12])\b', folded)
+        if m_s:
+            semester = int(m_s.group(1))
+        last_three = bool(
+            re.search(r'(los\s+)?(ultimos)\s+3\s+meses', folded)
+            or re.search(r'(3|tres)\s+(ultimos)\s+meses', folded)
+        )
+        if quarter and not month_range:
+            month_range = ((quarter - 1) * 3 + 1, quarter * 3)
+        elif semester and not month_range:
+            month_range = (1, 6) if semester == 1 else (7, 12)
+        elif last_three and not month_range:
+            now = datetime.datetime.now()
+            try:
+                year_now = int(ejercicio)
+            except (TypeError, ValueError):
+                year_now = now.year
+            if year_now == now.year:
+                end_m = now.month
+                start_m = max(1, end_m - 2)
+            else:
+                start_m, end_m = 10, 12
+            month_range = (start_m, end_m)
+        return month_range
+
+    @staticmethod
+    def _ranking_from_metrics(question: str, empresa, ejercicio, entity_key: str):
+        """Ranking de cliente o artículo con el neto ya calculado. No altera los ratios."""
+        if entity_key not in ('cliente', 'articulo'):
+            return None
+        folded = QueryBuilder._fold_party(question or '')
+        if entity_key == 'articulo' and re.search(r'\b(compra|compras|proveedor|proveedores)\b', folded):
+            return None
+        try:
+            empresa_id = int(empresa)
+        except (TypeError, ValueError):
+            return None
+        years = re.findall(r'\b(20\d{2})\b', question or '')
+        try:
+            target_year = int(years[0]) if years else int(ejercicio)
+        except (TypeError, ValueError):
+            target_year = datetime.datetime.now().year
+        limit_match = re.search(r'\b(5|10|15|20|50|100)\b', folded)
+        limit = int(limit_match.group(1)) if limit_match else 20
+        if not limit_match:
+            one = re.search(r'\b(mejor|peor|popular|famoso|estrella|vendido|consumido|demandado)\b', folded)
+            many = re.search(r'\b(mejores|peores|populares|famosos|estrellas|vendidos|consumidos|demandados)\b', folded)
+            one_thing = re.search(r'\b(cliente|producto|articulo|cafe)\b', folded)
+            many_things = re.search(r'\b(clientes|productos|articulos|cafes)\b', folded)
+            if one and not many and one_thing and not many_things:
+                limit = 1
+            elif re.search(r'\b(el|la)\s+mas\b', folded) and not many_things:
+                limit = 1
+        order_kw = 'ASC' if re.search(r'\b(peores|peor|menor|worst|menos)\b', folded) else 'DESC'
+        month_range = QueryBuilder._ranking_period(question, ejercicio)
+        if entity_key == 'articulo' and month_range:
+            return None
+        if entity_key == 'cliente' and month_range:
+            start_m, end_m = month_range
+            sql = (
+                'SELECT COALESCE(NULLIF(BTRIM(MAX(nombre)), \'\'), cliente) AS label, '
+                'SUM(importe_neto_total) AS val, SUM(importe_coste_total) AS coste, SUM(albaranes_count) AS ops '
+                'FROM metrics_totales_empresa_ejercicio_cliente_mes '
+                f'WHERE empresa = {empresa_id} AND ejercicio = {target_year} AND mes BETWEEN {int(start_m)} AND {int(end_m)} '
+                'GROUP BY cliente '
+                'HAVING SUM(importe_neto_total) <> 0 OR SUM(albaranes_count) <> 0 '
+                f'ORDER BY 2 {order_kw} LIMIT {int(limit)}'
+            )
+        else:
+            if entity_key == 'cliente':
+                table = 'metrics_totales_empresa_ejercicio_cliente'
+                label_col = 'nombre'
+                code_col = 'cliente'
+            else:
+                table = 'metrics_totales_empresa_ejercicio_articulo'
+                label_col = 'descripcion'
+                code_col = 'articulo'
+            sql = (
+                f'SELECT COALESCE(NULLIF(BTRIM({label_col}), \'\'), {code_col}) AS label, '
+                'importe_neto_total AS val, importe_coste_total AS coste, albaranes_count AS ops '
+                f'FROM {table} '
+                f'WHERE empresa = {empresa_id} AND ejercicio = {target_year} '
+                'AND (importe_neto_total <> 0 OR albaranes_count <> 0) '
+                f'ORDER BY 2 {order_kw} LIMIT {int(limit)}'
+            )
+        return {
+            'key': f'ranking_{entity_key}',
+            'sql': ' '.join(sql.split()),
+            'type': 'table',
+            'chart_type': 'bar',
+            'label': f'Top {entity_key.capitalize()}s {target_year}',
+            'source': 'deterministic_v2',
+            'intent_meta': {'metric': 'sales', 'ejercicio': target_year},
+        }
+
+    @staticmethod
     def _handle_ranking(question: str, empresa: int, ejercicio: int, entity_key: str) -> Optional[Dict[str, Any]]:
         """
         Handler for Top/Ranking queries.
         Refactored to ensure correct Date usage (Header vs Lines).
         """
+        metrics_rank = QueryBuilder._ranking_from_metrics(question, empresa, ejercicio, entity_key)
+        if metrics_rank:
+            return metrics_rank
+
         config = QueryBuilder._resolve_entity_semantics(entity_key, empresa)
         if not config: return None
         
@@ -812,6 +949,107 @@ class QueryBuilder:
         }
 
     @staticmethod
+    def _handle_company_figure(question: str, empresa, ejercicio):
+        """Importe medio, número de albaranes o ventas del ejercicio, desde el total ya calculado."""
+        folded = QueryBuilder._fold_party(question or '')
+        if re.search(r'\b(compra|compras|proveedor|proveedores)\b', folded):
+            return None
+        if re.search(r'\b(cliente|clientes|articulo|articulos|producto|productos)\b', folded):
+            return None
+        if not re.search(r'\balbaran|\bventas?\b|\bfacturacion|\bticket\b', folded):
+            return None
+        asks_average = bool(re.search(r'\b(medio|media|promedio)\b', folded) or re.search(r'\bticket\b', folded))
+        asks_count = bool(re.search(r'\b(cuantos|cuantas|numero)\b', folded) and re.search(r'\balbaran', folded))
+        asks_year_total = bool(
+            re.search(r'\b(total|totales|ejercicio|ano)\b', folded)
+            and not re.search(r'\b(mensual|mensuales|evolucion|tendencia)\b', folded)
+        )
+        if not (asks_average or asks_count or asks_year_total):
+            return None
+        try:
+            empresa_id = int(empresa)
+        except (TypeError, ValueError):
+            return QueryBuilder._party_reply('Elige la empresa y el ejercicio antes de preguntar.')
+        years = re.findall(r'\b(20\d{2})\b', question or '')
+        try:
+            target_year = int(years[0]) if years else int(ejercicio)
+        except (TypeError, ValueError):
+            return QueryBuilder._party_reply('Elige la empresa y el ejercicio antes de preguntar.')
+        alias = 'analytics' if 'analytics' in connections.databases else 'default'
+        try:
+            with connections[alias].cursor() as cur:
+                cur.execute(
+                    '''
+                    SELECT importe_neto_total, albaranes_count
+                    FROM metrics_totales_empresa_ejercicio
+                    WHERE empresa = %s AND ejercicio = %s
+                    ''',
+                    [empresa_id, target_year],
+                )
+                row = cur.fetchone()
+        except Exception:
+            logger.exception('QueryBuilder: no se pudieron leer los totales de la empresa')
+            return QueryBuilder._party_reply(f'No he podido leer las ventas de {target_year}.')
+        if not row:
+            return QueryBuilder._party_reply(f'No hay totales de ventas cargados para {target_year}.')
+        neto = float(row[0] or 0)
+        ops = int(row[1] or 0)
+        ops_txt = f'{ops:,}'.replace(',', '.')
+        if asks_average:
+            medio = (neto / ops) if ops else 0
+            text = (
+                f'Importe medio de albarán en {target_year}: {QueryBuilder._eur_es(medio)}. '
+                f'Son {QueryBuilder._eur_es(neto)} netos en {ops_txt} albaranes.'
+            )
+        elif asks_count:
+            text = f'Albaranes en {target_year}: {ops_txt}. Importe neto {QueryBuilder._eur_es(neto)}.'
+        else:
+            text = f'Ventas de {target_year}: {QueryBuilder._eur_es(neto)} netos en {ops_txt} albaranes.'
+        return QueryBuilder._party_reply(text)
+
+    @staticmethod
+    def _sales_evolution_from_metrics(question: str, empresa, ejercicio):
+        """Evolución de ventas por mes, trimestre o semestre con el neto ya calculado."""
+        folded = QueryBuilder._fold_party(question or '')
+        if re.search(r'\b(semana|semanal|dia|diario)\b', folded):
+            return None
+        if len(re.findall(r'\b(20\d{2})\b', question or '')) >= 2:
+            return None
+        try:
+            empresa_id = int(empresa)
+        except (TypeError, ValueError):
+            return None
+        years = re.findall(r'\b(20\d{2})\b', question or '')
+        try:
+            target_year = int(years[0]) if years else int(ejercicio)
+        except (TypeError, ValueError):
+            target_year = datetime.datetime.now().year
+        if re.search(r'\b(trimestre|trimestral)\b', folded):
+            label_sql = '((mes - 1) / 3) + 1'
+            group = f'GROUP BY {label_sql} '
+            select_val = f'{label_sql} AS label, SUM(importe_neto_total) AS val, SUM(importe_coste_total) AS coste, SUM(albaranes_count) AS ops'
+        elif re.search(r'\b(semestre|semestral)\b', folded):
+            label_sql = '((mes - 1) / 6) + 1'
+            group = f'GROUP BY {label_sql} '
+            select_val = f'{label_sql} AS label, SUM(importe_neto_total) AS val, SUM(importe_coste_total) AS coste, SUM(albaranes_count) AS ops'
+        else:
+            group = ''
+            select_val = 'mes AS label, importe_neto_total AS val, importe_coste_total AS coste, albaranes_count AS ops'
+        sql = (
+            f'SELECT {select_val} FROM metrics_totales_empresa_ejercicio_mes '
+            f'WHERE empresa = {empresa_id} AND ejercicio = {target_year} {group}ORDER BY 1'
+        )
+        return {
+            'key': 'evolution_single',
+            'sql': ' '.join(sql.split()),
+            'type': 'chart',
+            'chart_type': 'bar',
+            'label': f'Evolución {target_year}',
+            'source': 'deterministic_v2',
+            'intent_meta': {'metric': 'sales', 'ejercicio': target_year},
+        }
+
+    @staticmethod
     def _handle_evolution(question: str, empresa: int, ejercicio: int, is_purchase: bool = False) -> Dict[str, Any]:
         """
         Handler for Monthly Evolution (Ventas/Compras).
@@ -823,6 +1061,9 @@ class QueryBuilder:
             if 'pedido' in question.lower():
                 table = "datiadb_cabecerapedidoproveedor"
         else:
+            metrics_chart = QueryBuilder._sales_evolution_from_metrics(question, empresa, ejercicio)
+            if metrics_chart:
+                return metrics_chart
             # Sales -> Prefer Cabecera for speed, unless Lineas needed?
             # Actually, previous optimization used Join. Let's stick to Cabecera if possible for simplicity/speed
             # UNLESS we need deep metrics. 
@@ -1177,6 +1418,233 @@ class QueryBuilder:
         return {'reply': {'text': text, 'answer': text}}
 
     @staticmethod
+    def _is_catalog_miss(result) -> bool:
+        reply = (result or {}).get('reply') or {}
+        if reply.get('suggestions'):
+            return False
+        text = reply.get('text') or ''
+        return text.startswith('No encuentro')
+
+    @staticmethod
+    def _token_is_code(name: str) -> bool:
+        tokens = (name or '').split()
+        if len(tokens) != 1:
+            return False
+        return bool(re.fullmatch(r'[A-Za-z0-9._\-]+', tokens[0]) and re.search(r'\d', tokens[0]))
+
+    @staticmethod
+    def _contains_article_code(stock_query: Dict[str, str]) -> bool:
+        for token in (stock_query.get('name') or '').split():
+            if re.fullmatch(r'[A-Za-z0-9._\-]+', token) and re.search(r'\d', token):
+                return True
+        return False
+
+    @staticmethod
+    def _medida_pedida(question: str) -> Optional[str]:
+        """Kilos o unidades pedidas en la frase. El stock sigue por su propia regla."""
+        folded = QueryBuilder._fold_party(question or '')
+        if not folded or re.search(r'\b(stock|existencias|existencia|inventario)\b', folded):
+            return None
+        if re.search(r'\b(kilos?|kg|kilogramos?)\b', folded):
+            return 'kilos'
+        if re.search(r'\b(unidades|unidad|bultos|bulto)\b', folded) and re.search(
+            r'\b(vendid|venta|ventas|albaran|factura|compr)\b', folded
+        ):
+            return 'unidades'
+        return None
+
+    @staticmethod
+    def _es_ranking(question: str) -> bool:
+        """Un ranking pide el mayor o el mejor. «se han vendido» no basta."""
+        folded = QueryBuilder._fold_party(question or '')
+        if not folded or QueryBuilder._medida_pedida(folded):
+            return False
+        return bool(re.search(
+            r'\b(top|ranking|mejor|mejores|peor|peores|mayor|mayores|popular|populares|famoso|famosos|estrella|estrellas)\b'
+            r'|\b(el|la|los|las)\s+mas\b'
+            r'|\bmas\s+(vendid|consumid|demandad)',
+            folded,
+        ))
+
+    @staticmethod
+    def _handle_cantidad(question: str, empresa, ejercicio, medida: str):
+        """Suma las unidades de las líneas. El kilo es el importe neto de la línea dividido entre el precio."""
+        try:
+            empresa_id = int(empresa)
+        except (TypeError, ValueError):
+            return None
+        folded = QueryBuilder._fold_party(question or '')
+        years = re.findall(r'\b(20\d{2})\b', question or '')
+        try:
+            target_year = int(years[0]) if years else int(ejercicio)
+        except (TypeError, ValueError):
+            target_year = datetime.datetime.now().year
+        compras = bool(re.search(r'\b(compra|compras|comprad|proveedor|proveedores)\b', folded))
+        tabla = 'datiadb_lineasalbaranproveedor' if compras else 'datiadb_lineasalbarancliente'
+        ano = 'ejerciciopedido' if 'pedido' in tabla else 'ejercicioalbaran'
+        producto = None
+        if re.search(r'\b(cafes|cafe)\b', folded):
+            producto = 'café'
+            patron = 'cafe'
+        else:
+            hallado = re.search(r'\b(?:kilos?|kg|kilogramos?|unidades|unidad|bultos|bulto)\s+(?:de|del)\s+([a-z0-9 ]+)', folded)
+            if hallado:
+                resto = re.split(r'\b(se|han|en|durante|del|ejercicio|ano|vendid|compr)\b', hallado.group(1))[0]
+                resto = re.sub(r'[^a-z0-9 ]', '', resto).strip()
+                if resto and resto not in ('la', 'el', 'los', 'las'):
+                    producto = resto
+                    patron = resto
+            else:
+                patron = None
+        filtro = ''
+        if patron:
+            filtro = f" AND A.descripcion ILIKE '%{patron}%'"
+        join = ''
+        if patron:
+            join = ' JOIN datia_articulos A ON A.empresa = L.codigoempresa AND A.articulo = L.codigoarticulo'
+        sql = (
+            'SELECT COALESCE(SUM(CASE WHEN L.precio <> 0 THEN L.importeneto / L.precio END), 0) AS cantidad '
+            f'FROM {tabla} L{join} '
+            f'WHERE L.codigoempresa = {empresa_id} AND L.{ano} = {target_year}{filtro}'
+        )
+        return {
+            'key': f'cantidad_{medida}',
+            'sql': ' '.join(sql.split()),
+            'type': 'cantidad',
+            'label': medida,
+            'keep_label': True,
+            'source': 'deterministic_v2',
+            'intent_meta': {
+                'metric': 'cantidad',
+                'unidad': medida,
+                'producto': producto or '',
+                'ejercicio': target_year,
+                'compras': compras,
+            },
+        }
+
+    @staticmethod
+    def _colloquial_ranking(question: str, empresa, ejercicio):
+        """«el café más popular» se responde con el ranking de artículos, sin pasar por el modelo."""
+        folded = QueryBuilder._fold_party(question or '')
+        if not folded or not QueryBuilder._es_ranking(folded):
+            return None
+        if re.search(r'\b(cliente|clientes)\b', folded):
+            entity = 'cliente'
+        elif re.search(r'\b(articulo|articulos|producto|productos|cafe|cafes|referencia|referencias)\b', folded):
+            entity = 'articulo'
+        elif re.search(r'\b(popular|populares|famoso|famosos|estrella|estrellas|vendido|vendidos|consumido|consumidos|demandado|demandados)\b', folded):
+            entity = 'articulo'
+        else:
+            return None
+        return QueryBuilder._handle_ranking(question, empresa, ejercicio, entity)
+
+    @staticmethod
+    def _looks_like_ranking(question: str) -> bool:
+        return QueryBuilder._es_ranking(question)
+
+    @staticmethod
+    def _semantic_clase(question: str) -> Optional[str]:
+        if re.search(r'\b(cuenta|cuentas|saldo)\b', question or ''):
+            return 'cuenta'
+        if re.search(r'\b(stock|existencias|existencia|inventario|articulo|articulos|producto|productos)\b', question or ''):
+            return 'articulo'
+        if re.search(r'\b(cliente|clientes|ventas|venta)\b', question or ''):
+            return 'cliente'
+        return None
+
+    @staticmethod
+    def _semantic_followup(entidad) -> str:
+        identificador = entidad.identificador
+        if entidad.clase == 'articulo':
+            return f'stock del {identificador}'
+        if entidad.clase == 'cuenta':
+            return f'saldo de la cuenta {identificador}'
+        return f'ventas al cliente {identificador}'
+
+    @staticmethod
+    def _semantic_if_entity(question, q_lower, empresa, ejercicio):
+        if QueryBuilder._looks_like_ranking(q_lower) or QueryBuilder._is_year_analysis(q_lower):
+            return None
+        clase = QueryBuilder._semantic_clase(q_lower)
+        if not clase:
+            return None
+        return QueryBuilder._semantic_answer(question, empresa, ejercicio, clase)
+
+    @staticmethod
+    def _semantic_answer(question, empresa, ejercicio, clase):
+        if empresa in (None, '') or ejercicio in (None, ''):
+            return QueryBuilder._party_reply('Elige la empresa y el ejercicio antes de preguntar.')
+        from datia.services.significado_service import SignificadoService
+        found = SignificadoService.buscar(question, empresa, clase=clase)
+        status = found.get('status')
+        if status == 'sin_empresa':
+            return QueryBuilder._party_reply('Elige la empresa y el ejercicio antes de preguntar.')
+        if status == 'preparando':
+            return QueryBuilder._party_reply('La búsqueda por significado se está preparando.')
+        if status == 'ninguna':
+            return QueryBuilder._party_reply('No encuentro esa entidad en el catálogo de esta empresa.')
+        if status == 'ambiguo':
+            suggestions = [
+                {'label': f"{item.texto_indexado} ({item.identificador})", 'query': QueryBuilder._semantic_followup(item)}
+                for item in found.get('opciones') or []
+            ][:5]
+            return QueryBuilder._party_reply('Hay varias entidades parecidas. Elige una.', suggestions)
+        entidad = found.get('entidad')
+        if not entidad:
+            return QueryBuilder._party_reply('No encuentro esa entidad en el catálogo de esta empresa.')
+        return QueryBuilder._figure_for_entity(question, empresa, ejercicio, entidad)
+
+    @staticmethod
+    def _figure_for_entity(question, empresa, ejercicio, entidad):
+        if entidad.clase == 'cliente':
+            return QueryBuilder._handle_named_party(
+                question, empresa, ejercicio, {'kind': 'cliente', 'name': entidad.identificador}
+            )
+        if entidad.clase == 'articulo':
+            return QueryBuilder._handle_stock_query(
+                question, empresa, ejercicio, {'name': entidad.identificador}
+            )
+        if entidad.clase == 'cuenta':
+            return QueryBuilder._handle_cuenta_saldo(empresa, ejercicio, entidad.identificador, entidad.texto_indexado)
+        return QueryBuilder._party_reply('No encuentro esa entidad en el catálogo de esta empresa.')
+
+    @staticmethod
+    def _handle_cuenta_saldo(empresa, ejercicio, identificador, nombre):
+        try:
+            empresa_id = int(empresa)
+            target_year = int(ejercicio)
+        except (TypeError, ValueError):
+            return QueryBuilder._party_reply('Elige la empresa y el ejercicio antes de preguntar.')
+        alias = 'analytics' if 'analytics' in connections.databases else 'default'
+        shown = (nombre or identificador).replace('<', '').replace('>', '')
+        try:
+            with connections[alias].cursor() as cur:
+                cur.execute(
+                    '''
+                    SELECT saldo
+                    FROM datia_financial_acumulados
+                    WHERE empresa = %s AND ejercicio = %s AND cuenta = %s
+                    ORDER BY periodo DESC
+                    LIMIT 1
+                    ''',
+                    [empresa_id, target_year, identificador],
+                )
+                row = cur.fetchone()
+        except Exception:
+            logger.exception('QueryBuilder: no se pudo leer el saldo de la cuenta')
+            return QueryBuilder._party_reply(
+                f'La cuenta {shown} ({identificador}) está en el catálogo, pero no he podido leer el saldo.'
+            )
+        if not row:
+            return QueryBuilder._party_reply(
+                f'La cuenta {shown} ({identificador}) está en el catálogo. El saldo no está cargado para el ejercicio {target_year}.'
+            )
+        return QueryBuilder._party_reply(
+            f'Cuenta {shown} ({identificador}): saldo {QueryBuilder._eur_es(row[0])}.'
+        )
+
+    @staticmethod
     def _eur_es(value) -> str:
         try:
             amount = f"{float(value):,.2f}"
@@ -1524,6 +1992,18 @@ class QueryBuilder:
         
         logger.info(f"QueryBuilder v2: Processing '{question}'")
 
+        medida = QueryBuilder._medida_pedida(q_lower)
+        if medida:
+            cantidad = QueryBuilder._handle_cantidad(q_lower, empresa, ejercicio, medida)
+            if cantidad:
+                logger.info("QueryBuilder: la pregunta pide %s, no un ranking en euros", medida)
+                return cantidad
+
+        colloquial = QueryBuilder._colloquial_ranking(q_lower, empresa, ejercicio)
+        if colloquial:
+            logger.info("QueryBuilder: ranking en lenguaje llano, sin entrenamiento")
+            return colloquial
+
         learned = QueryBuilder._memory_hit(question, empresa, ejercicio, 0.82, scopes=['learned'])
         if learned:
             logger.info("QueryBuilder: consulta aprendida de esta empresa")
@@ -1532,19 +2012,27 @@ class QueryBuilder:
         party = QueryBuilder._extract_named_party(q_lower)
         if party:
             logger.info("QueryBuilder: ventas o compras de un tercero concreto")
-            return QueryBuilder._handle_named_party(q_lower, empresa, ejercicio, party)
+            party_result = QueryBuilder._handle_named_party(q_lower, empresa, ejercicio, party)
+            if party['kind'] != 'cliente' or not QueryBuilder._is_catalog_miss(party_result) or QueryBuilder._token_is_code(party['name']):
+                return party_result
+            semantic = QueryBuilder._semantic_answer(question, empresa, ejercicio, 'cliente')
+            return semantic or party_result
 
         stock_query = QueryBuilder._extract_stock_query(q_lower)
         if stock_query:
             logger.info("QueryBuilder: stock de un artículo concreto")
-            return QueryBuilder._handle_stock_query(q_lower, empresa, ejercicio, stock_query)
+            stock_result = QueryBuilder._handle_stock_query(q_lower, empresa, ejercicio, stock_query)
+            if QueryBuilder._contains_article_code(stock_query) or not QueryBuilder._is_catalog_miss(stock_result):
+                return stock_result
+            semantic = QueryBuilder._semantic_answer(question, empresa, ejercicio, 'articulo')
+            return semantic or stock_result
 
         # --- STEP 1: INTENT ROUTING ---
         
         # A. RANKING INTENT
         ranking_triggers = ['top', 'ranking', 'mejores', 'mejor', 'peor', 'best', 'mayores', 'principales']
-        sold_rank = bool(re.search(r'\bmas\s+vendid|\bvendidos?\b', q_lower))
-        if any(t in q_lower for t in ranking_triggers) or sold_rank:
+        sold_rank = bool(re.search(r'\bmas\s+vendid', q_lower)) and not QueryBuilder._medida_pedida(q_lower)
+        if (any(t in q_lower for t in ranking_triggers) or sold_rank) and not QueryBuilder._medida_pedida(q_lower):
             # Identify Entity
             for entity_key in QueryBuilder.ENTITIES.keys():
                 # Check singular and plural
@@ -1597,6 +2085,9 @@ class QueryBuilder:
              return QueryBuilder._handle_evolution(q_lower, empresa, ejercicio, is_purchase=True)
 
         # Check Sales
+        figure = QueryBuilder._handle_company_figure(q_lower, empresa, ejercicio)
+        if figure:
+            return figure
         sales_triggers = ['ventas', 'pedidos', 'sales', 'evolucion', 'tendencia', 'mensual', 'albaran', 'albaranes']
         if any(t in q_lower for t in sales_triggers):
              logger.info("Router: Detected SALES EVOLUTION")
@@ -1616,6 +2107,10 @@ class QueryBuilder:
         if QueryBuilder._is_year_analysis(q_lower):
             logger.info("QueryBuilder: análisis del ejercicio")
             return QueryBuilder._handle_year_analysis(q_lower, empresa, ejercicio)
+
+        semantic = QueryBuilder._semantic_if_entity(question, q_lower, empresa, ejercicio)
+        if semantic is not None:
+            return semantic
 
         # --- STEP 2: MEMORY FALLBACK ---
         memory = QueryBuilder._memory_hit(question, empresa, ejercicio, 0.5)

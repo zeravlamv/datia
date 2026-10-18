@@ -13,6 +13,20 @@ class SnapshotHandler(BaseHandler):
         # Not used via checking intent directly
         return {}
 
+    def _importe_compra_con_datos(self, table, cols, candidatos, emp_col, year_col, empresa, ejercicio):
+        existentes = [cols[c] for c in candidatos if c in cols]
+        if not existentes:
+            return None
+        for nombre in existentes:
+            rows = self.exec_sql(
+                f'SELECT COALESCE(SUM("{nombre}"), 0) AS total FROM {table} '
+                f'WHERE {emp_col} = {int(empresa)} AND {year_col} = {int(ejercicio)}'
+            )
+            total = float((rows and rows[0].get('total')) or 0)
+            if total != 0:
+                return nombre
+        return existentes[0]
+
     def get_snapshot_metrics(self, empresa: int, ejercicio: int, kind: str = 'sales') -> Dict[str, Any]:
         try:
             logger = logging.getLogger('datia.snapshot')
@@ -142,7 +156,10 @@ class SnapshotHandler(BaseHandler):
             # Helper Helper to get metrics for a date range
             def get_metrics_for_range(start_date, end_date):
                 if kind == 'compras':
-                    compras_net_col = pick(['importeliquido', 'importeneto', 'baseimponible']) or "importeliquido"
+                    compras_net_col = self._importe_compra_con_datos(
+                        tbl_cab, cols, ['importeliquido', 'importeneto', 'baseimponible', 'importebruto'],
+                        emp_col, year_col, empresa, ejercicio,
+                    ) or "importeliquido"
                     try:
                         override = getattr(settings, "DATIA_SNAPSHOT_PURCHASES_NET_COL", None)
                         if override and str(override).lower() in cols:
@@ -314,7 +331,6 @@ class SnapshotHandler(BaseHandler):
                     pass
 
             if kind == 'compras':
-                from django.db import connections
                 cur = connections['analytics'].cursor()
                 cur.execute(
                     "SELECT COALESCE(SUM(importe_neto_total),0), COUNT(*) FROM metrics_totales_empresa_ejercicio_compra_mes WHERE empresa=%s AND ejercicio=%s AND mes BETWEEN 1 AND 12",

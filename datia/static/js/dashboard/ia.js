@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Short delay to ensure animations/transitions are done
         setTimeout(() => input.focus(), 300);
     }
+    cargarConversaciones();
 });
 
 // Also listen for Tab activation (if handled via custom events or visibility change)
@@ -98,34 +99,7 @@ async function askAI(queryString, forceTraining = false) {
 
     // Check if query exactly matches OR starts with a keyword
     if (cleanKeywords.some(k => normalizedQ === k || normalizedQ.startsWith(k + ' '))) {
-        // 1. Clear Stream
-        stream.innerHTML = '';
-        // 2. Reset Inputs
-        input.value = "";
-        const stickyInput = document.getElementById('ai-input-sticky');
-        if (stickyInput) stickyInput.value = "";
-
-        // 3. UI Reset (Center Prompt)
-        const centeredPrompt = document.getElementById('ia-prompt-centered');
-        const stickyPrompt = document.getElementById('ia-prompt-sticky');
-        const streamContainer = document.getElementById('ia-results-stream');
-
-        if (centeredPrompt && stickyPrompt) {
-            stickyPrompt.style.opacity = '0';
-            if (streamContainer) streamContainer.classList.remove('has-sticky-prompt');
-
-            setTimeout(() => {
-                stickyPrompt.style.display = 'none';
-                centeredPrompt.style.removeProperty('display');
-                centeredPrompt.style.opacity = '0';
-                centeredPrompt.style.removeProperty('transform');
-                requestAnimationFrame(() => {
-                    setTimeout(() => {
-                        centeredPrompt.style.opacity = '1';
-                    }, 50);
-                });
-            }, 200);
-        }
+        nuevaConsulta();
         return;
     }
 
@@ -400,7 +374,9 @@ async function askAI(queryString, forceTraining = false) {
             }, 1500);
 
         } else {
+            const copiaRespuesta = copiarRespuestaGuardable(data);
             renderAiResponse(data, body, { query: q });
+            guardarConversacionActual(q, copiaRespuesta);
             try { if (window.VOA && typeof window.VOA.notify === 'function') window.VOA.notify('AI_QA_COMPLETED', { query: q }); } catch (_) {}
         }
     } catch (e) {
@@ -410,7 +386,7 @@ async function askAI(queryString, forceTraining = false) {
         // [FIX] Detect AbortError explicitly
         if (e.name === 'AbortError') {
             body.innerHTML = `<div style="color: #ef4444; font-weight: bold;">${gettext("Tiempo de espera agotado (Timeout)")}</div>
-             <div style="color: #a1a1aa; font-size: 0.9rem; margin-top: 5px;">${gettext("La consulta ha tardado más de 5 minutos y ha sido cancelada por el navegador.")}</div>`;
+             <div style="color: #a1a1aa; font-size: 0.9rem; margin-top: 5px;">${gettext("La consulta ha tardado más de 90 segundos y ha sido cancelada por el navegador.")}</div>`;
         } else {
             body.innerHTML = `<div style="color: #ef4444;">${gettext("Error de sistema:")} ${e.message}</div>`;
         }
@@ -2357,7 +2333,7 @@ function renderAiResponse(data, container, options = {}) {
     // Content based on Type
     let customRendered = false;
     const vizContainer = document.createElement("div");
-    vizContainer.id = "ai-viz-" + Date.now();
+    vizContainer.id = "ai-viz-" + (container.id || Date.now());
     vizContainer.style.marginTop = "1rem";
 
     if (data.type === 'report') {
@@ -2441,7 +2417,7 @@ function renderAiResponse(data, container, options = {}) {
         `;
         const msg = data.answer || "Consulta ambigua.";
         const items = Array.isArray(data.suggestions) ? data.suggestions : [];
-        const inputId = 'amb-free-text-' + Date.now();
+        const inputId = 'amb-free-text-' + (container.id || Date.now());
         let shtml = '';
         if (items.length > 0) {
             shtml = `<div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:10px;">` + items.map(it => {
@@ -3191,4 +3167,204 @@ function renderDeepDiveV2(container, data) {
         container.appendChild(sideGrid);
     }
 }
+
+let conversacionActual = null;
+
+function escaparTexto(valor) {
+    return String(valor || '').replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+}
+
+function resetPantallaChat() {
+    const stream = document.getElementById('ia-results-stream');
+    const input = document.getElementById('ai-input');
+    const stickyInput = document.getElementById('ai-input-sticky');
+    const centeredPrompt = document.getElementById('ia-prompt-centered');
+    const stickyPrompt = document.getElementById('ia-prompt-sticky');
+    if (stream) stream.innerHTML = '';
+    if (input) input.value = '';
+    if (stickyInput) stickyInput.value = '';
+    if (centeredPrompt && stickyPrompt) {
+        stickyPrompt.style.opacity = '0';
+        if (stream) stream.classList.remove('has-sticky-prompt');
+        setTimeout(() => {
+            stickyPrompt.style.display = 'none';
+            centeredPrompt.style.removeProperty('display');
+            centeredPrompt.style.opacity = '0';
+            centeredPrompt.style.removeProperty('transform');
+            requestAnimationFrame(() => {
+                setTimeout(() => { centeredPrompt.style.opacity = '1'; }, 50);
+            });
+            if (input) input.focus();
+        }, 200);
+    }
+}
+
+function mostrarChatActivo() {
+    const centeredPrompt = document.getElementById('ia-prompt-centered');
+    const stickyPrompt = document.getElementById('ia-prompt-sticky');
+    const stream = document.getElementById('ia-results-stream');
+    if (centeredPrompt) centeredPrompt.style.display = 'none';
+    if (stickyPrompt) {
+        stickyPrompt.style.display = 'flex';
+        stickyPrompt.style.opacity = '1';
+    }
+    if (stream) stream.classList.add('has-sticky-prompt');
+}
+
+function pintarMensajeGuardado(mensaje, indice) {
+    const stream = document.getElementById('ia-results-stream');
+    if (!stream || !mensaje) return;
+    const card = document.createElement('div');
+    card.className = 'ia-card' + (indice === 0 ? ' latest' : ' collapsed');
+    const header = document.createElement('div');
+    header.className = 'ia-card-header';
+    header.style.cursor = 'pointer';
+    header.onclick = function () { toggleCard(this); };
+    const hora = mensaje.ts ? new Date(mensaje.ts).toLocaleTimeString(document.documentElement.lang || 'es', { hour: '2-digit', minute: '2-digit' }) : '';
+    header.innerHTML = `
+        <div class="ia-header-title">${escaparTexto(mensaje.pregunta)}</div>
+        <div class="small text-muted">${escaparTexto(hora)}</div>
+    `;
+    const body = document.createElement('div');
+    body.className = 'card-body';
+    body.id = 'ai-res-saved-' + indice + '-' + (conversacionActual || 'x');
+    body.style.paddingLeft = '5%';
+    body.style.paddingRight = '5%';
+    body.style.maxWidth = '100%';
+    body.style.boxSizing = 'border-box';
+    card.appendChild(header);
+    card.appendChild(body);
+    stream.appendChild(card);
+    renderAiResponse(mensaje.respuesta || {}, body, { query: mensaje.pregunta || '' });
+}
+
+function pintarListaConversaciones(filas) {
+    const lista = document.getElementById('ia-conversaciones-lista');
+    if (!lista) return;
+    if (!filas.length) {
+        lista.innerHTML = '<div class="ia-conversaciones-vacio">Todavía no hay consultas guardadas.</div>';
+        return;
+    }
+    lista.innerHTML = filas.map(function (fila) {
+        const activa = Number(fila.id) === Number(conversacionActual) ? ' activa' : '';
+        return `
+            <div class="ia-conversacion-item${activa}" data-id="${fila.id}">
+                <button type="button" class="ia-conversacion-titulo" title="${escaparTexto(fila.titulo)}" onclick="abrirConversacion(${fila.id})">${escaparTexto(fila.titulo)}</button>
+                <button type="button" class="ia-conversacion-borrar" title="Borrar" onclick="borrarConversacion(event, ${fila.id})">×</button>
+            </div>
+        `;
+    }).join('');
+}
+
+async function cargarConversaciones() {
+    const lista = document.getElementById('ia-conversaciones-lista');
+    const empresa = parseInt(currEmpresa, 10);
+    const ejercicio = parseInt(currEjercicio, 10);
+    if (!lista || !empresa || !ejercicio) return;
+    try {
+        const res = await fetch(`${API}/ai/conversaciones?empresa=${empresa}&ejercicio=${ejercicio}`, { credentials: 'same-origin' });
+        const data = await res.json();
+        pintarListaConversaciones(data.conversaciones || []);
+    } catch (e) {
+        lista.innerHTML = '<div class="ia-conversaciones-vacio">No se pudo cargar la lista.</div>';
+    }
+}
+
+function copiarRespuestaGuardable(data) {
+    try {
+        return JSON.parse(JSON.stringify(data));
+    } catch (e) {
+        return {
+            answer: data && data.answer ? String(data.answer) : '',
+            type: data && data.type ? data.type : 'text',
+            query: data && data.query ? data.query : ''
+        };
+    }
+}
+
+async function guardarConversacionActual(pregunta, respuesta) {
+    if (!pregunta || !respuesta || respuesta.error) return;
+    try {
+        const res = await fetch(`${API}/ai/conversaciones`, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': (typeof CSRF_TOKEN !== 'undefined' ? CSRF_TOKEN : '')
+            },
+            body: JSON.stringify({
+                empresa: currEmpresa,
+                ejercicio: currEjercicio,
+                pregunta: pregunta,
+                respuesta: respuesta,
+                conversacion_id: 0
+            })
+        });
+        const json = await res.json();
+        if (json && json.id) {
+            conversacionActual = json.id;
+            cargarConversaciones();
+        }
+    } catch (e) {
+        console.error('No se pudo guardar la consulta', e);
+    }
+}
+
+function nuevaConsulta() {
+    conversacionActual = null;
+    resetPantallaChat();
+    cargarConversaciones();
+}
+
+async function abrirConversacion(id) {
+    try {
+        const res = await fetch(`${API}/ai/conversaciones/${id}`, { credentials: 'same-origin' });
+        const data = await res.json();
+        if (!data || data.status === 'error' || !Array.isArray(data.mensajes)) {
+            if (window.showToast) window.showToast('No se pudo abrir la consulta');
+            return;
+        }
+        conversacionActual = data.id;
+        const stream = document.getElementById('ia-results-stream');
+        if (stream) stream.innerHTML = '';
+        mostrarChatActivo();
+        const mensajes = data.mensajes.slice().reverse();
+        mensajes.forEach(function (mensaje, indice) {
+            pintarMensajeGuardado(mensaje, indice);
+        });
+        cargarConversaciones();
+    } catch (e) {
+        if (window.showToast) window.showToast('No se pudo abrir la consulta');
+    }
+}
+
+async function borrarConversacion(evento, id) {
+    if (evento) {
+        evento.preventDefault();
+        evento.stopPropagation();
+    }
+    if (!confirm('¿Borrar esta consulta?')) return;
+    try {
+        const res = await fetch(`${API}/ai/conversaciones/${id}`, {
+            method: 'DELETE',
+            credentials: 'same-origin',
+            headers: {
+                'X-CSRFToken': (typeof CSRF_TOKEN !== 'undefined' ? CSRF_TOKEN : '')
+            }
+        });
+        const json = await res.json();
+        if (json && json.status === 'deleted') {
+            if (Number(conversacionActual) === Number(id)) nuevaConsulta();
+            else cargarConversaciones();
+        }
+    } catch (e) {
+        alert('No se pudo borrar la consulta');
+    }
+}
+
+window.nuevaConsulta = nuevaConsulta;
+window.abrirConversacion = abrirConversacion;
+window.borrarConversacion = borrarConversacion;
 

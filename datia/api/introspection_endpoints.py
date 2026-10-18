@@ -61,24 +61,8 @@ def get_columns_api(request, table_name):
         if not rows:
              return JsonResponse({'status': 'error', 'message': f'Table {table_name} not found or has no columns'}, status=404)
         
-        # 2. Fetch existing mapping
-        # We assume DEFAULT company 'DEMO' or we take it from query param? 
-        # For now, let's assume 'DEMO' or handle multiple mappings later.
-        # Ideally, we should receive ?empresa=... but the UI JS doesn't send it in the GET URL currently (check tab_auto.html).
-        # Ah, tab_auto.html has `currEmpresa` global variable but `loadColumns()` uses `/api/semantic/columns/${safeTable}`.
-        # So we default to 'DEMO' or find the first source with this table name.
-        
-        empresa_param = (request.GET.get('empresa') or request.GET.get('empresa_id') or '').strip()
-        empresa_id = None
-        try:
-            if empresa_param:
-                empresa_id = int(empresa_param)
-        except:
-            empresa_id = None
-        if empresa_id is not None:
-            source = DataSource.objects.filter(empresa_id=empresa_id, source_table=table_name).first()
-        else:
-            source = DataSource.objects.filter(source_table=table_name).first()
+        # El mapeo es único para toda la base.
+        source = DataSource.objects.filter(source_table__iexact=table_name).order_by('id').first()
         
         existing_fields = {}
         table_metadata = {}
@@ -270,9 +254,9 @@ def save_mapping_api(request):
         is_virtual = data.get('is_virtual', False)  # NF-016
         sync_mode = data.get('sync_mode', 'full') # Fix ISS-029
         
-        source, created = DataSource.objects.update_or_create(
-            empresa_id=empresa_id,
-            source_table=table_name,
+        source, created = DataSource.resolver(
+            empresa_id,
+            table_name,
             defaults={
                 'name': business_name or table_name,
                 'description': table_desc,
@@ -280,7 +264,8 @@ def save_mapping_api(request):
                 'is_active': False,
                 'is_virtual': is_virtual,
                 'sync_mode': sync_mode
-            }
+            },
+            actualizar=True,
         )
         
         # If updating existing source, also mark as pending
@@ -343,33 +328,48 @@ def save_mapping_api(request):
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
+def _empresa_solicitada(request):
+    raw = (request.GET.get('empresa') or request.GET.get('empresa_id') or '').strip()
+    if raw.isdigit():
+        return int(raw)
+    return None
+
+
+def _fuentes():
+    """Catálogo único. Una fila por nombre de tabla, sin partir por empresa."""
+    vistas = []
+    seen = set()
+    rows = DataSource.objects.all().order_by('source_table', 'id')
+    for source in rows:
+        key = (source.source_table or '').strip().lower()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        vistas.append(source)
+    return vistas
+
+
 @csrf_exempt
 @login_required_json
 def get_mapped_sources_api(request):
     """
-    GET /api/semantic/mapped-sources
-    Returns list of tables that have been mapped.
+    GET /api/semantic/mapped-sources?empresa=
+    Tablas mapeadas de una sola empresa. Sin empresa no se mezclan el resto de sociedades.
     """
     if request.method != 'GET':
         return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
         
     try:
-        # Fix ISS-029: Return ALL sources, including those pending sync (is_active=False)
-        # Previously filtered filter(is_active=True) which hid newly saved mappings.
-        sources = DataSource.objects.all().values(
-            'id', 'name', 'source_table', 'description', 'last_sync_at', 'is_virtual', 'is_active'  # NF-016 + ISS-031
-        )
-        
         data = []
-        for s in sources:
+        for source in _fuentes():
             data.append({
-                'id': s['id'],
-                'name': s['name'], 
-                'table': s['source_table'], 
-                'desc': s['description'],
-                'last_sync': s['last_sync_at'],
-                'is_virtual': s['is_virtual'],  # NF-016
-                'is_active': s['is_active']     # ISS-031: Fix PEND status display
+                'id': source.id,
+                'name': source.name,
+                'table': source.source_table,
+                'desc': source.description,
+                'last_sync': source.last_sync_at,
+                'is_virtual': source.is_virtual,
+                'is_active': source.is_active,
             })
         
         return JsonResponse({'status': 'ok', 'sources': data})
@@ -430,7 +430,7 @@ def generate_sql_training_batch(request):
                 # This is crucial for Virtual Tables that might be stuck in is_active=False
                 tables = DataSource.objects.filter(id__in=t_ids)
             else:
-                tables = DataSource.objects.filter(is_active=True)
+                tables = DataSource.objects.filter(is_active=True).order_by('source_table', 'id')
             
             total_tables = tables.count()
             if total_tables == 0:
@@ -522,15 +522,16 @@ def generate_sql_training_batch(request):
                     synthetic = SyntheticSQLGenerator()
                     
                     # 1. Generate Valid SQL Batch Instantly (Max possible combinations)
+                    marked = synthetic.preparar_roles(table)
+                    if marked:
+                        yield f"event: log\ndata: {json.dumps({'message': f'Se marcaron {marked} campos utiles. La tabla no tenia agrupador.'})}\n\n"
                     dimensions = table.fields.filter(usage_type='dimension', is_active=True).count()
                     metrics = table.fields.filter(usage_type='metric', is_active=True).count()
                     
                     yield f"event: log\ndata: {json.dumps({'message': f'Analizando estructura: {dimensions} Dimensiones, {metrics} Métricas...'})}\n\n"
                     
                     if dimensions == 0:
-                         yield f"event: log\ndata: {json.dumps({'message': '⚠️ ERROR: No hay campos marcados como \"Agrupador\" (Dimension).'})}\n\n"
-                         yield f"event: log\ndata: {json.dumps({'message': 'Ve a \"Mapeo de Datos\" y asigna roles a los campos.'})}\n\n"
-                         continue
+                         yield f"event: log\ndata: {json.dumps({'message': 'Esta tabla no tiene columnas de cliente, articulo o proveedor para agrupar.'})}\n\n"
 
                     # [FIX]: Use requested limit instead of hardcoded 500
                     # Use local variable to avoid UnboundLocalError with outer scope
@@ -578,7 +579,8 @@ def generate_sql_training_batch(request):
                                 total_saved_for_table += 1
                                 yield f"event: query_generated\ndata: {json.dumps({'query_index': total_saved_for_table, 'total_queries': total_to_process, 'description': query_item.get('description', 'Saved')})}\n\n"
                             else:
-                                 yield f"event: log\ndata: {json.dumps({'message': 'Error saving vector.'})}\n\n"
+                                 detail = getattr(generator, 'last_error', '') or 'sin detalle'
+                                 yield f"event: log\ndata: {json.dumps({'message': f'No se pudo guardar el vector: {detail}'})}\n\n"
 
                         except Exception as loop_err:
                             yield f"event: log\ndata: {json.dumps({'message': f'Error loop: {str(loop_err)}'})}\n\n"
@@ -618,9 +620,7 @@ def get_active_tables_api(request):
         from datia.models.ai import MetricsEmbeddings
         
         data = []
-        # Fix ISS-030: Return ALL configured tables, even if not yet synced (is_active=False)
-        # This allows the UI to show them in the "Sincronización" list for selection.
-        for ds in DataSource.objects.all():
+        for ds in _fuentes():
             # Check training status
             is_trained = MetricsEmbeddings.objects.filter(
                 kind='qa', 

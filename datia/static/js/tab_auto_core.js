@@ -162,6 +162,14 @@ function getCurrentEmpresa() {
     return '';
 }
 
+function empresaListQuery() {
+    const emp = getCurrentEmpresa();
+    if (emp && /^\d+$/.test(String(emp))) {
+        return `empresa=${encodeURIComponent(emp)}`;
+    }
+    return '';
+}
+
 let cxRetry = 0;
 
 async function loadContext() {

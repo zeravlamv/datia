@@ -12,16 +12,17 @@ class Command(BaseCommand):
     def handle(self, *args, **opts):
         empresa = int(opts.get('empresa') or 1)
         # Cabecera Pedido Cliente
-        cab_ped, _ = DataSource.objects.update_or_create(
-            empresa_id=empresa,
-            source_table='CabeceraPedidoCliente',
+        cab_ped, _ = DataSource.resolver(
+            empresa,
+            'CabeceraPedidoCliente',
             defaults={
                 'name': 'Cabecera Pedido Cliente',
                 'description': 'Documentos de pedido de clientes',
                 'keywords': ['cliente','clientes','pedidos','ventas'],
                 'is_active': True,
                 'is_virtual': False,
-            }
+            },
+            actualizar=True,
         )
         DataField.objects.update_or_create(
             source=cab_ped,
@@ -109,16 +110,17 @@ class Command(BaseCommand):
             }
         )
         # Cabecera Albarán Cliente
-        cab_alb, _ = DataSource.objects.update_or_create(
-            empresa_id=empresa,
-            source_table='CabeceraAlbaranCliente',
+        cab_alb, _ = DataSource.resolver(
+            empresa,
+            'CabeceraAlbaranCliente',
             defaults={
                 'name': 'Cabecera Albarán Cliente',
                 'description': 'Documentos de albarán de clientes',
                 'keywords': ['cliente','clientes','albaran','albaranes','ventas'],
                 'is_active': True,
                 'is_virtual': False,
-            }
+            },
+            actualizar=True,
         )
         DataField.objects.update_or_create(
             source=cab_alb,

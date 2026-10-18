@@ -83,7 +83,7 @@ class DatiaSchema:
                     cursor.execute(f"SELECT column_name, data_type FROM information_schema.columns WHERE table_name = '{table}'")
                     cols = cursor.fetchall()
                     
-                    ds = DataSource.objects.filter(is_active=True, empresa_id=empresa).extra(
+                    ds = DataSource.objects.filter(is_active=True).extra(
                         where=["source_table = %s OR 'datiadb_' || LOWER(source_table) = %s"],
                         params=[table, table.lower()]
                     ).first()

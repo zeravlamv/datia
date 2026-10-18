@@ -97,7 +97,7 @@ class TrainingHandler(BaseHandler):
                 if not term or len(term) < 2: continue
                 
                 if type_ == 'field':
-                    fields = DataField.objects.filter(field_name=target_id, source__empresa_id=empresa)
+                    fields = DataField.objects.filter(field_name=target_id)
                     for f in fields:
                         current = list(f.synonyms or [])
                         if term not in [str(s).lower() for s in current] and term != (f.business_name or '').lower():
@@ -108,7 +108,7 @@ class TrainingHandler(BaseHandler):
                             
                 elif type_ == 'table':
                     try:
-                        ds = DataSource.objects.get(id=target_id, empresa_id=empresa)
+                        ds = DataSource.objects.get(id=target_id)
                         current = list(ds.keywords or [])
                         if term not in [str(k).lower() for k in current] and term != (ds.name or '').lower():
                             current.append(term)

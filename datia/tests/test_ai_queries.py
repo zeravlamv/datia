@@ -45,9 +45,8 @@ class TestAIQueries(unittest.TestCase):
         self.assertIsInstance(res, dict)
         sql = res.get('sql') or ''
         self.assertIn('LIMIT 20', sql)
-        # Filtro de mes específico como BETWEEN 5 AND 5
-        self.assertRegex(sql, r'EXTRACT\(MONTH FROM .*?\) BETWEEN 5 AND 5')
-        # Orden descendente por defecto (Top)
+        self.assertIn('metrics_totales_empresa_ejercicio_cliente_mes', sql)
+        self.assertIn('mes BETWEEN 5 AND 5', sql)
         self.assertRegex(sql, r'ORDER BY 2 DESC')
 
     @patch.object(QueryBuilder, '_resolve_audit_cols')
@@ -61,8 +60,8 @@ class TestAIQueries(unittest.TestCase):
         self.assertIsInstance(res, dict)
         sql = res.get('sql') or ''
         self.assertRegex(sql, r'ORDER BY 2 ASC')
-        # Filtro por año del ejercicio
-        self.assertRegex(sql, r'EXTRACT\(YEAR FROM .*?\) = 2025')
+        self.assertIn('metrics_totales_empresa_ejercicio_cliente', sql)
+        self.assertIn('ejercicio = 2025', sql)
 
     @patch.object(QueryBuilder, '_resolve_audit_cols')
     @patch.object(QueryBuilder, '_validate_table_columns')

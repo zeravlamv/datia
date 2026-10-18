@@ -1,5 +1,12 @@
 {% load static i18n %}
-<div id="tab-ia" class="tab-panel" style="display: none; min-height: 80vh; position: relative;">
+<div id="tab-ia" class="tab-panel" style="display: none; min-height: 80vh;">
+    <aside class="ia-conversaciones" aria-label="{% trans 'Consultas guardadas' %}">
+        <button type="button" class="ia-nueva-btn" onclick="nuevaConsulta()">
+            {% trans "Nueva consulta" %}
+        </button>
+        <div id="ia-conversaciones-lista" class="ia-conversaciones-lista"></div>
+    </aside>
+    <div class="ia-chat-main">
 
     <!-- Centered Prompt (Initial State) -->
     <div id="ia-prompt-centered" class="ia-prompt-centered">
@@ -50,5 +57,6 @@
     <!-- Results Stream -->
     <div id="ia-results-stream" class="ia-stream">
         <!-- Dynamic Content -->
+    </div>
     </div>
 </div>

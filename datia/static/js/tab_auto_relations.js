@@ -9,7 +9,8 @@ async function loadRelations() {
     // Populate Table Dropdowns if empty
     if (sourceSel.options.length <= 1) {
         try {
-            const res = await fetch('/api/semantic/active-tables');
+            const empresaQuery = (typeof empresaListQuery === 'function') ? empresaListQuery() : '';
+            const res = await fetch('/api/semantic/active-tables' + (empresaQuery ? `?${empresaQuery}` : ''));
             const data = await res.json();
             if (data.status === 'ok') {
                 const opts = data.tables.map(t => {

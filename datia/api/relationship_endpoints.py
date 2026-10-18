@@ -17,7 +17,7 @@ def relationships_api(request):
     if request.method == "GET":
         raw_company = request.GET.get('empresa', '')
         try:
-            company_id = int(str(raw_company).strip())
+            int(str(raw_company).strip())
         except Exception:
             return JsonResponse({"status": "error", "message": "empresa debe ser numérica"}, status=400)
         table_id = request.GET.get('table_id')
@@ -41,7 +41,7 @@ def relationships_api(request):
         # Filter relations where source belongs to company (or all if simplistic)
         # Assuming DataSources are filtered by company implicitly in typical usage, 
         # but relations link two sources. Ideally we filter by source__empresa_id.
-        relations = DataRelation.objects.filter(source__empresa_id=company_id).select_related(
+        relations = DataRelation.objects.select_related(
             'source', 'from_field', 'target', 'to_field'
         )
 

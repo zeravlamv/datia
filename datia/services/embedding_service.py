@@ -157,8 +157,27 @@ class EmbeddingService:
 
         return self._model
 
+    def _provider(self) -> str:
+        configured = None
+        try:
+            from django.conf import settings
+            configured = getattr(settings, 'DATIA_EMBED_PROVIDER', None)
+        except Exception:
+            configured = None
+        provider = os.environ.get('DATIA_EMBED_PROVIDER') or configured or 'ollama'
+        return str(provider).lower()
+
+    def _embed_model_name(self) -> str:
+        configured = None
+        try:
+            from django.conf import settings
+            configured = getattr(settings, 'OLLAMA_EMBED_MODEL', None)
+        except Exception:
+            configured = None
+        return os.environ.get('OLLAMA_EMBED_MODEL') or configured or 'nomic-embed-text'
+
     def embed_text(self, text: str) -> List[float]:
-        provider = os.environ.get('DATIA_EMBED_PROVIDER', 'sentence').lower()
+        provider = self._provider()
         if provider == 'sentence':
             model = self._get_model()
             if model:
@@ -169,26 +188,24 @@ class EmbeddingService:
             v = self._embed_with_ollama(text)
             if v:
                 return v
+            # La huella solo mantiene plantillas y esquemas ya guardados.
+            # El índice de entidades llama a _embed_with_ollama y no acepta esta huella.
             return self._hash_embed(text)
         return self._hash_embed(text)
 
     def _embed_with_ollama(self, text: str) -> List[float]:
+        """Vector nativo de Ollama. No recorta a 384 ni rellena con ceros. None si Ollama no responde."""
         try:
             base = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
-            model = os.environ.get("OLLAMA_EMBED_MODEL", "nomic-embed-text")
+            model = self._embed_model_name()
             res = requests.post(f"{base}/api/embeddings", json={"model": model, "prompt": text}, timeout=(3, 8))
-            if res.status_code == 200:
-                data = res.json()
-                vec = data.get("embedding") or []
-                if not isinstance(vec, list):
-                    return None
-                if len(vec) >= 384:
-                    return vec[:384]
-                if len(vec) == 0:
-                    return None
-                pad = [0.0] * (384 - len(vec))
-                return (vec + pad)
-            return None
+            if res.status_code != 200:
+                return None
+            data = res.json()
+            vec = data.get("embedding") or []
+            if not isinstance(vec, list) or len(vec) == 0:
+                return None
+            return [float(x) for x in vec]
         except Exception:
             return None
 
@@ -230,7 +247,9 @@ class EmbeddingService:
         Used by Auto-Training and Seed/Index processes.
         """
         vector = self.embed_text(text)
-        
+        if not vector:
+            return
+
         # Ensure key exists or generate one
         if not key:
             key = f"auto_{abs(hash(text))}_{int(timezone.now().timestamp())}"
@@ -281,7 +300,7 @@ class EmbeddingService:
             if not source_name:
                 return True
             from datia.models.semantic import DataSource
-            return DataSource.objects.filter(empresa_id=empresa_id, name=source_name).exists()
+            return DataSource.objects.filter(name=source_name).exists()
         try:
             return int(raw) == empresa_id
         except Exception:
@@ -292,7 +311,7 @@ class EmbeddingService:
         cached = getattr(self, '_semantic_ready', None)
         if cached is not None:
             return cached
-        provider = os.environ.get('DATIA_EMBED_PROVIDER', 'sentence').lower()
+        provider = self._provider()
         ready = False
         if provider == 'sentence':
             ready = self._get_model() is not None
@@ -312,6 +331,8 @@ class EmbeddingService:
             return None
 
         query_vec = self.embed_text(query)
+        if not query_vec:
+            return None
         
         feedbacks = MetricsFeedback.objects.filter(query=query)
         rejected_keys = list(feedbacks.filter(is_positive=False).values_list('rejected_key', flat=True))
@@ -341,8 +362,10 @@ class EmbeddingService:
         
         for item in filtered:
             # Cosine Similarity: (A . B) / (||A|| * ||B||)
-            stored_vec = np.array(item.vector)
-            q_vec = np.array(query_vec)
+            stored_vec = np.array(item.vector, dtype=np.float64)
+            q_vec = np.array(query_vec, dtype=np.float64)
+            if stored_vec.shape != q_vec.shape:
+                continue
             
             norm_stored = np.linalg.norm(stored_vec)
             norm_q = np.linalg.norm(q_vec)
@@ -390,13 +413,17 @@ class EmbeddingService:
         Retrieves the top-k most similar SQL examples (Few-Shot) to guide the LLM.
         """
         query_vec = self.embed_text(query)
+        if not query_vec:
+            return []
         candidates = MetricsEmbeddings.objects.filter(kind='qa')
         
         results = []
         for item in candidates:
             # Cosine Similarity
-            stored_vec = np.array(item.vector)
-            q_vec = np.array(query_vec)
+            stored_vec = np.array(item.vector, dtype=np.float64)
+            q_vec = np.array(query_vec, dtype=np.float64)
+            if stored_vec.shape != q_vec.shape:
+                continue
             
             norm_stored = np.linalg.norm(stored_vec)
             norm_q = np.linalg.norm(q_vec)
@@ -549,13 +576,17 @@ class EmbeddingService:
         Finds relevant tables based on user question.
         """
         query_vec = self.embed_text(query)
+        if not query_vec:
+            return []
         candidates = MetricsEmbeddings.objects.filter(kind='schema')
         
         results = []
         for item in candidates:
             # Cosine Similarity
-            stored_vec = np.array(item.vector)
-            q_vec = np.array(query_vec)
+            stored_vec = np.array(item.vector, dtype=np.float64)
+            q_vec = np.array(query_vec, dtype=np.float64)
+            if stored_vec.shape != q_vec.shape:
+                continue
             norm_stored = np.linalg.norm(stored_vec)
             norm_q = np.linalg.norm(q_vec)
             
