@@ -154,3 +154,23 @@ def match_intent(question: str) -> Optional[Dict[str, Any]]:
             if pat.search(q):
                 return {"intent_id": it.intent_id}
     return None
+
+
+def cubre_la_pregunta(question: str, intent_id: str) -> bool:
+    """Una frase con dos cortes (clientes y productos, ventas y compras) no cabe en un solo informe."""
+    q = (question or "").lower()
+
+    def has(*words: str) -> bool:
+        return any(re.search(rf"\b{re.escape(word)}\b", q) for word in words)
+
+    entidades = sum([
+        has("cliente", "clientes"),
+        has("producto", "productos", "articulo", "articulos", "artículo", "artículos"),
+        has("proveedor", "proveedores"),
+    ])
+    if entidades >= 2:
+        return False
+    if has("venta", "ventas") and has("compra", "compras"):
+        if str(intent_id or "").startswith(("ventas.", "compras.")):
+            return False
+    return True

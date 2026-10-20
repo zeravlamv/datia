@@ -403,6 +403,7 @@ class EmbeddingService:
                 "type": meta.get('type'),
                 "chart_type": meta.get('chart_type'),
                 "label": meta.get('label'),
+                "plan": meta.get('plan'),
                 "score": best_score
             }
         
@@ -450,7 +451,7 @@ class EmbeddingService:
         return results[:k]
 
 
-    def learn_template(self, text: str, sql: str, type: str = 'card', label: str = 'Resultado', chart_type: Optional[str] = None, empresa=None, ejercicio=None, scope: str = 'learned'):
+    def learn_template(self, text: str, sql: str, type: str = 'card', label: str = 'Resultado', chart_type: Optional[str] = None, empresa=None, ejercicio=None, scope: str = 'learned', plan=None):
         """
         Guarda una consulta enseñada. La clave es estable entre reinicios
         y queda ligada a la empresa.
@@ -467,6 +468,8 @@ class EmbeddingService:
             'label': label,
             'scope': scope or 'learned',
         }
+        if isinstance(plan, dict):
+            metadata['plan'] = plan
         if empresa is not None and empresa != '':
             try:
                 metadata['empresa_id'] = int(empresa)

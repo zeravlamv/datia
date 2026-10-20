@@ -13,6 +13,56 @@ class SnapshotHandler(BaseHandler):
         # Not used via checking intent directly
         return {}
 
+    @staticmethod
+    def _q(nombre: str) -> str:
+        return '"' + str(nombre).replace('"', '') + '"'
+
+    @staticmethod
+    def sql_ventas_desde_lineas(line_cols, empresa, ejercicio, start_date, end_date, net_override=None, cost_override=None):
+        """Importe neto de las líneas de albarán en un rango de días, un albarán por serie y número."""
+        if not isinstance(line_cols, dict) or 'importeneto' not in line_cols:
+            return None
+        if not {'codigoempresa', 'ejercicioalbaran', 'fechaalbaran'} <= set(line_cols):
+            return None
+        for dia in (start_date, end_date):
+            if not isinstance(dia, str) or len(dia) != 10 or dia[4] != '-' or dia[7] != '-':
+                return None
+        try:
+            empresa_id = int(empresa)
+            year = int(ejercicio)
+        except (TypeError, ValueError):
+            return None
+
+        def elegida(override, defecto):
+            clave = str(override or '').lower()
+            if clave and clave in line_cols:
+                return line_cols[clave]
+            return line_cols.get(defecto)
+
+        neto = elegida(net_override, 'importeneto')
+        coste = elegida(cost_override, 'importecoste')
+        if not neto:
+            return None
+        coste_sql = f'COALESCE(SUM({SnapshotHandler._q(coste)}), 0)' if coste else '0'
+        serie = line_cols.get('seriealbaran')
+        numero = line_cols.get('numeroalbaran') or line_cols.get('numero')
+        if serie and numero:
+            ops_sql = f'COUNT(DISTINCT ({SnapshotHandler._q(serie)}, {SnapshotHandler._q(numero)}))'
+        elif numero:
+            ops_sql = f'COUNT(DISTINCT {SnapshotHandler._q(numero)})'
+        else:
+            ops_sql = 'COUNT(*)'
+        fecha = SnapshotHandler._q(line_cols['fechaalbaran'])
+        return (
+            f'SELECT COALESCE(SUM({SnapshotHandler._q(neto)}), 0) AS neto, '
+            f'{coste_sql} AS coste, {ops_sql} AS albaranes '
+            f'FROM datiadb_lineasalbarancliente T '
+            f'WHERE {SnapshotHandler._q(line_cols["codigoempresa"])} = {empresa_id} '
+            f'AND {SnapshotHandler._q(line_cols["ejercicioalbaran"])} = {year} '
+            f"AND ({fecha})::date >= DATE '{start_date}' "
+            f"AND ({fecha})::date <= DATE '{end_date}'"
+        )
+
     def _importe_compra_con_datos(self, table, cols, candidatos, emp_col, year_col, empresa, ejercicio):
         existentes = [cols[c] for c in candidatos if c in cols]
         if not existentes:
@@ -42,16 +92,19 @@ class SnapshotHandler(BaseHandler):
                 tbl_cab = 'datiadb_cabeceraalbarancliente'
                 tbl_lin = 'datiadb_lineasalbarancliente'
 
-            try:
-                with connections['analytics'].cursor() as c:
-                    c.execute(
-                        "SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name=%s",
-                        [tbl_cab],
-                    )
-                    raw_cols = [r[0] for r in c.fetchall()]
-                cols = {str(x).lower(): str(x) for x in raw_cols}
-            except Exception:
-                cols = {}
+            def _leer_columnas(tabla):
+                try:
+                    with connections['analytics'].cursor() as c:
+                        c.execute(
+                            "SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name=%s",
+                            [tabla],
+                        )
+                        return {str(x).lower(): str(x) for x in (r[0] for r in c.fetchall())}
+                except Exception:
+                    return {}
+
+            cols = _leer_columnas(tbl_cab)
+            line_cols = {} if kind == 'compras' else _leer_columnas(tbl_lin)
 
             def pick(cands):
                 for c in cands:
@@ -176,42 +229,34 @@ class SnapshotHandler(BaseHandler):
                         AND {date_col} >= '{start_date}' AND {date_col} <= '{end_date}'
                     """
                 else:
-                    net_col = pick(['importeneto', 'importeliquido', 'baseimponible']) or "importeneto"
-                    coste_col = None
-                    try:
-                        override = getattr(settings, "DATIA_SNAPSHOT_SALES_NET_COL", None)
-                        if override and str(override).lower() in cols:
-                            net_col = cols[str(override).lower()]
-                    except Exception:
-                        pass
-                    try:
-                        override_cost = getattr(settings, "DATIA_SNAPSHOT_SALES_COSTE_COL", None)
-                        if override_cost and str(override_cost).lower() in cols:
-                            coste_col = cols[str(override_cost).lower()]
-                    except Exception:
-                        coste_col = None
-                    select_coste = f'SUM("{coste_col}")' if coste_col else """
-                        SUM(
-                            COALESCE(
-                                (to_jsonb(T)->>'importecosdte')::numeric,
-                                (to_jsonb(T)->>'importecoste')::numeric,
-                                (to_jsonb(T)->>'costetotal')::numeric,
-                                (to_jsonb(T)->>'importe_coste')::numeric,
-                                (to_jsonb(T)->>'importecostetotal')::numeric,
-                                (to_jsonb(T)->>'importetotalcoste')::numeric,
-                                0
-                            )
-                        )
-                    """
-                    sql = f"""
-                        SELECT 
-                            SUM("{net_col}") as neto,
-                            {select_coste} as coste,
-                            COUNT(DISTINCT {num_col}) as albaranes
-                        FROM {tbl_cab} T
-                        WHERE {emp_col} = {empresa} AND {year_col} = {ejercicio}
-                        AND {date_col} >= '{start_date}' AND {date_col} <= '{end_date}'
-                    """
+                    def _ajuste(nombre):
+                        try:
+                            return getattr(settings, nombre, None)
+                        except Exception:
+                            return None
+
+                    net_override = _ajuste("DATIA_SNAPSHOT_SALES_NET_COL")
+                    cost_override = _ajuste("DATIA_SNAPSHOT_SALES_COSTE_COL")
+                    sql = self.sql_ventas_desde_lineas(
+                        line_cols, empresa, ejercicio, start_date, end_date, net_override, cost_override,
+                    )
+                    if not sql:
+                        net_col = self._importe_compra_con_datos(
+                            tbl_cab, cols,
+                            ['importeneto', 'importeliquido', 'baseimponible', 'importebruto'],
+                            emp_col, year_col, empresa, ejercicio,
+                        ) or pick(['importeneto', 'importeliquido', 'baseimponible', 'importebruto']) or "importeneto"
+                        coste_col = pick(['importecoste', 'importecosdte', 'costetotal'])
+                        select_coste = f'COALESCE(SUM("{coste_col}"), 0)' if coste_col else '0'
+                        sql = f"""
+                            SELECT
+                                COALESCE(SUM("{net_col}"), 0) as neto,
+                                {select_coste} as coste,
+                                COUNT(DISTINCT {num_col}) as albaranes
+                            FROM {tbl_cab} T
+                            WHERE {emp_col} = {empresa} AND {year_col} = {ejercicio}
+                            AND ({date_col})::date >= DATE '{start_date}' AND ({date_col})::date <= DATE '{end_date}'
+                        """
                 rows = self.exec_sql(sql)
                 n = float((rows and rows[0].get('neto')) or 0)
                 c = float((rows and rows[0].get('coste')) or 0) if kind != 'compras' else 0.0

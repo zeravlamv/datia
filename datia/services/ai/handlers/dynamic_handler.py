@@ -30,7 +30,12 @@ class DynamicHandler(BaseHandler):
         if not is_detailed:
             # Standard List
             lang = context.get('lang', 'es')
-            return self.formatter.format_response(intent_data, rows, ejercicio, limit, lang=lang)
+            result = self.formatter.format_response(intent_data, rows, ejercicio, limit, lang=lang)
+            nota = intent_data.get('nota')
+            if nota and isinstance(result, dict):
+                result['answer'] = f"{result.get('answer') or ''} {nota}".strip()
+                result['text'] = f"{result.get('text') or ''} {nota}".strip()
+            return result
             
         # --- Deep Dive Report Mode ---
         # Pass context to allow AI Analysis

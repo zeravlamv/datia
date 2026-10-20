@@ -14,6 +14,37 @@ import uuid
 logger = logging.getLogger('datia')
 AI_PROGRESS = {}
 
+_TIPOS_CON_RESPUESTA = {
+    'text', 'report', 'table', 'chart', 'card', 'cantidad',
+    'ambiguity_alert', 'training_ask', 'no_data_option',
+}
+
+
+def _respuesta_tiene_valor(resultado) -> bool:
+    """La consulta dejó algo que mostrar. Un importe a cero también cuenta."""
+    if not isinstance(resultado, dict):
+        return False
+    if resultado.get('type') == 'error':
+        return False
+    texto = f"{resultado.get('text') or ''} {resultado.get('answer') or ''}"
+    if 'no he podido' in texto.casefold() or 'error al procesar' in texto.casefold():
+        return False
+    if resultado.get('kpis') or resultado.get('data'):
+        return True
+    tabla = resultado.get('table') or {}
+    if tabla.get('rows'):
+        return True
+    if resultado.get('source') in ('cartera', 'metricas_compra'):
+        return True
+    tipo = resultado.get('type')
+    if not tipo and texto.strip():
+        tipo = 'text'
+    if tipo in _TIPOS_CON_RESPUESTA and texto.strip():
+        return True
+    if resultado.get('sql') and tipo in _TIPOS_CON_RESPUESTA:
+        return True
+    return False
+
 def _progress(req_id: str, step: str, message: str = "", percent: int = None):
     try:
         ev = {"ts": _time.time(), "step": step, "message": message}
@@ -34,7 +65,7 @@ class IAService:
         self.router = IntentRouter(self.embedding_service)
         self.formatter = ResponseFormatter()
 
-    def generate_answer(self, question: str, empresa: int, ejercicio: int, threshold: float = 0.60, training_enabled: bool = False, model: str = None, request = None) -> dict:
+    def generate_answer(self, question: str, empresa: int, ejercicio: int, threshold: float = 0.60, training_enabled: bool = False, model: str = None, request = None, profundizar: bool = False) -> dict:
         q_lower = question.lower()
         
         # --- 1. Parameter Extraction ---
@@ -42,21 +73,16 @@ class IAService:
         if found_year:
             ejercicio = int(found_year.group(1))
 
-        limit = 5
-        top_match = re.search(r'(?:top|primeros|primeras|ultimos|últimos)\s+(\d{1,3})\b', q_lower)
+        limit = 10
+        top_match = re.search(r'(?:top|primeros|primeras|ultimos|últimos|mejores|peores)\s+(\d{1,3})\b', q_lower)
+        if not top_match:
+            top_match = re.search(r'\b(\d{1,3})\s+(?:mejores|peores|primeros|primeras|ultimos|últimos)\b', q_lower)
         if top_match:
             limit = int(top_match.group(1))
-        elif 'top' in q_lower:
-            limit = 10
-        else:
-            for number in re.finditer(r'\b(\d{1,3})\b', q_lower):
-                if not re.fullmatch(r'20\d{2}', number.group(1)):
-                    limit = int(number.group(1))
-                    break
-        if limit > 20:
-            limit = 20
+        if limit > 100:
+            limit = 100
         if limit < 1:
-            limit = 5
+            limit = 10
 
         # Call the AI Service
         
@@ -107,39 +133,111 @@ class IAService:
             'request': request
         }
 
-        # --- 2. Route Intent ---
-        handler_class, intent_data = self.router.resolve(question, context)
+        if profundizar:
+            from datia.services.ai.profundizar import Profundizar
+            detalle = Profundizar.responder(question, empresa, ejercicio)
+            if isinstance(detalle, dict):
+                detalle['query'] = question
+                detalle['lang'] = lang
+                return detalle
 
+        # --- 2. Route Intent ---
+        result = self._responder(question, context, lang, force_reload)
+        if context.get('_ya_reintento') or _respuesta_tiene_valor(result):
+            return result
+
+        logger.info("IAService: la primera vía no dejó un resultado; el modelo escribe la consulta")
+        context['training_enabled'] = True
+        context['_ya_reintento'] = True
+        context['_sql_descartada'] = (result or {}).get('sql')
+        segundo = self._consulta_del_modelo(question, context, lang)
+        if _respuesta_tiene_valor(segundo):
+            segundo['reentrenado'] = True
+            return segundo
+        aviso = (
+            "No he podido obtener un resultado para esta pregunta. "
+            "Prueba nombrando el dato: ventas, compras, clientes, artículos, margen o coste."
+        )
+        return {
+            "type": "text",
+            "text": aviso,
+            "answer": aviso,
+            "sql": None,
+            "query": question,
+            "lang": lang,
+            "reentrenado": True,
+        }
+
+    def _responder(self, question, context, lang, force_reload):
+        handler_class, intent_data = self.router.resolve(question, context)
         if not handler_class:
             custom_text = intent_data.get('text')
             default_text = LanguageService.get_text('unknown_intent', lang) if hasattr(LanguageService, 'get_text') else "No he entendido tu pregunta."
-            return {
+            respuesta = {
                 "text": custom_text if custom_text else default_text,
                 "sql": None,
-                **intent_data  # Preserve structured data like 'type', 'question'
+                **intent_data,
             }
-
-        # --- 3. Execute Handler ---
-        # Handlers are stateless but need formatter
+            respuesta['query'] = question
+            respuesta['lang'] = lang
+            return respuesta
         handler = handler_class(self.formatter)
-        
         try:
-             result = handler.handle(intent_data, context)
-             if isinstance(result, dict):
-                 result['query'] = question
-                 # [NEW] Pass back lang and logic for reload
-                 result['lang'] = context['lang']
-                 if force_reload:
-                     result['action'] = 'RELOAD'
-             
-             return result
+            result = handler.handle(intent_data, context)
         except Exception as e:
             logger.error(f"Inference Error: {e}", exc_info=True)
-            return {"text": f"Error al procesar tu solicitud: {str(e)}", "sql": "ERROR", "query": question}
+            return {"text": f"Error al procesar tu solicitud: {str(e)}", "sql": "ERROR", "query": question, "lang": lang}
+        if isinstance(result, dict):
+            result['query'] = question
+            result['lang'] = context['lang']
+            if force_reload:
+                result['action'] = 'RELOAD'
+            return result
+        return {"text": "No he podido preparar la respuesta.", "answer": "No he podido preparar la respuesta.", "sql": None, "query": question, "lang": lang}
 
-    # [MOVED -> DashboardService]
-    # def generate_strategic_report(...)
-    # END: IAService (Strictly Chat/RAG)
+    def _consulta_del_modelo(self, question, context, lang):
+        """La primera vía no dejó datos. El modelo local escribe un SELECT y se acepta si hay filas o un texto."""
+        from datia.services.ai.handlers.dynamic_handler import DynamicHandler
+        from datia.services.ai.open_question import OpenQuestion
+        abierto = OpenQuestion.responder(
+            question,
+            context.get('empresa'),
+            context.get('ejercicio'),
+            context.get('limit') or 10,
+            forzar_modelo=True,
+        )
+        if not isinstance(abierto, dict):
+            return None
+        if abierto.get('reply'):
+            reply = dict(abierto['reply'])
+            reply['query'] = question
+            reply['lang'] = lang
+            return reply
+        if abierto.get('error') or not abierto.get('sql'):
+            return None
+        try:
+            result = DynamicHandler(self.formatter).handle(abierto, context)
+        except Exception:
+            logger.exception("IAService: la consulta del modelo no se pudo ejecutar")
+            return None
+        if isinstance(result, dict):
+            result['query'] = question
+            result['lang'] = lang
+            return result
+        return None
+
+    def generate_strategic_report(self, empresa: int, ejercicio: int, kind: str = 'ventas', model: str = None, role: str = None) -> dict:
+        import os
+        import json
+        from django.conf import settings
+        req_id = f"{kind}-{empresa}-{ejercicio}"
+        try:
+            ctx_dir = getattr(settings, 'DATIA_AI_CONTEXT_DIR', settings.BASE_DIR)
+        except Exception:
+            ctx_dir = settings.BASE_DIR
+        report_path = os.path.join(str(ctx_dir), f'datia_ai_report_{kind}_{empresa}_{ejercicio}.html')
+        data_context = None
+        try:
             context_file = os.path.join(ctx_dir, f'datia_ai_context_{kind}_{empresa}_{ejercicio}.json')
             legacy_context_file = os.path.join(ctx_dir, f'datia_ai_context_{kind}.json')
             context_source = None

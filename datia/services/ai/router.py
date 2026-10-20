@@ -18,7 +18,7 @@ from .conversation_manager import ConversationManager
 from .title_generator import TitleGenerator
 from .ambiguity_analyzer import AmbiguityAnalyzer
 from datia.models.master import GlobalConfig
-from .nlq_catalog import match_intent
+from .nlq_catalog import match_intent, cubre_la_pregunta
 
 class IntentRouter:
     MONTHS = {
@@ -34,6 +34,7 @@ class IntentRouter:
         Main routing logic. Strict "Tabula Rasa" Flow.
         Returns: (HandlerClass, intent_data_dict)
         """
+        cat_backup = None
         try:
             from django.conf import settings
             import os
@@ -72,12 +73,19 @@ class IntentRouter:
             context['detailed'] = True
 
         cat = match_intent(q_lower)
-        if cat:
+        cat_backup = None
+        if cat and cubre_la_pregunta(q_lower, cat.get('intent_id')):
             try:
                 cat['query'] = question
             except Exception:
                 pass
             return CatalogReportHandler, cat
+        if cat:
+            try:
+                cat['query'] = question
+            except Exception:
+                pass
+            cat_backup = cat
 
         # --- 0. Language Change Intent ---
         # Regex to detect: "cambiar a ingles", "speak in english", "ponlo en frances"
@@ -212,9 +220,11 @@ class IntentRouter:
         try:
             # We pass 'training_enabled' to QueryBuilder so it knows whether to attempt Generation or just Recall.
             dynamic_match = QueryBuilder.build_from_nl(q_lower, context)
-            if not dynamic_match:
-                from datia.services.ai.auto_learn import AutoLearn
-                dynamic_match = AutoLearn.aprender(question, empresa, ejercicio)
+            if not dynamic_match or dynamic_match.get('error'):
+                from datia.services.ai.open_question import OpenQuestion
+                abierta = OpenQuestion.responder(question, empresa, ejercicio, limit)
+                if abierta and not abierta.get('error'):
+                    dynamic_match = abierta
             
             if dynamic_match:
                 if dynamic_match.get('reply'):
@@ -289,16 +299,22 @@ class IntentRouter:
         except Exception as e:
             print(f"Router: QueryBuilder Error: {e}")
 
-        # 4. Fallback Logic
-        # If QueryBuilder returned None, it means:
-        # - No memory found.
-        # - Generation failed (Strict Schema violation) OR Generation was skipped (training_enabled=False).
-        
+        if cat_backup:
+            return CatalogReportHandler, cat_backup
+
         if not training_enabled:
             return None, {
-                'type': 'training_ask',
+                'type': 'text',
                 'question': question,
-                'text': "He intentado aprender esta consulta con los totales de la empresa y no he podido dejarla lista."
+                'text': (
+                    "No he podido preparar una consulta segura para esta pregunta. "
+                    "Nombra el dato: ventas, compras, clientes, artículos, margen o coste."
+                ),
+                'suggestions': [
+                    {'label': 'Mejores clientes', 'query': 'mejores clientes'},
+                    {'label': 'Ventas y compras', 'query': 'ventas y compras'},
+                    {'label': 'Margen por cliente', 'query': 'margen por cliente'},
+                ],
             }
 
         try:
@@ -309,6 +325,14 @@ class IntentRouter:
                     return DynamicHandler, retry
         except Exception as exc:
             print(f"Router: entrenamiento de sinónimos no disponible: {exc}")
-        return None, {'text': "No se pudo generar una respuesta válida."}
+        if cat_backup:
+            return CatalogReportHandler, cat_backup
+        return None, {
+            'type': 'text',
+            'text': (
+                "No he podido dejar esta pregunta en una consulta sobre las métricas de la empresa. "
+                "Prueba con clientes, artículos, ventas, compras, margen o coste."
+            ),
+        }
 
 

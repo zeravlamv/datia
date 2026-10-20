@@ -502,6 +502,29 @@ function renderAiChart(container, config) {
             isHorizontal = false;
         }
 
+        const nombreCorto = (nombre) => {
+            const texto = String(nombre || '');
+            return texto.length > 32 ? texto.slice(0, 31) + '…' : texto;
+        };
+        const cifraCorta = (valor) => {
+            if (typeof valor !== 'number' || Number.isNaN(valor)) return String(valor);
+            const abs = Math.abs(valor);
+            if (abs >= 1000000) {
+                return (valor / 1000000).toLocaleString('es-ES', { maximumFractionDigits: 1 }) + ' M';
+            }
+            if (abs >= 1000) {
+                return (valor / 1000).toLocaleString('es-ES', { maximumFractionDigits: 0 }) + ' mil';
+            }
+            return valor.toLocaleString('es-ES', { maximumFractionDigits: 0 });
+        };
+        const muchasBarras = labels.length > 12;
+        if (isHorizontal) {
+            container.style.height = Math.max(280, labels.length * 36 + 64) + 'px';
+        } else {
+            container.style.height = '280px';
+        }
+        chart.resize();
+
         option = {
             ...option,
             tooltip: {
@@ -527,7 +550,13 @@ function renderAiChart(container, config) {
                 top: 0,
                 itemGap: 20
             },
-            grid: { left: '5%', right: '5%', bottom: '5%', top: '15%', containLabel: true },
+            grid: {
+                left: 8,
+                right: isHorizontal ? 78 : 16,
+                bottom: 8,
+                top: 36,
+                containLabel: true
+            },
             xAxis: isHorizontal ? {
                 type: 'value',
                 axisLabel: { 
@@ -541,8 +570,10 @@ function renderAiChart(container, config) {
                 data: labels,
                 axisLabel: { 
                     color: colors.subtext, 
-                    rotate: -30, 
+                    rotate: isMonthly ? 0 : -30, 
                     interval: 0,
+                    hideOverlap: true,
+                    fontSize: 12,
                     fontFamily: 'Inter, sans-serif',
                     margin: 14
                 },
@@ -550,11 +581,16 @@ function renderAiChart(container, config) {
             yAxis: isHorizontal ? {
                 type: 'category',
                 data: labels,
+                inverse: true,
                 axisLabel: { 
                     color: colors.subtext, 
-                    width: 140, 
+                    width: 200,
                     overflow: 'truncate',
-                    fontFamily: 'Inter, sans-serif'
+                    ellipsis: '…',
+                    interval: 0,
+                    fontSize: 12,
+                    fontFamily: 'Inter, sans-serif',
+                    formatter: nombreCorto
                 }
             } : {
                 type: 'value',
@@ -570,16 +606,17 @@ function renderAiChart(container, config) {
                 type: type === 'bar' ? 'bar' : 'line',
                 data: ds.data,
                 smooth: true,
-                barMaxWidth: 60,
-                itemStyle: { borderRadius: [4, 4, 0, 0] },
+                barMaxWidth: isHorizontal ? 18 : 36,
+                barCategoryGap: '40%',
+                itemStyle: { borderRadius: isHorizontal ? [0, 4, 4, 0] : [4, 4, 0, 0] },
                 label: {
-                    show: type === 'bar', // [FIX] Hide labels for Lines to avoid clutter/overlap
-                    position: isHorizontal ? 'right' : 'top',
+                    show: type === 'bar' && isHorizontal && !muchasBarras,
+                    position: 'right',
+                    distance: 6,
                     color: colors.text,
-                    formatter: (p) => {
-                        return typeof p.value === 'number' ? p.value.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : p.value;
-                    },
+                    formatter: (p) => cifraCorta(p.value),
                     fontFamily: 'Inter, sans-serif',
+                    fontSize: 11,
                     fontWeight: 600
                 },
                 lineStyle: { width: 3 },

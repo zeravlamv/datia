@@ -22,6 +22,7 @@ from datia.models.totales import (
     MetricsTotalesEmpresaEjercicioProveedor,
     MetricsTotalesEmpresaEjercicioProveedorMes,
 )
+from datia.services.ai.comparison import aviso_coste_y_hueco, celda
 from datia.services.financial_service import FinancialService
 from datia.factories import ServiceFactory
 
@@ -172,9 +173,15 @@ class CatalogReportHandler(BaseHandler):
 
     def _augment_with_llm(self, payload: Dict[str, Any], intent_id: str, intent_data: Dict, context: Dict) -> Dict[str, Any]:
         fallback_answer = self._build_fallback_answer(payload, intent_id, context)
+        aviso = payload.get('aviso') or ''
         if fallback_answer:
-            payload["answer"] = fallback_answer
-            payload["text"] = fallback_answer
+            payload["answer"] = f"{fallback_answer} {aviso}".strip()
+            payload["text"] = payload["answer"]
+        elif aviso:
+            payload["answer"] = f"{payload.get('answer') or ''} {aviso}".strip()
+            payload["text"] = payload["answer"]
+        if payload.get('datos_debiles'):
+            return payload
 
         try:
             llm = ServiceFactory.get_report_llm_service(kind="financiera")
@@ -301,11 +308,22 @@ class CatalogReportHandler(BaseHandler):
                 total = sum(float((r[1] or 0)) for r in rows)
                 c = str(top[0] or "")
                 v = float(top[1] or 0)
-                py = float(top[2] or 0)
-                varpct = float(top[3] or 0)
+
+                def _importe(valor):
+                    try:
+                        return float(valor)
+                    except (TypeError, ValueError):
+                        return None
+
+                py = _importe(top[2])
+                varpct = _importe(top[3])
+                if py is None:
+                    frente = f"sin métrica de {int(ejercicio) - 1}" if ejercicio else "sin métrica del ejercicio anterior"
+                else:
+                    frente = f"frente a {py:,.2f} € del ejercicio anterior ({(varpct or 0):.1f} %)"
                 return (
                     f"Ranking comercial {ejercicio}: el cliente líder es {c} con ventas de {v:,.2f} €,"
-                    f" frente a {py:,.2f} € del ejercicio anterior ({varpct:.1f} %). "
+                    f" {frente}. "
                     f"Los tres primeros clientes concentran {top3:,.2f} € sobre un total analizado de {total:,.2f} €. "
                     f"Conviene revisar concentración, evolución del margen y dependencia comercial sobre la cabecera del ranking."
                 )
@@ -1185,6 +1203,7 @@ class CatalogReportHandler(BaseHandler):
             cy_sales = d['value']
             cy_cost = d['cost']
             cy_ops = d['ops']
+            hay = pr is not None
             cy_margin = cy_sales - cy_cost
             py_margin = py_sales - py_cost
             cy_margin_pct = (cy_margin / cy_sales * 100.0) if cy_sales else 0.0
@@ -1192,15 +1211,18 @@ class CatalogReportHandler(BaseHandler):
             sales_var_pct = ((cy_sales - py_sales) / py_sales * 100.0) if py_sales else 0.0
             price_cy = (cy_sales / cy_ops) if cy_ops else 0.0
             price_py = (py_sales / py_ops) if py_ops else 0.0
+            d['hay_anterior'] = hay
+            d['ventas'] = cy_sales
             table_rows.append([
                 d['name'],
-                round(cy_sales, 2), round(py_sales, 2), round(sales_var_pct, 1),
-                round(cy_cost, 2), round(py_cost, 2),
-                round(cy_margin, 2), round(py_margin, 2),
-                round(cy_margin_pct, 1), round(py_margin_pct, 1),
-                cy_ops, py_ops,
-                round(price_cy, 2), round(price_py, 2)
+                round(cy_sales, 2), celda(hay, round(py_sales, 2)), celda(hay, round(sales_var_pct, 1)),
+                round(cy_cost, 2), celda(hay, round(py_cost, 2)),
+                round(cy_margin, 2), celda(hay, round(py_margin, 2)),
+                round(cy_margin_pct, 1), celda(hay, round(py_margin_pct, 1)),
+                cy_ops, celda(hay, py_ops),
+                round(price_cy, 2), celda(hay, round(price_py, 2))
             ])
+        aviso, debil = aviso_coste_y_hueco(data, prev)
         kpis = [
             self._kpi(f"{self._t('kpi_top1')}: {(data[0]['name'] if data else '')}", round(values[0], 2) if values else 0.0, '€', '#3b82f6'),
             self._kpi(self._t('kpi_top3'), round(sum(values[:3]), 2) if values else 0.0, '€', '#10b981'),
@@ -1211,6 +1233,8 @@ class CatalogReportHandler(BaseHandler):
         return {
             'type': 'report',
             'key': 'ventas_top_clientes',
+            'aviso': aviso,
+            'datos_debiles': debil,
             'kpis': kpis,
             'answer': f"{'Clientes con menores ventas' if worst else 'Mejores clientes'} del ejercicio {year}.",
             'chart_config': self._yoy_total_chart(year, prev, cy_total, py_total, f"Comparativa {year} vs {prev}"),
@@ -1248,6 +1272,7 @@ class CatalogReportHandler(BaseHandler):
             cy_sales = d['value']
             cy_cost = d['cost']
             cy_ops = d['ops']
+            hay = pr is not None
             cy_margin = cy_sales - cy_cost
             py_margin = py_sales - py_cost
             cy_margin_pct = (cy_margin / cy_sales * 100.0) if cy_sales else 0.0
@@ -1255,15 +1280,17 @@ class CatalogReportHandler(BaseHandler):
             sales_var_pct = ((cy_sales - py_sales) / py_sales * 100.0) if py_sales else 0.0
             price_cy = (cy_sales / cy_ops) if cy_ops else 0.0
             price_py = (py_sales / py_ops) if py_ops else 0.0
+            d['hay_anterior'] = hay
             table_rows.append([
                 d['name'],
-                round(cy_sales, 2), round(py_sales, 2), round(sales_var_pct, 1),
-                round(cy_cost, 2), round(py_cost, 2),
-                round(cy_margin, 2), round(py_margin, 2),
-                round(cy_margin_pct, 1), round(py_margin_pct, 1),
-                cy_ops, py_ops,
-                round(price_cy, 2), round(price_py, 2)
+                round(cy_sales, 2), celda(hay, round(py_sales, 2)), celda(hay, round(sales_var_pct, 1)),
+                round(cy_cost, 2), celda(hay, round(py_cost, 2)),
+                round(cy_margin, 2), celda(hay, round(py_margin, 2)),
+                round(cy_margin_pct, 1), celda(hay, round(py_margin_pct, 1)),
+                cy_ops, celda(hay, py_ops),
+                round(price_cy, 2), celda(hay, round(price_py, 2))
             ])
+        aviso, debil = aviso_coste_y_hueco(data, prev)
         kpis = [
             self._kpi(f"{self._t('kpi_top1')}: {(data[0]['name'] if data else '')}", round(values[0], 2) if values else 0.0, '€', '#3b82f6'),
             self._kpi(self._t('kpi_top3'), round(sum(values[:3]), 2) if values else 0.0, '€', '#10b981'),
@@ -1274,6 +1301,8 @@ class CatalogReportHandler(BaseHandler):
         return {
             'type': 'report',
             'key': 'ventas_top_productos',
+            'aviso': aviso,
+            'datos_debiles': debil,
             'kpis': kpis,
             'answer': f"{'Productos con menores ventas' if worst else 'Mejores productos'} del ejercicio {year}.",
             'chart_config': self._yoy_total_chart(year, prev, cy_total, py_total, f"Comparativa {year} vs {prev}"),

@@ -3072,19 +3072,21 @@ input:checked+.slider:before {
     height: 52px;
 }
 
-/* Sticky Top Prompt (Replaces Bottom) */
+/* Caja de escribir al pie del chat */
 .ia-prompt-sticky {
-    position: fixed;
-    top: 85px;
-    /* Header 60px + Gap */
-    left: 0;
-    right: 0;
-    z-index: 900;
-    padding: 0 20px;
+    order: 2;
+    position: relative;
+    top: auto;
+    left: auto;
+    right: auto;
+    z-index: 5;
+    flex: 0 0 auto;
+    width: 100%;
+    padding: 8px 16px 18px;
     display: flex;
     justify-content: center;
     pointer-events: none;
-    /* Allow clicks pass through outside input */
+    background: linear-gradient(180deg, rgba(9, 9, 11, 0) 0%, #09090b 28%);
 }
 
 .ia-prompt-sticky .ia-input-wrapper {
@@ -3100,24 +3102,36 @@ input:checked+.slider:before {
 }
 
 .ia-stream {
-    padding-bottom: 50px;
-    max-width: 90%;
-    /* [MODIFIED] 90% width (5% margin each side) */
-    margin: 0 auto;
-    padding-top: 40px;
-    /* Will be increased via JS/CSS class when prompt is active */
-    transition: padding-top 0.4s ease;
+    order: 1;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 22px 28px 18px;
 }
 
 .ia-stream.has-sticky-prompt {
-    padding-top: 160px;
-    /* Space for sticky prompt */
+    padding-top: 28px;
+}
+
+body:has(#tab-ia.active) {
+    overflow: hidden;
 }
 
 #tab-ia.active {
+    position: fixed;
+    top: 112px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
     display: flex !important;
     align-items: stretch;
-    min-height: calc(100vh - 90px);
+    min-height: 0 !important;
+    overflow: hidden;
+    background: #09090b;
 }
 
 .ia-conversaciones {
@@ -3129,7 +3143,8 @@ input:checked+.slider:before {
     padding: 14px 10px;
     background: #09090b;
     border-right: 1px solid #27272a;
-    max-height: calc(100vh - 90px);
+    max-height: none;
+    height: 100%;
     overflow: hidden;
     position: relative;
     z-index: 950;
@@ -3137,10 +3152,10 @@ input:checked+.slider:before {
 
 .ia-nueva-btn {
     flex: 0 0 auto;
-    border: 1px solid rgba(168, 85, 247, 0.45);
-    background: rgba(168, 85, 247, 0.16);
-    color: #fff;
-    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: transparent;
+    color: #e4e4e7;
+    border-radius: 999px;
     padding: 10px 12px;
     font-weight: 600;
     cursor: pointer;
@@ -3158,6 +3173,39 @@ input:checked+.slider:before {
     min-height: 0;
 }
 
+.ia-stream,
+.ia-conversaciones-lista,
+.ai-report-tabla {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.ia-stream::-webkit-scrollbar,
+.ia-conversaciones-lista::-webkit-scrollbar,
+.ai-report-tabla::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.ia-stream::-webkit-scrollbar-track,
+.ia-conversaciones-lista::-webkit-scrollbar-track,
+.ai-report-tabla::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.ia-stream::-webkit-scrollbar-thumb,
+.ia-conversaciones-lista::-webkit-scrollbar-thumb,
+.ai-report-tabla::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.16);
+    border-radius: 99px;
+}
+
+.ia-stream:hover::-webkit-scrollbar-thumb,
+.ia-conversaciones-lista:hover::-webkit-scrollbar-thumb,
+.ai-report-tabla:hover::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.34);
+}
+
 .ia-conversacion-item {
     display: flex;
     align-items: center;
@@ -3170,7 +3218,7 @@ input:checked+.slider:before {
 
 .ia-conversacion-item:hover,
 .ia-conversacion-item.activa {
-    background: rgba(168, 85, 247, 0.16);
+    background: rgba(255, 255, 255, 0.08);
 }
 
 .ia-conversacion-titulo {
@@ -3213,7 +3261,59 @@ input:checked+.slider:before {
     position: relative;
     flex: 1;
     min-width: 0;
-    min-height: 80vh;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.ia-sugerencias {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 18px;
+}
+
+.ia-sugerencias button {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.04);
+    color: #e4e4e7;
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.ia-sugerencias button:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.ia-turno {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin: 0 0 28px;
+    animation: fadeIn 0.25s ease;
+}
+
+.ia-burbuja-usuario {
+    align-self: flex-end;
+    max-width: min(78%, 560px);
+    background: #2f2f33;
+    color: #f4f4f5;
+    border-radius: 20px 20px 6px 20px;
+    padding: 10px 16px;
+    font-size: 0.95rem;
+    line-height: 1.45;
+}
+
+.ia-respuesta {
+    align-self: stretch;
+    color: #e4e4e7;
+    line-height: 1.55;
+    padding: 0 4px 8px;
 }
 
 html.is-phone #tab-ia.active {
@@ -3272,17 +3372,85 @@ html.is-phone .ia-conversaciones {
     color: #e4e4e7;
     letter-spacing: 0.2px;
 }
+.ai-report-texto {
+    max-width: 78ch;
+    font-size: 1.02rem;
+    line-height: 1.65;
+    color: #e4e4e7;
+    margin: 0 0 18px;
+}
+
+.ai-report-seccion {
+    color: #d4d4d8;
+    font-size: 0.92rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    margin: 0 0 10px;
+}
+
+.ai-report-graficos {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 22px;
+    margin: 6px 0 8px;
+}
+
+.ai-report-graficos:has(> :nth-child(2)) {
+    grid-template-columns: 1fr 1fr;
+}
+
+.ai-report-grafico {
+    min-width: 0;
+    padding: 8px 4px 0;
+}
+
+.ai-report-lienzo {
+    height: 280px;
+    min-height: 280px;
+}
+
+.ai-report-tabla {
+    margin-top: 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.ai-report-tabla table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.86rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.ai-report-tabla th {
+    white-space: nowrap;
+    line-height: 1.25;
+}
+
+.ai-report-tabla thead th {
+    position: sticky;
+    top: 0;
+    background: #09090b;
+    z-index: 1;
+}
+
+.ai-report-nota {
+    margin-top: 14px;
+    font-size: 0.8rem;
+    color: #71717a;
+}
+
 .ai-report-kpi-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 300px));
+    gap: 16px;
 }
 .ai-report-kpi-card {
-    border-radius: 14px;
+    border-radius: 16px;
     border: 1px solid rgba(255,255,255,0.14);
-    background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(0,0,0,0.22) 100%);
-    padding: 14px;
-    min-height: 92px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(0,0,0,0.22) 100%);
+    padding: 18px 20px;
+    min-height: 112px;
     box-shadow: 0 10px 26px rgba(0,0,0,0.28);
 }
 .ai-report-kpi-label {
@@ -3292,10 +3460,17 @@ html.is-phone .ia-conversaciones {
     letter-spacing: 0.2px;
 }
 .ai-report-kpi-value {
-    font-size: 1.35rem;
-    font-weight: 800;
+    font-size: 1.65rem;
+    font-weight: 700;
     color: #fff;
     margin-bottom: 4px;
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 1100px) {
+    .ai-report-graficos:has(> :nth-child(2)) {
+        grid-template-columns: 1fr;
+    }
 }
 .ai-report-kpi-sub {
     font-size: 0.86rem;

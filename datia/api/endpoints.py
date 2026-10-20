@@ -1764,7 +1764,7 @@ from django.http import HttpResponse
 from django.conf import settings
 
 @router.post("/qa")
-def qa_query(request, response: HttpResponse, question: str, empresa: int = 1, ejercicio: int = 2025, training_enabled: bool = False, model: str = None):
+def qa_query(request, response: HttpResponse, question: str, empresa: int = 1, ejercicio: int = 2025, training_enabled: bool = False, model: str = None, profundizar: bool = False):
     try:
         svc = ServiceFactory.get_ai_service()
         # --- Context/Memory Logic ---
@@ -1782,7 +1782,7 @@ def qa_query(request, response: HttpResponse, question: str, empresa: int = 1, e
         # [FIX] ISS-035: Increase timeout or catch it specifically
         # Currently the service handles it, but let's be explicit if possible.
         # The AI Service (datia.services.ai_service.py) does the heavy lifting.
-        svc_response = svc.generate_answer(effective_question, empresa, ejercicio, training_enabled=training_enabled, model=model, request=request)
+        svc_response = svc.generate_answer(effective_question, empresa, ejercicio, training_enabled=training_enabled, model=model, request=request, profundizar=profundizar)
         
         # [NEW] Force Language Cookie if changed
         if svc_response.get('lang') and svc_response.get('action') == 'RELOAD':
@@ -1803,9 +1803,14 @@ def qa_query(request, response: HttpResponse, question: str, empresa: int = 1, e
                 if any(v > 0 for v in vals):
                     has_real_data = True
                     
-        # Check KPIs
-        if svc_response.get('kpis') and len(svc_response['kpis']) > 0:
-             has_real_data = True
+        # Check KPIs: un indicador a cero no cuenta como dato del ejercicio
+        if svc_response.get('kpis'):
+            for kpi in svc_response['kpis']:
+                try:
+                    if float((kpi or {}).get('value') or 0) > 0:
+                        has_real_data = True
+                except (TypeError, ValueError):
+                    continue
 
 
         # Check raw text for "No hay datos" explicit message
@@ -1813,7 +1818,7 @@ def qa_query(request, response: HttpResponse, question: str, empresa: int = 1, e
         
         fallback_msg = ""
         question_names_year = bool(re.search(r'\b20\d{2}\b', question or ''))
-        if ((not has_real_data) or text_implies_empty) and not question_names_year:
+        if ((not has_real_data) or text_implies_empty) and not question_names_year and not svc_response.get('profundizado'):
             prev_year = ejercicio - 1
             response_prev = svc.generate_answer(
                 effective_question,
@@ -1866,6 +1871,7 @@ def qa_query(request, response: HttpResponse, question: str, empresa: int = 1, e
             "top_products": svc_response.get('top_products'),
             "action": svc_response.get('action'), # [FIX] Pass action for frontend logic
             "key": svc_response.get('key'), # New RLHF Field
+            "profundizado": bool(svc_response.get('profundizado')),
             "query": effective_question, # New RLHF Field
             "source": svc_response.get('source'), # AI Flag for UI Badge
             "debug_context": f"Context used: {last_query}" if is_short else "New context"
@@ -2140,6 +2146,7 @@ class ConversacionInput(Schema):
     pregunta: str
     respuesta: Dict[str, Any]
     conversacion_id: int = 0
+    reemplazar: bool = False
 
 
 def _usuario_chat(request):
@@ -2154,6 +2161,54 @@ def _titulo_consulta(pregunta: str) -> str:
     return (texto[:177] + "...") if len(texto) > 180 else (texto or "Consulta")
 
 
+def _norma_pregunta(texto: str) -> str:
+    return " ".join((texto or "").split()).casefold()
+
+
+def _pregunta_guardada(fila) -> str:
+    mensajes = fila.mensajes or []
+    if mensajes and isinstance(mensajes[0], dict):
+        return mensajes[0].get("pregunta") or fila.titulo or ""
+    return fila.titulo or ""
+
+
+def _copias_de_la_pregunta(modelo, user_id, empresa, ejercicio, pregunta):
+    clave = _norma_pregunta(pregunta)
+    if not clave:
+        return []
+    return [
+        fila for fila in modelo.objects.filter(
+            usuario_id=user_id,
+            empresa=int(empresa),
+            ejercicio=int(ejercicio),
+        )
+        if _norma_pregunta(_pregunta_guardada(fila)) == clave
+    ]
+
+
+def _dejar_una_copia(modelo, user_id, empresa, ejercicio, pregunta, conservar_id):
+    sobran = [
+        fila.id for fila in _copias_de_la_pregunta(modelo, user_id, empresa, ejercicio, pregunta)
+        if fila.id != conservar_id
+    ]
+    if sobran:
+        modelo.objects.filter(id__in=sobran, usuario_id=user_id).delete()
+
+
+def _fusionar_consultas_iguales(modelo, user_id, empresa, ejercicio):
+    grupos = {}
+    for fila in modelo.objects.filter(usuario_id=user_id, empresa=int(empresa), ejercicio=int(ejercicio)):
+        grupos.setdefault(_norma_pregunta(_pregunta_guardada(fila)), []).append(fila)
+    for grupo in grupos.values():
+        if len(grupo) < 2:
+            continue
+        grupo.sort(key=lambda fila: fila.actualizado_at, reverse=True)
+        modelo.objects.filter(
+            id__in=[fila.id for fila in grupo[1:]],
+            usuario_id=user_id,
+        ).delete()
+
+
 @router.get("/ai/conversaciones")
 def listar_conversaciones(request, empresa: int = 0, ejercicio: int = 0):
     from datia.models import ConsultaConversacion
@@ -2161,6 +2216,7 @@ def listar_conversaciones(request, empresa: int = 0, ejercicio: int = 0):
     user = _usuario_chat(request)
     if not user:
         return {"conversaciones": []}
+    _fusionar_consultas_iguales(ConsultaConversacion, user.id, empresa, ejercicio)
     filas = ConsultaConversacion.objects.filter(
         usuario_id=user.id,
         empresa=int(empresa),
@@ -2215,25 +2271,37 @@ def guardar_conversacion(request, payload: ConversacionInput):
         "respuesta": payload.respuesta or {},
         "ts": timezone.now().isoformat(),
     }
+    empresa = int(payload.empresa)
+    ejercicio = int(payload.ejercicio)
+    iguales = _copias_de_la_pregunta(ConsultaConversacion, user.id, empresa, ejercicio, pregunta)
     fila = None
     if payload.conversacion_id:
         fila = ConsultaConversacion.objects.filter(
             id=payload.conversacion_id,
             usuario_id=user.id,
         ).first()
+    if fila is None and iguales:
+        fila = iguales[0]
     if fila is None:
         fila = ConsultaConversacion.objects.create(
             usuario_id=user.id,
-            empresa=int(payload.empresa),
-            ejercicio=int(payload.ejercicio),
+            empresa=empresa,
+            ejercicio=ejercicio,
             titulo=_titulo_consulta(pregunta),
             mensajes=[mensaje],
         )
+    elif payload.reemplazar or iguales:
+        fila.mensajes = [mensaje]
+        fila.titulo = _titulo_consulta(pregunta)
+        fila.empresa = empresa
+        fila.ejercicio = ejercicio
+        fila.save(update_fields=['mensajes', 'titulo', 'empresa', 'ejercicio', 'actualizado_at'])
     else:
         mensajes = list(fila.mensajes or [])
         mensajes.append(mensaje)
         fila.mensajes = mensajes[-40:]
         fila.save(update_fields=['mensajes', 'actualizado_at'])
+    _dejar_una_copia(ConsultaConversacion, user.id, empresa, ejercicio, pregunta, fila.id)
     return {"status": "saved", "id": fila.id, "titulo": fila.titulo}
 
 

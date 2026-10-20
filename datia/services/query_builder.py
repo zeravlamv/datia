@@ -531,6 +531,12 @@ class QueryBuilder:
         month_range = QueryBuilder._ranking_period(question, ejercicio)
         if entity_key == 'articulo' and month_range:
             return None
+        if order_kw == 'ASC':
+            filtro_importe = 'importe_neto_total > 0'
+            having_importe = 'SUM(importe_neto_total) > 0'
+        else:
+            filtro_importe = '(importe_neto_total <> 0 OR albaranes_count <> 0)'
+            having_importe = 'SUM(importe_neto_total) <> 0 OR SUM(albaranes_count) <> 0'
         if entity_key == 'cliente' and month_range:
             start_m, end_m = month_range
             sql = (
@@ -539,7 +545,7 @@ class QueryBuilder:
                 'FROM metrics_totales_empresa_ejercicio_cliente_mes '
                 f'WHERE empresa = {empresa_id} AND ejercicio = {target_year} AND mes BETWEEN {int(start_m)} AND {int(end_m)} '
                 'GROUP BY cliente '
-                'HAVING SUM(importe_neto_total) <> 0 OR SUM(albaranes_count) <> 0 '
+                f'HAVING {having_importe} '
                 f'ORDER BY 2 {order_kw} LIMIT {int(limit)}'
             )
         else:
@@ -556,7 +562,7 @@ class QueryBuilder:
                 'importe_neto_total AS val, importe_coste_total AS coste, albaranes_count AS ops '
                 f'FROM {table} '
                 f'WHERE empresa = {empresa_id} AND ejercicio = {target_year} '
-                'AND (importe_neto_total <> 0 OR albaranes_count <> 0) '
+                f'AND {filtro_importe} '
                 f'ORDER BY 2 {order_kw} LIMIT {int(limit)}'
             )
         return {
@@ -997,9 +1003,10 @@ class QueryBuilder:
         ops_txt = f'{ops:,}'.replace(',', '.')
         if asks_average:
             medio = (neto / ops) if ops else 0
+            titulo = 'Precio medio de venta' if re.search(r'\bprecio\b', folded) else 'Importe medio de albarán'
             text = (
-                f'Importe medio de albarán en {target_year}: {QueryBuilder._eur_es(medio)}. '
-                f'Son {QueryBuilder._eur_es(neto)} netos en {ops_txt} albaranes.'
+                f'{titulo} en {target_year}: {QueryBuilder._eur_es(medio)} por albarán. '
+                f'El total de ventas es {QueryBuilder._eur_es(neto)} netos en {ops_txt} albaranes.'
             )
         elif asks_count:
             text = f'Albaranes en {target_year}: {ops_txt}. Importe neto {QueryBuilder._eur_es(neto)}.'
@@ -1415,7 +1422,7 @@ class QueryBuilder:
                     'suggestions': suggestions,
                 }
             }
-        return {'reply': {'text': text, 'answer': text}}
+        return {'reply': {'type': 'text', 'text': text, 'answer': text}}
 
     @staticmethod
     def _is_catalog_miss(result) -> bool:
@@ -1462,7 +1469,7 @@ class QueryBuilder:
         return bool(re.search(
             r'\b(top|ranking|mejor|mejores|peor|peores|mayor|mayores|popular|populares|famoso|famosos|estrella|estrellas)\b'
             r'|\b(el|la|los|las)\s+mas\b'
-            r'|\bmas\s+(vendid|consumid|demandad)',
+            r'|\b(mas|menos)\s+(vendid|consumid|demandad)',
             folded,
         ))
 
@@ -1496,6 +1503,13 @@ class QueryBuilder:
                     patron = resto
             else:
                 patron = None
+        pide_producto, pide_cliente = QueryBuilder._pide_corte_cantidad(folded)
+        if pide_producto or pide_cliente:
+            cortado = QueryBuilder._respuesta_cantidad_cortada(
+                empresa_id, target_year, medida, pide_producto, pide_cliente, folded,
+            )
+            if cortado:
+                return cortado
         filtro = ''
         if patron:
             filtro = f" AND A.descripcion ILIKE '%{patron}%'"
@@ -1521,6 +1535,166 @@ class QueryBuilder:
                 'ejercicio': target_year,
                 'compras': compras,
             },
+        }
+
+    @staticmethod
+    def _pide_corte_cantidad(folded: str):
+        producto = bool(re.search(r'\b(producto|productos|articulo|articulos)\b', folded or ''))
+        cliente = bool(re.search(r'\b(cliente|clientes|a quien|al que|quien)\b', folded or ''))
+        return producto, cliente
+
+    @staticmethod
+    def _kilos_sql():
+        return 'COALESCE(SUM(CASE WHEN L.precio <> 0 THEN L.importeneto / L.precio END), 0)'
+
+    @staticmethod
+    def _numero_cantidad(valor):
+        return f"{float(valor):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+
+    @staticmethod
+    def _leer_cantidad(sql, params):
+        alias = 'analytics' if 'analytics' in connections.databases else 'default'
+        with connections[alias].cursor() as cur:
+            cur.execute(sql, params)
+            return cur.fetchall()
+
+    @staticmethod
+    def _respuesta_cantidad_cortada(empresa, year, medida, pide_producto, pide_cliente, folded):
+        """El artículo o el cliente con más kilos, leído en las líneas. No es el total de la empresa."""
+        orden = 'ASC' if re.search(r'\b(peor|peores|menos)\b', folded or '') and not re.search(
+            r'\b(mas|mayor|mejor)\b', folded or '',
+        ) else 'DESC'
+        kilos = QueryBuilder._kilos_sql()
+        try:
+            if pide_producto:
+                filas = QueryBuilder._leer_cantidad(
+                    f'''
+                    SELECT COALESCE(NULLIF(BTRIM(MAX(A.descripcion)), ''), L.codigoarticulo) AS nombre,
+                           L.codigoarticulo AS codigo,
+                           {kilos} AS kilos
+                    FROM datiadb_lineasalbarancliente L
+                    LEFT JOIN datia_articulos A
+                      ON A.empresa = L.codigoempresa AND A.articulo = L.codigoarticulo
+                    WHERE L.codigoempresa = %s AND L.ejercicioalbaran = %s
+                    GROUP BY L.codigoarticulo
+                    HAVING {kilos} <> 0
+                    ORDER BY kilos {orden}
+                    LIMIT 1
+                    ''',
+                    [empresa, year],
+                )
+            else:
+                filas = QueryBuilder._leer_cantidad(
+                    f'''
+                    SELECT COALESCE(NULLIF(BTRIM(MAX(C.razonsocial)), ''), C.codigocliente) AS nombre,
+                           {kilos} AS kilos
+                    FROM datiadb_lineasalbarancliente L
+                    JOIN datiadb_cabeceraalbarancliente C
+                      ON C.codigoempresa = L.codigoempresa
+                     AND C.ejercicioalbaran = L.ejercicioalbaran
+                     AND C.seriealbaran = L.seriealbaran
+                     AND C.numeroalbaran = L.numeroalbaran
+                    WHERE L.codigoempresa = %s AND L.ejercicioalbaran = %s
+                    GROUP BY C.codigocliente
+                    HAVING {kilos} <> 0
+                    ORDER BY kilos {orden}
+                    LIMIT 8
+                    ''',
+                    [empresa, year],
+                )
+        except Exception:
+            logger.exception('QueryBuilder: no se pudo leer la cantidad por producto o cliente')
+            return None
+        if not filas:
+            return None
+        if pide_producto:
+            nombre, codigo, total = filas[0]
+            nombre = str(nombre or codigo).strip()
+            total = float(total or 0)
+            clientes = []
+            if pide_cliente and codigo:
+                try:
+                    clientes = QueryBuilder._leer_cantidad(
+                        f'''
+                        SELECT COALESCE(NULLIF(BTRIM(MAX(C.razonsocial)), ''), C.codigocliente) AS nombre,
+                               {kilos} AS kilos
+                        FROM datiadb_lineasalbarancliente L
+                        JOIN datiadb_cabeceraalbarancliente C
+                          ON C.codigoempresa = L.codigoempresa
+                         AND C.ejercicioalbaran = L.ejercicioalbaran
+                         AND C.seriealbaran = L.seriealbaran
+                         AND C.numeroalbaran = L.numeroalbaran
+                        WHERE L.codigoempresa = %s AND L.ejercicioalbaran = %s AND L.codigoarticulo = %s
+                        GROUP BY C.codigocliente
+                        HAVING {kilos} <> 0
+                        ORDER BY kilos {orden}
+                        LIMIT 8
+                        ''',
+                        [empresa, year, codigo],
+                    )
+                except Exception:
+                    logger.exception('QueryBuilder: no se pudo leer el cliente de la cantidad')
+                    clientes = []
+            texto = (
+                f"En {year} el producto con más {medida} es {nombre}, "
+                f"con {QueryBuilder._numero_cantidad(total)} {medida}."
+            )
+            filas_tabla = [[nombre, round(total, 2)]]
+            columnas = ['Producto', medida.capitalize()]
+            if clientes:
+                cliente, kilos_cliente = clientes[0]
+                cliente = str(cliente or '').strip()
+                texto += (
+                    f" El cliente al que más se le vende ese producto es {cliente}, "
+                    f"con {QueryBuilder._numero_cantidad(kilos_cliente)} {medida}."
+                )
+                columnas = ['Cliente', medida.capitalize()]
+                filas_tabla = [[str(fila[0] or '').strip(), round(float(fila[1] or 0), 2)] for fila in clientes]
+            return {
+                'reply': {
+                    'type': 'report',
+                    'key': 'cantidad_producto_cliente',
+                    'text': texto,
+                    'answer': texto,
+                    'source': 'lineas_albaran',
+                    'kpis': [{
+                        'label': medida.capitalize(),
+                        'value': round(total, 2),
+                        'suffix': '',
+                        'color': '#34d399',
+                    }],
+                    'table': {
+                        'title': f'{medida.capitalize()} por cliente' if clientes else f'{medida.capitalize()} por producto',
+                        'columns': columnas,
+                        'rows': filas_tabla,
+                    },
+                }
+            }
+        primero = str(filas[0][0] or '').strip()
+        total = float(filas[0][1] or 0)
+        texto = (
+            f"En {year} el cliente al que más se le venden {medida} es {primero}, "
+            f"con {QueryBuilder._numero_cantidad(total)} {medida}."
+        )
+        return {
+            'reply': {
+                'type': 'report',
+                'key': 'cantidad_producto_cliente',
+                'text': texto,
+                'answer': texto,
+                'source': 'lineas_albaran',
+                'kpis': [{
+                    'label': medida.capitalize(),
+                    'value': round(total, 2),
+                    'suffix': '',
+                    'color': '#34d399',
+                }],
+                'table': {
+                    'title': f'{medida.capitalize()} por cliente',
+                    'columns': ['Cliente', medida.capitalize()],
+                    'rows': [[str(fila[0] or '').strip(), round(float(fila[1] or 0), 2)] for fila in filas],
+                },
+            }
         }
 
     @staticmethod
@@ -1980,6 +2154,67 @@ class QueryBuilder:
 
     @staticmethod
     def build_from_nl(question: str, context: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Resuelve la pregunta. Si la consulta anterior no tenía importe, la salta y entrena otra."""
+        resultado = QueryBuilder._construir_consulta(question, context)
+        sql = (resultado or {}).get('sql') or ''
+        prohibida = context.get('_sql_descartada') or ''
+        if prohibida and sql and QueryBuilder._sql_igual(sql, prohibida):
+            logger.info("QueryBuilder: se descarta la consulta que no dio un importe válido")
+            resultado = None
+        if resultado:
+            return resultado
+        if context.get('training_enabled'):
+            return QueryBuilder._autoentrenar(question, context, prohibida)
+        return None
+
+    @staticmethod
+    def _sql_igual(izquierda: str, derecha: str) -> bool:
+        return ' '.join((izquierda or '').split()).casefold() == ' '.join((derecha or '').split()).casefold()
+
+    @staticmethod
+    def _autoentrenar(question: str, context: Dict[str, Any], prohibida: str = ''):
+        """Aprende una consulta que pasa la prueba en seco y no es la que acaba de fallar."""
+        empresa = context.get('empresa')
+        ejercicio = context.get('ejercicio')
+        logger.info("QueryBuilder: autoentreno tras un resultado sin importe válido")
+        import hashlib
+        q_hash = hashlib.md5((question or '').encode('utf-8')).hexdigest()
+        if not AutoTrainingLimiter.should_attempt(q_hash):
+            return None
+        AutoTrainingLimiter.record_attempt(q_hash)
+        detector = IntentDetector()
+        intent = detector.detect(question, empresa)
+        if not intent.get('tables'):
+            return None
+        generator = SQLVariationGenerator()
+        for sql in generator.generate(intent, empresa):
+            if prohibida and QueryBuilder._sql_igual(sql, prohibida):
+                continue
+            if not QueryBuilder.validate_sql_dry_run(sql).get('valid'):
+                continue
+            try:
+                ServiceFactory.get_embedding_service().learn_template(
+                    text=question,
+                    sql=sql,
+                    type='table',
+                    label='Generada',
+                    empresa=empresa,
+                    ejercicio=ejercicio,
+                    scope='generated',
+                )
+            except Exception:
+                pass
+            return {
+                'key': 'auto_gen',
+                'sql': sql,
+                'type': 'table',
+                'label': 'Auto-Generated',
+                'source': 'auto_training',
+            }
+        return None
+
+    @staticmethod
+    def _construir_consulta(question: str, context: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
         Main Entry Point. Routes to specific handlers.
         """
@@ -1991,6 +2226,12 @@ class QueryBuilder:
         q_lower = QueryBuilder._normalize_tokens(question)
         
         logger.info(f"QueryBuilder v2: Processing '{question}'")
+
+        from datia.services.ai.open_question import OpenQuestion
+        abierta = OpenQuestion.plantilla(question, empresa, ejercicio, context.get('limit') or 10)
+        if abierta:
+            logger.info("QueryBuilder: la pregunta encaja en una plantilla de métricas")
+            return abierta
 
         medida = QueryBuilder._medida_pedida(q_lower)
         if medida:
@@ -2031,7 +2272,7 @@ class QueryBuilder:
         
         # A. RANKING INTENT
         ranking_triggers = ['top', 'ranking', 'mejores', 'mejor', 'peor', 'best', 'mayores', 'principales']
-        sold_rank = bool(re.search(r'\bmas\s+vendid', q_lower)) and not QueryBuilder._medida_pedida(q_lower)
+        sold_rank = bool(re.search(r'\b(mas|menos)\s+vendid', q_lower)) and not QueryBuilder._medida_pedida(q_lower)
         if (any(t in q_lower for t in ranking_triggers) or sold_rank) and not QueryBuilder._medida_pedida(q_lower):
             # Identify Entity
             for entity_key in QueryBuilder.ENTITIES.keys():
@@ -2062,19 +2303,22 @@ class QueryBuilder:
                 return result
         
         # A.2 GROUPING HEURÍSTICO (Métrica por Cliente, p.ej. Margen por cliente ...)
-        # Activar agrupación directa cuando se detecta 'cliente' junto con una métrica habitual
-        if ('cliente' in q_lower or 'clientes' in q_lower):
-            metric_hints = ['margen', 'rentabil', 'beneficio', 'ganancia', 'venta', 'ventas', 'importe', 'pedidos', 'coste', 'gasto', 'costos', 'costo']
-            if any(h in q_lower for h in metric_hints):
-                result = QueryBuilder._handle_grouping(q_lower, empresa, ejercicio, 'cliente')
-                if result:
-                    return result
+        # Hace falta una métrica comercial. La palabra cliente sola no es un ranking de ventas.
+        if ('cliente' in q_lower or 'clientes' in q_lower) and QueryBuilder._pide_desglose_comercial(q_lower):
+            result = QueryBuilder._handle_grouping(q_lower, empresa, ejercicio, 'cliente')
+            if result:
+                return result
  
         # B. EVOLUTION/SALES/PURCHASE INTENT
         # Check Purchase first (more specific)
         purchase_triggers = ['compras', 'compra', 'proveedor', 'gastos']
         exclude_entities = ['cliente','clientes','producto','productos','articulo','articulos','familia','familias','agente','agentes','vendedor','vendedores','comercial','comerciales']
-        if any(t in q_lower for t in purchase_triggers) and 'pedido' not in q_lower and not any(x in q_lower for x in exclude_entities):
+        if (
+            any(t in q_lower for t in purchase_triggers)
+            and 'pedido' not in q_lower
+            and not any(x in q_lower for x in exclude_entities)
+            and OpenQuestion.clasificar_ranking_proveedor(q_lower) is None
+        ):
              logger.info("Router: Detected PURCHASE EVOLUTION")
              return QueryBuilder._handle_evolution(q_lower, empresa, ejercicio, is_purchase=True)
              
@@ -2096,7 +2340,7 @@ class QueryBuilder:
         detector = IntentDetector()
         intent = detector.detect(question, empresa)
         grouping = intent.get('grouping')
-        if grouping:
+        if grouping and QueryBuilder._pide_desglose_comercial(q_lower):
             mapping = {'product': 'articulo', 'client': 'cliente', 'agent': 'agente', 'zone': 'zona', 'family': 'familia'}
             target_entity = mapping.get(grouping)
             if target_entity:
@@ -2118,50 +2362,22 @@ class QueryBuilder:
             logger.info("QueryBuilder: respuesta recuperada de la memoria de la empresa")
             return memory
 
-        # --- STEP 3: AUTO-TRAINING / LLM ---
-        if training_enabled:
-             logger.info("Router: Delegating to Auto-Training (Last Resort)")
-             # ... (Existing Auto-Training Logic) ...
-             # For brevity in this refactor, we assume the existing logic would be here.
-             # But since I am overwriting the file, I must include minimal fallback or the full logic.
-             # I will return a specific error code to trigger the 'Generar con IA' flow in frontend if needed,
-             # OR implement the full logic if space permits.
-             
-             # Re-using the AutoTrainingLimiter logic from previous version (simplified)
-             import hashlib
-             q_hash = hashlib.md5(question.encode('utf-8')).hexdigest()
-             
-             if AutoTrainingLimiter.should_attempt(q_hash):
-                 AutoTrainingLimiter.record_attempt(q_hash)
-                 detector = IntentDetector()
-                 intent = detector.detect(question, empresa)
-                 if intent['tables']:
-                     generator = SQLVariationGenerator()
-                     variations = generator.generate(intent, empresa)
-                     for sql in variations:
-                         # Dry run
-                         if QueryBuilder.validate_sql_dry_run(sql)['valid']:
-                             try:
-                                 ServiceFactory.get_embedding_service().learn_template(
-                                     text=question,
-                                     sql=sql,
-                                     type='table',
-                                     label='Generada',
-                                     empresa=empresa,
-                                     ejercicio=ejercicio,
-                                     scope='generated',
-                                 )
-                             except Exception:
-                                 pass
-                             return {
-                                 'key': 'auto_gen',
-                                 'sql': sql,
-                                 'type': 'table',
-                                 'label': 'Auto-Generated',
-                                 'source': 'auto_training'
-                             }
-        
         return None
+
+    @staticmethod
+    def _pide_desglose_comercial(question: str) -> bool:
+        """Un desglose de ventas exige una métrica o un «por cliente». Deuda y la palabra suelta no bastan."""
+        folded = QueryBuilder._fold_party(question)
+        from datia.services.ai.open_question import OpenQuestion
+        if OpenQuestion.clasificar_deuda(folded):
+            return False
+        if re.search(r'\bpor\b', folded):
+            return True
+        hints = (
+            'margen', 'rentabil', 'beneficio', 'ganancia', 'venta', 'ventas',
+            'importe', 'pedido', 'pedidos', 'coste', 'gasto', 'factura', 'facturacion',
+        )
+        return any(hint in folded for hint in hints)
 
     @staticmethod
     def _apply_sql_placeholders(sql, empresa, ejercicio):
@@ -2269,7 +2485,12 @@ class QueryBuilder:
             return None
         if not match or not match.get('sql'):
             return None
-        sql_text = match['sql'] or ''
+        plan = match.get('plan')
+        compilado = None
+        if isinstance(plan, dict):
+            from datia.services.ai.semantic_plan import SemanticPlan
+            compilado = SemanticPlan.compilar(plan, empresa, ejercicio, SemanticPlan.dialecto_actual())
+        sql_text = compilado or QueryBuilder._apply_sql_placeholders(match.get('sql') or '', empresa, ejercicio)
         folded = QueryBuilder._fold_party(question)
         asks_count = bool(re.search(r'\b(contar|cuantos|cuantas|numero de|cantidad de)\b', folded))
         is_count_only = bool(re.search(r'\bcount\s*\(', sql_text, re.I)) and not re.search(r'\b(sum|avg|min|max)\s*\(', sql_text, re.I)
@@ -2278,7 +2499,8 @@ class QueryBuilder:
             return None
         return {
             'key': match.get('key'),
-            'sql': QueryBuilder._apply_sql_placeholders(match['sql'], empresa, ejercicio),
+            'sql': sql_text,
+            'plan': plan if isinstance(plan, dict) else None,
             'type': match.get('type') or 'table',
             'label': match.get('label') or 'Memoria',
             'source': 'ai_memory',

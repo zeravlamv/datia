@@ -134,40 +134,19 @@ async function askAI(queryString, forceTraining = false) {
         }, 400);
     }
 
-    // Collapse others
-    document.querySelectorAll('.ia-card').forEach(c => {
-        c.classList.add('collapsed');
-        c.classList.remove('latest');
-    });
+    document.querySelectorAll('.ia-turno.latest, .ia-card.latest').forEach(c => c.classList.remove('latest'));
 
-    // Create Card
     const card = document.createElement('div');
-    card.className = "ia-card latest";
-    const lang = document.documentElement.lang || 'es';
-    const ts = new Date().toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' });
+    card.className = "ia-turno ia-card latest";
 
-    // Header
-    const header = document.createElement('div');
-    header.className = "ia-card-header";
-    header.style.cursor = "pointer";
-    header.onclick = function () { toggleCard(this); };
-    header.innerHTML = `
-        <div class="ia-header-title">${q.replace(/</g, "&lt;")}</div>
-        <div class="small text-muted">${ts}</div>
-    `;
-    card.appendChild(header);
+    const burbuja = document.createElement('div');
+    burbuja.className = "ia-burbuja-usuario";
+    burbuja.textContent = q;
+    card.appendChild(burbuja);
 
-    // Body
     const body = document.createElement('div');
-    body.className = "card-body";
+    body.className = "ia-respuesta card-body";
     body.id = 'ai-res-' + Date.now();
-
-    // [NEW] Fluid Layout Wrapper
-    // Enforces 5% horizontal margin on desktop for readability
-    body.style.paddingLeft = "5%";
-    body.style.paddingRight = "5%";
-    body.style.maxWidth = "100%";
-    body.style.boxSizing = "border-box";
 
     // --- BRAIN EXPERIENCE LOADER ---
     const isTraining = forceTraining; // ONLY show visual training loader if MANUALLY triggered
@@ -207,11 +186,7 @@ async function askAI(queryString, forceTraining = false) {
         `;
     } else {
         body.innerHTML = `
-            <div style="background: rgba(168, 85, 247, 0.05); border: 1px solid rgba(168, 85, 247, 0.2); border-radius: 12px; padding: 30px; text-align: center; max-width: 400px; margin: 40px auto; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
-                <div class="loader-scanner" style="margin: 0 auto 20px auto;"></div>
-                <div id="${brainId}" style="font-size:0.9rem; color:var(--accent); font-weight:500; min-height:1.5em; transition: opacity 0.3s; font-family: 'Inter', sans-serif;">${steps[0]}</div>
-                <div style="font-size:0.75rem; color:#71717a; margin-top:8px; font-family:monospace;">DATIA INTELLIGENCE ENGINE v2.5</div>
-            </div>
+            <div id="${brainId}" style="font-size:0.95rem; color:#a1a1aa; min-height:1.5em;">${steps[0]}</div>
         `;
 
         loaderInterval = setInterval(() => {
@@ -228,13 +203,8 @@ async function askAI(queryString, forceTraining = false) {
     }
 
     card.appendChild(body);
-
-    // Prepend (Newest First)
-    if (stream.firstChild) {
-        stream.insertBefore(card, stream.firstChild);
-    } else {
-        stream.appendChild(card);
-    }
+    stream.appendChild(card);
+    card.scrollIntoView({ behavior: 'smooth', block: 'end' });
 
     // API Call
     try {
@@ -449,41 +419,7 @@ async function triggerDeepDive(query, containerId, lang) {
         btn.innerHTML = '⏳ ' + gettext("Analizando...");
     }
 
-    // 2. Track what content has already been displayed
-    const displayedContent = {
-        hasKPIs: container.querySelector('[style*="grid-template-columns"]') !== null,
-        hasLineChart: container.querySelector('canvas') !== null,
-        hasTable: container.querySelector('table') !== null,
-        chartTypes: []
-    };
-
-    // Detect existing chart types
-    const canvases = container.querySelectorAll('canvas');
-    canvases.forEach(canvas => {
-        const chartId = canvas.id;
-        if (chartId && window[chartId]) {
-            displayedContent.chartTypes.push(window[chartId].config.type);
-        }
-    });
-
-    // 3. Build enhanced query requesting complementary content
-    const deepDiveInstructions = [];
-
-    if (!displayedContent.chartTypes.includes('bar')) {
-        deepDiveInstructions.push('gráfico de barras comparativo');
-    }
-    if (!displayedContent.chartTypes.includes('pie') && !displayedContent.chartTypes.includes('doughnut')) {
-        deepDiveInstructions.push('distribución circular');
-    }
-    if (!displayedContent.hasTable) {
-        deepDiveInstructions.push('tabla detallada');
-    }
-
-    deepDiveInstructions.push('KPIs adicionales', 'análisis de tendencias', 'comparativa YoY');
-
-    // [FIX] Use query directly instead of prefix accumulation which might cause confusion
-    // The previous implementation was appending prefixes to the query which might be causing issues if not cleared
-    const effectiveQuery = `${query} (Deep Dive: ${deepDiveInstructions.join(', ')})`;
+    const effectiveQuery = String(query || '').replace(/\s*\(Deep Dive:.*\)\s*$/i, '').trim();
 
     // 4. Inline Loading
     const loadingDiv = document.createElement("div");
@@ -491,7 +427,7 @@ async function triggerDeepDive(query, containerId, lang) {
     loadingDiv.className = "pulse";
     loadingDiv.style.marginTop = "10px";
     loadingDiv.style.color = "#a1a1aa";
-    loadingDiv.innerText = gettext("Generando insights y gráficos avanzados...");
+    loadingDiv.innerText = gettext("Buscando el detalle de esta respuesta...");
     container.appendChild(loadingDiv);
     loadingDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
@@ -510,7 +446,7 @@ async function triggerDeepDive(query, containerId, lang) {
         const trainingMode = false;
         const aiModel = localStorage.getItem('datia-ai-model') || '';
 
-        const res = await fetch(`${API}/qa?question=${encodeURIComponent(effectiveQuery)}&empresa=${emp}&ejercicio=${eje}&training_enabled=${trainingMode}&model=${encodeURIComponent(aiModel)}`, {
+        const res = await fetch(`${API}/qa?question=${encodeURIComponent(effectiveQuery)}&empresa=${emp}&ejercicio=${eje}&training_enabled=${trainingMode}&model=${encodeURIComponent(aiModel)}&profundizar=1`, {
             method: 'POST'
         });
         const data = await res.json();
@@ -555,8 +491,7 @@ async function triggerDeepDive(query, containerId, lang) {
             extensionDiv.style.marginTop = '10px';
             container.appendChild(extensionDiv);
 
-            // Pass skipText: true to strictly prevent repetition
-            renderAiResponse(data, extensionDiv, { skipText: true, isDeepDive: true, query: query });
+            renderAiResponse(data, extensionDiv, { isDeepDive: false, query: query });
 
             // Hide the button completely after successful deep dive
             if (btn) {
@@ -576,6 +511,99 @@ async function triggerDeepDive(query, containerId, lang) {
             btn.innerHTML = '✨ ' + gettext("Analizar más");
         }
     }
+}
+
+function escaparHtmlTabla(valor) {
+    return String(valor ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function columnaEsNumerica(columnas, filas, indice) {
+    const titulo = String(columnas[indice] || '');
+    if (/[€%]/.test(titulo) || /var/i.test(titulo)) return true;
+    let vistos = 0;
+    let numeros = 0;
+    filas.forEach(function (fila) {
+        const celda = fila && fila[indice];
+        if (celda === null || celda === undefined || celda === '') return;
+        vistos += 1;
+        if (typeof celda === 'number' && !Number.isNaN(celda)) numeros += 1;
+    });
+    return vistos > 0 && numeros === vistos;
+}
+
+function htmlTablaAlineada(columnas, filas, maxFilas) {
+    const cols = Array.isArray(columnas) ? columnas : [];
+    const rows = (Array.isArray(filas) ? filas : []).slice(0, maxFilas);
+    const ancho = Math.max(cols.length, (rows[0] || []).length);
+    const numerica = [];
+    for (let i = 0; i < ancho; i += 1) numerica.push(columnaEsNumerica(cols, rows, i));
+    const fmt = function (n, decimales) {
+        return new Intl.NumberFormat('es-ES', {
+            minimumFractionDigits: decimales,
+            maximumFractionDigits: decimales
+        }).format(n);
+    };
+    let html = '<table style="width:100%; border-collapse:collapse; font-size:0.9rem; font-variant-numeric:tabular-nums;">';
+    if (cols.length > 0) {
+        html += '<thead><tr style="border-bottom:1px solid #3f3f46; color:#a1a1aa;">';
+        cols.forEach(function (titulo, idx) {
+            const align = numerica[idx] ? 'right' : 'left';
+            html += '<th style="padding:8px 8px; text-align:' + align + '; font-weight:600; vertical-align:bottom;">' + escaparHtmlTabla(titulo) + '</th>';
+        });
+        html += '</tr></thead>';
+    }
+    html += '<tbody>';
+    rows.forEach(function (fila) {
+        html += '<tr style="border-bottom:1px solid rgba(63,63,70,0.4);">';
+        (fila || []).forEach(function (celda, idx) {
+            const align = numerica[idx] ? 'right' : 'left';
+            const titulo = String(cols[idx] || '');
+            let texto;
+            if (typeof celda === 'number' && !Number.isNaN(celda)) {
+                if (titulo.includes('%') || /var/i.test(titulo)) texto = fmt(celda, 1);
+                else if (titulo.includes('€')) texto = fmt(celda, 2);
+                else texto = fmt(celda, Number.isInteger(celda) ? 0 : 2);
+            } else {
+                texto = escaparHtmlTabla(celda);
+            }
+            const nowrap = numerica[idx] ? ' white-space:nowrap;' : '';
+            html += '<td style="padding:8px 8px; text-align:' + align + '; color:#e4e4e7; vertical-align:baseline;' + nowrap + '">' + texto + '</td>';
+        });
+        html += '</tr>';
+    });
+    html += '</tbody></table>';
+    return html;
+}
+
+function anadirGrafico(fila, titulo, config) {
+    if (!config) return;
+    const bloque = document.createElement('div');
+    bloque.className = 'ai-report-grafico';
+    if (titulo) {
+        const title = document.createElement('div');
+        title.className = 'ai-report-seccion';
+        title.textContent = titulo;
+        bloque.appendChild(title);
+    }
+    const chartDiv = document.createElement('div');
+    chartDiv.className = 'ai-report-lienzo';
+    bloque.appendChild(chartDiv);
+    fila.appendChild(bloque);
+    renderAiChart(chartDiv, config);
+}
+
+function anadirTablaInforme(container, table, maxFilas) {
+    if (!table || !Array.isArray(table.rows) || table.rows.length === 0) return;
+    const title = document.createElement('div');
+    title.className = 'ai-report-seccion';
+    title.style.marginTop = '18px';
+    title.textContent = table.title || gettext('Detalle');
+    container.appendChild(title);
+    const wrapper = document.createElement('div');
+    wrapper.className = 'ai-report-tabla';
+    const cols = Array.isArray(table.columns) ? table.columns : [];
+    wrapper.innerHTML = htmlTablaAlineada(cols, table.rows, maxFilas);
+    container.appendChild(wrapper);
 }
 
 function renderAiReport(container, data, isDeepDive = false) {
@@ -662,195 +690,50 @@ function renderAiReport(container, data, isDeepDive = false) {
     // 2. Charts
     // Initial View: Show Summary (Main Trend)
     if (!isDeepDive) {
-        if (data.chart_config) {
-            const chartDiv = document.createElement('div');
-            chartDiv.style.minHeight = '250px';
-            chartDiv.style.marginTop = '10px';
-            container.appendChild(chartDiv);
-            renderAiChart(chartDiv, data.chart_config);
-        }
+        const fila = document.createElement('div');
+        fila.className = 'ai-report-graficos';
+        anadirGrafico(fila, '', data.chart_config);
         if (data.chart_pareto_clients) {
-            const title = document.createElement('div');
-            title.innerText = gettext("Distribución de Ventas por Cliente (Top)");
-            title.style.color = "#a1a1aa";
-            title.style.fontSize = "0.8rem";
-            title.style.marginTop = "1.2rem";
-            container.appendChild(title);
-            const chartDiv = document.createElement('div');
-            chartDiv.style.minHeight = '250px';
-            chartDiv.style.marginTop = '8px';
-            container.appendChild(chartDiv);
-            renderAiChart(chartDiv, data.chart_pareto_clients);
+            anadirGrafico(fila, gettext("Distribución de Ventas por Cliente (Top)"), data.chart_pareto_clients);
         } else if (data.chart_pareto_products) {
-            const title = document.createElement('div');
-            title.innerText = gettext("Distribución de Ventas por Artículo (Top)");
-            title.style.color = "#a1a1aa";
-            title.style.fontSize = "0.8rem";
-            title.style.marginTop = "1.2rem";
-            container.appendChild(title);
-            const chartDiv = document.createElement('div');
-            chartDiv.style.minHeight = '250px';
-            chartDiv.style.marginTop = '8px';
-            container.appendChild(chartDiv);
-            renderAiChart(chartDiv, data.chart_pareto_products);
+            anadirGrafico(fila, gettext("Distribución de Ventas por Artículo (Top)"), data.chart_pareto_products);
         } else if (data.chart_pareto) {
-            const title = document.createElement('div');
-            title.innerText = gettext("Distribución (Top)");
-            title.style.color = "#a1a1aa";
-            title.style.fontSize = "0.8rem";
-            title.style.marginTop = "1.2rem";
-            container.appendChild(title);
-            const chartDiv = document.createElement('div');
-            chartDiv.style.minHeight = '250px';
-            chartDiv.style.marginTop = '8px';
-            container.appendChild(chartDiv);
-            renderAiChart(chartDiv, data.chart_pareto);
+            anadirGrafico(fila, gettext("Distribución (Top)"), data.chart_pareto);
         }
-        if (data.table && data.table.rows && Array.isArray(data.table.rows) && data.table.rows.length > 0) {
-            const title = document.createElement('div');
-            title.innerText = (data.table.title || gettext('Detalle'));
-            title.style.color = "#a1a1aa";
-            title.style.fontSize = "0.8rem";
-            title.style.marginTop = "1.2rem";
-            container.appendChild(title);
-
-            const wrapper = document.createElement('div');
-            wrapper.style.overflowX = 'auto';
-            wrapper.style.marginTop = '8px';
-            const cols = Array.isArray(data.table.columns) ? data.table.columns : [];
-            const rows = Array.isArray(data.table.rows) ? data.table.rows : [];
-            let html = `<table style="width:100%; border-collapse: collapse; font-size: 0.9rem;">`;
-            if (cols.length > 0) {
-                html += `<thead><tr style="border-bottom: 1px solid #3f3f46; color: #a1a1aa;">` + cols.map(c => {
-                    return `<th style="padding: 8px; text-align: left;">${c}</th>`;
-                }).join('') + `</tr></thead>`;
-            }
-            html += `<tbody>`;
-            rows.slice(0, 30).forEach(r => {
-                html += `<tr style="border-bottom: 1px solid rgba(63,63,70,0.4);">` + (r || []).map((cell, idx) => {
-                    const align = idx === 0 ? 'left' : 'right';
-                    let out = cell;
-                    if (typeof cell === 'number') {
-                        const col = (cols[idx] || '').toString();
-                        if (col.includes('%') || col.includes('Var')) out = fmtPercent(cell);
-                        else if (col.includes('€')) out = fmtMoney(cell);
-                        else out = fmtNumber(cell, Number.isInteger(cell) ? 0 : 2);
-                    }
-                    return `<td style="padding: 8px; text-align: ${align}; color: #e4e4e7;">${out}</td>`;
-                }).join('') + `</tr>`;
-            });
-            html += `</tbody></table>`;
-            wrapper.innerHTML = html;
-            container.appendChild(wrapper);
-        }
-        // Hint for user to click deep dive for more charts if they exist
+        if (fila.children.length) container.appendChild(fila);
+        anadirTablaInforme(container, data.table, 30);
         if (data.chart_pareto || data.chart_pareto_clients || data.chart_pareto_products) {
             const hint = document.createElement('div');
-            hint.style.fontSize = '0.75rem';
-            hint.style.color = '#71717a';
-            hint.style.marginTop = '8px';
-            hint.style.textAlign = 'center';
-            hint.style.fontStyle = 'italic';
-            hint.innerText = gettext("Dale a 'Analizar más' para ver desgloses y distribuciones.");
+            hint.className = 'ai-report-nota';
+            hint.textContent = gettext("Dale a 'Analizar más' para ver desgloses y distribuciones.");
             container.appendChild(hint);
         }
     } else {
         // Deep Dive View: Show Details (Paretos, Concentration, etc.)
         let detailedRendered = false;
-
+        const fila = document.createElement('div');
+        fila.className = 'ai-report-graficos';
         if (data.chart_pareto_clients) {
-            const title = document.createElement('div');
-            title.innerText = gettext("Distribución de Ventas por Cliente (Pareto)");
-            title.style.color = "#a1a1aa";
-            title.style.fontSize = "0.8rem";
-            title.style.marginTop = "1.5rem";
-            container.appendChild(title);
-            const chartDiv = document.createElement('div');
-            chartDiv.style.minHeight = '250px';
-            container.appendChild(chartDiv);
-            renderAiChart(chartDiv, data.chart_pareto_clients);
+            anadirGrafico(fila, gettext("Distribución de Ventas por Cliente (Pareto)"), data.chart_pareto_clients);
             detailedRendered = true;
         } else if (data.chart_pareto) {
-            const title = document.createElement('div');
-            title.innerText = gettext("Distribución de Ventas (Pareto Top 20)");
-            title.style.color = "#a1a1aa";
-            title.style.fontSize = "0.8rem";
-            title.style.marginTop = "1.5rem";
-            container.appendChild(title);
-            const chartDiv = document.createElement('div');
-            chartDiv.style.minHeight = '250px';
-            container.appendChild(chartDiv);
-            renderAiChart(chartDiv, data.chart_pareto);
+            anadirGrafico(fila, gettext("Distribución de Ventas (Pareto Top 20)"), data.chart_pareto);
             detailedRendered = true;
         }
-
         if (data.chart_pareto_products) {
-            const title = document.createElement('div');
-            title.innerText = gettext("Distribución de Ventas por Artículo (Pareto)");
-            title.style.color = "#a1a1aa";
-            title.style.fontSize = "0.8rem";
-            title.style.marginTop = "1.5rem";
-            container.appendChild(title);
-            const chartDiv = document.createElement('div');
-            chartDiv.style.minHeight = '250px';
-            container.appendChild(chartDiv);
-            renderAiChart(chartDiv, data.chart_pareto_products);
+            anadirGrafico(fila, gettext("Distribución de Ventas por Artículo (Pareto)"), data.chart_pareto_products);
             detailedRendered = true;
         }
-
         if (data.chart_concentration) {
-            const title = document.createElement('div');
-            const slice = (data.chart_concentration && data.chart_concentration.data && Array.isArray(data.chart_concentration.data.labels))
+            const slice = (data.chart_concentration.data && Array.isArray(data.chart_concentration.data.labels))
                 ? data.chart_concentration.data.labels.length
                 : 5;
-            title.innerText = `${gettext("Concentración de Clientes")} (Top ${slice})`;
-            title.style.color = "#a1a1aa";
-            title.style.fontSize = "0.8rem";
-            title.style.marginTop = "1.5rem";
-            container.appendChild(title);
-            const chartDiv = document.createElement('div');
-            chartDiv.style.minHeight = '200px';
-            container.appendChild(chartDiv);
-            renderAiChart(chartDiv, data.chart_concentration);
+            anadirGrafico(fila, `${gettext("Concentración de Clientes")} (Top ${slice})`, data.chart_concentration);
             detailedRendered = true;
         }
-
-        if (data.table && data.table.rows && Array.isArray(data.table.rows) && data.table.rows.length > 0) {
-            const title = document.createElement('div');
-            title.innerText = (data.table.title || gettext('Detalle'));
-            title.style.color = "#a1a1aa";
-            title.style.fontSize = "0.8rem";
-            title.style.marginTop = "1.5rem";
-            container.appendChild(title);
-
-            const wrapper = document.createElement('div');
-            wrapper.style.overflowX = 'auto';
-            wrapper.style.marginTop = '8px';
-            const cols = Array.isArray(data.table.columns) ? data.table.columns : [];
-            const rows = Array.isArray(data.table.rows) ? data.table.rows : [];
-            let html = `<table style="width:100%; border-collapse: collapse; font-size: 0.9rem;">`;
-            if (cols.length > 0) {
-                html += `<thead><tr style="border-bottom: 1px solid #3f3f46; color: #a1a1aa;">` + cols.map(c => {
-                    return `<th style="padding: 8px; text-align: left;">${c}</th>`;
-                }).join('') + `</tr></thead>`;
-            }
-            html += `<tbody>`;
-            rows.slice(0, 50).forEach(r => {
-                html += `<tr style="border-bottom: 1px solid rgba(63,63,70,0.4);">` + (r || []).map((cell, idx) => {
-                    const align = idx === 0 ? 'left' : 'right';
-                    let out = cell;
-                    if (typeof cell === 'number') {
-                        const col = (cols[idx] || '').toString();
-                        if (col.includes('%') || col.includes('Var')) out = fmtPercent(cell);
-                        else if (col.includes('€')) out = fmtMoney(cell);
-                        else out = fmtNumber(cell, Number.isInteger(cell) ? 0 : 2);
-                    }
-                    return `<td style="padding: 8px; text-align: ${align}; color: #e4e4e7;">${out}</td>`;
-                }).join('') + `</tr>`;
-            });
-            html += `</tbody></table>`;
-            wrapper.innerHTML = html;
-            container.appendChild(wrapper);
+        if (fila.children.length) container.appendChild(fila);
+        if (data.table && Array.isArray(data.table.rows) && data.table.rows.length > 0) {
+            anadirTablaInforme(container, data.table, 50);
             detailedRendered = true;
         }
 
@@ -891,9 +774,9 @@ function renderAiTable(container, rows, chartConfig, isDeepDive = false, metric 
         return (monthName.charAt(0).toUpperCase() + monthName.slice(1)).replace(/\.$/, '');
     };
 
-    let html = `<div style="overflow-x:auto;"><table style="width:100%; border-collapse: collapse; font-size: 0.9rem;">`;
+    let html = `<div class="ai-report-tabla"><table style="width:100%; border-collapse: collapse; font-size: 0.9rem; font-variant-numeric: tabular-nums;">`;
     html += `<thead><tr style="border-bottom: 1px solid #3f3f46; color: #a1a1aa;">`;
-    html += `<th style="padding: 8px; text-align: left;">${gettext('Mes')}</th>`; // Changed Item to Mes for readability if it's monthly
+    html += `<th style="padding: 8px 12px; text-align: left; white-space: nowrap; vertical-align: bottom;">${gettext('Mes')}</th>`;
 
     // Determine columns dynamically but enforce specific order if possible
     // Order: Ventas, Costos, Imp. Margen, Margen %, Precio Medio, Pedidos
@@ -947,7 +830,7 @@ function renderAiTable(container, rows, chartConfig, isDeepDive = false, metric 
         if (k === 'margin') title = gettext('Margen %');
 
         const align = 'right';
-        html += `<th style="padding: 8px; text-align: ${align};">${title}</th>`;
+        html += `<th style="padding: 8px 12px; text-align: ${align}; white-space: nowrap; vertical-align: bottom; width: 1%;">${title}</th>`;
     });
     html += `</tr></thead><tbody>`;
 
@@ -981,7 +864,7 @@ function renderAiTable(container, rows, chartConfig, isDeepDive = false, metric 
         let label = r.label || r.Item || 'N/D';
         label = getLocalizedMonth(label);
 
-        html += `<td style="padding: 8px;">${label}</td>`;
+        html += `<td style="padding: 8px 12px; text-align: left;">${label}</td>`;
 
         displayKeys.forEach(k => {
             let valToRender = r[k];
@@ -1006,7 +889,7 @@ function renderAiTable(container, rows, chartConfig, isDeepDive = false, metric 
                 valToRender = '-';
             }
 
-            html += `<td style="padding: 8px; text-align: right;">${valToRender}</td>`;
+            html += `<td style="padding: 8px 12px; text-align: right; white-space: nowrap; width: 1%;">${valToRender}</td>`;
         });
         html += `</tr>`;
     });
@@ -1016,7 +899,7 @@ function renderAiTable(container, rows, chartConfig, isDeepDive = false, metric 
     const totalTicket = totalOps !== 0 ? totalVal / totalOps : 0;
 
     html += `<tr style="border-top: 2px solid #52525b; font-weight: bold; background: rgba(255,255,255,0.02);">`;
-    html += `<td style="padding: 8px;">TOTAL</td>`;
+    html += `<td style="padding: 8px 12px; text-align: left;">TOTAL</td>`;
 
     displayKeys.forEach(k => {
         let valToRender = 0;
@@ -1037,7 +920,7 @@ function renderAiTable(container, rows, chartConfig, isDeepDive = false, metric 
             }
         }
 
-        html += `<td style="padding: 8px; text-align: right;">${valToRender}</td>`;
+        html += `<td style="padding: 8px 12px; text-align: right; white-space: nowrap; width: 1%;">${valToRender}</td>`;
     });
 
     // [FIX] Add Total for 'Value' column if present
@@ -2323,9 +2206,7 @@ function renderAiResponse(data, container, options = {}) {
 
     if (data.answer && !shouldSkipText) {
         const titleDiv = document.createElement("div");
-        titleDiv.style.fontWeight = "bold";
-        titleDiv.style.color = "#34d399";
-        titleDiv.style.marginBottom = "0.5rem";
+        titleDiv.className = "ai-report-texto";
         titleDiv.innerHTML = data.answer.replace(/\n/g, "<br>");
         contentWrapper.appendChild(titleDiv);
     }
@@ -2535,7 +2416,7 @@ function renderAiResponse(data, container, options = {}) {
 
     const isDetailed = effectiveQuery && (effectiveQuery.toLowerCase().includes("detallado") || effectiveQuery.toLowerCase().includes("detailed"));
 
-    if (!isDetailed) {
+    if (!isDetailed && !data.profundizado) {
         deepDiveBtn = `
             <div class="vr mx-2 bg-secondary" style="height: 16px; margin: 0 15px;"></div>
             <button id="btn-deep-dive-${containerId}" class="btn btn-sm btn-outline-info" onclick="triggerDeepDive('${safeQuery}', '${containerId}', '${contentLang}')" style="cursor:pointer; z-index:100;">
@@ -2595,9 +2476,10 @@ function renderAiResponse(data, container, options = {}) {
     // [FIX] Create a wrapper to push content up and ensure feedback is visible at bottom
     const bottomSpacer = document.createElement("div");
     bottomSpacer.style.height = "20px";
-    contentWrapper.appendChild(bottomSpacer);
-
-    contentWrapper.appendChild(feedbackDiv);
+    if (!data.profundizado) {
+        contentWrapper.appendChild(bottomSpacer);
+        contentWrapper.appendChild(feedbackDiv);
+    }
 
     if (!customRendered) {
         if (!data || (!data.kpis && !data.chart_config)) return;
@@ -2897,28 +2779,6 @@ async function validateAndSave(question, sql, analysis, type) {
 }
 
 
-function triggerDeepDive(query, containerId, lang) {
-    const btn = document.getElementById('btn-deep-dive-' + containerId);
-    const original = btn ? btn.innerHTML : '';
-    if (btn) {
-        btn.innerHTML = "✨ Analizando...";
-        btn.disabled = true;
-    }
-    const q = String(query || '').replace(/^informe detallado:\s*/i, '').trim();
-    const done = function () {
-        if (!btn) return;
-        btn.disabled = false;
-        btn.innerHTML = original || '✨ Analizar más';
-    };
-    try {
-        const pending = askAI(q);
-        if (pending && typeof pending.finally === 'function') pending.finally(done);
-        else done();
-    } catch (e) {
-        done();
-    }
-}
-
 function renderDeepDiveV2(container, data) {
 
     if (!data) return;
@@ -3015,17 +2875,25 @@ function renderDeepDiveV2(container, data) {
             const clientBox = document.createElement('div');
             clientBox.innerHTML = `<h4 style="font-size:0.95rem; color:#a1a1aa; margin-bottom:15px;">Top Clientes</h4>`;
 
-            let tableHtml = `<table style="width:100%; border-collapse:collapse; font-size:0.9rem;">`;
+            let tableHtml = `<table style="width:100%; border-collapse:collapse; font-size:0.9rem; font-variant-numeric:tabular-nums;">`;
+            tableHtml += `<thead><tr style="border-bottom:1px solid #3f3f46; color:#a1a1aa;">
+                <th style="padding:8px 12px; text-align:left;">#</th>
+                <th style="padding:8px 12px; text-align:left;">Cliente</th>
+                <th style="padding:8px 12px; text-align:right; white-space:nowrap;">Importe</th>
+            </tr></thead><tbody>`;
             data.rankings.clients.forEach((c, idx) => {
+                const importe = typeof c.value === 'number'
+                    ? c.value.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    : escaparHtmlTabla(c.value);
                 tableHtml += `
                     <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-                        <td style="padding:10px 0; color:#71717a; width:30px;">#${idx + 1}</td>
-                        <td style="padding:10px 0; color:#e4e4e7;">${c.name}</td>
-                        <td style="padding:10px 0; text-align:right; font-weight:600; color:#fff;">${c.value.toLocaleString()} €</td>
+                        <td style="padding:8px 12px; color:#71717a; text-align:left;">${idx + 1}</td>
+                        <td style="padding:8px 12px; color:#e4e4e7; text-align:left;">${escaparHtmlTabla(c.name)}</td>
+                        <td style="padding:8px 12px; text-align:right; white-space:nowrap; font-weight:600; color:#fff;">${importe} €</td>
                     </tr>
                 `;
             });
-            tableHtml += `</table>`;
+            tableHtml += `</tbody></table>`;
             clientBox.innerHTML += tableHtml;
 
             splitGrid.appendChild(clientBox);
@@ -3169,6 +3037,8 @@ function renderDeepDiveV2(container, data) {
 }
 
 let conversacionActual = null;
+let recalcularConversacionId = 0;
+let recalculoEnCurso = false;
 
 function escaparTexto(valor) {
     return String(valor || '').replace(/[&<>"']/g, function (c) {
@@ -3286,6 +3156,8 @@ function copiarRespuestaGuardable(data) {
 
 async function guardarConversacionActual(pregunta, respuesta) {
     if (!pregunta || !respuesta || respuesta.error) return;
+    const reemplazarId = Number(recalcularConversacionId) || 0;
+    recalcularConversacionId = 0;
     try {
         const res = await fetch(`${API}/ai/conversaciones`, {
             method: 'POST',
@@ -3299,7 +3171,8 @@ async function guardarConversacionActual(pregunta, respuesta) {
                 ejercicio: currEjercicio,
                 pregunta: pregunta,
                 respuesta: respuesta,
-                conversacion_id: 0
+                conversacion_id: reemplazarId,
+                reemplazar: reemplazarId > 0
             })
         });
         const json = await res.json();
@@ -3319,24 +3192,30 @@ function nuevaConsulta() {
 }
 
 async function abrirConversacion(id) {
+    if (recalculoEnCurso) return;
+    recalculoEnCurso = true;
     try {
         const res = await fetch(`${API}/ai/conversaciones/${id}`, { credentials: 'same-origin' });
         const data = await res.json();
-        if (!data || data.status === 'error' || !Array.isArray(data.mensajes)) {
+        const mensajes = data && Array.isArray(data.mensajes) ? data.mensajes : [];
+        const primero = mensajes[0] || {};
+        const pregunta = String((primero.pregunta || (data && data.titulo) || '')).trim();
+        if (!data || data.status === 'error' || !pregunta) {
             if (window.showToast) window.showToast('No se pudo abrir la consulta');
             return;
         }
+        recalcularConversacionId = data.id;
         conversacionActual = data.id;
         const stream = document.getElementById('ia-results-stream');
         if (stream) stream.innerHTML = '';
         mostrarChatActivo();
-        const mensajes = data.mensajes.slice().reverse();
-        mensajes.forEach(function (mensaje, indice) {
-            pintarMensajeGuardado(mensaje, indice);
-        });
         cargarConversaciones();
+        await askAI(pregunta);
     } catch (e) {
         if (window.showToast) window.showToast('No se pudo abrir la consulta');
+    } finally {
+        recalcularConversacionId = 0;
+        recalculoEnCurso = false;
     }
 }
 

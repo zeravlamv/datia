@@ -98,7 +98,10 @@ class ResponseFormatter:
             shown = f"{int(count):,}".replace(',', '.')
         except (TypeError, ValueError):
             shown = str(count)
-        msg = f"El resultado es un conteo de {shown} registros. No es el importe del ejercicio."
+        if match_meta.get('key') == 'conteo':
+            msg = f"{match_meta.get('label') or 'Conteo'}: {shown}."
+        else:
+            msg = f"El resultado es un conteo de {shown} registros. No es el importe del ejercicio."
         return {
             "text": msg,
             "answer": msg,
@@ -138,8 +141,8 @@ class ResponseFormatter:
     def _format_card(label: str, data: Dict, sql: str, lang: str, match_meta: Dict = None) -> Dict:
         # Improved Extraction Logic: Support dynamic keys from LLM (e.g. VentasTotal, Total, Amount)
         
-        # 1. Neto/Sales (First Priority)
-        neto = 0.0
+        # 1. Neto/Sales (First Priority). Un cero explícito se conserva.
+        neto = None
         keys_neto = ['neto', 'importe', 'val', 'value', 'total', 'ventas', 'ventastotal', 'amount', 'sales', 'sum']
         
         # Case insensitive search
@@ -152,8 +155,8 @@ class ResponseFormatter:
                     break
                 except: continue
         
-        # Fallback: If still 0, take the FIRST numeric value found
-        if neto == 0:
+        if neto is None:
+            neto = 0.0
             for v in data.values():
                  if isinstance(v, (int, float, str)):
                      try:

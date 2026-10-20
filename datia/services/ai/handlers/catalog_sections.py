@@ -1,6 +1,8 @@
 import re
 from typing import Dict, Any, List, Optional, Tuple
 
+from datia.services.ai.comparison import aviso_coste_y_hueco, celda
+
 
 def _months_es() -> List[str]:
     return ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
@@ -85,6 +87,7 @@ def build_compras_top_proveedores(handler, empresa: int, year: int, prev: int, l
         py_cost = handler.to_float(getattr(pr, 'importe_coste_total', 0)) if pr else 0.0
         cy_ops = int(getattr(r, 'albaranes_count', 0) or 0)
         py_ops = int(getattr(pr, 'albaranes_count', 0) or 0) if pr else 0
+        hay = pr is not None
         cy_margin = cy_sales - cy_cost
         py_margin = py_sales - py_cost
         cy_margin_pct = (cy_margin / cy_sales * 100.0) if cy_sales else 0.0
@@ -92,21 +95,27 @@ def build_compras_top_proveedores(handler, empresa: int, year: int, prev: int, l
         sales_var_pct = ((cy_sales - py_sales) / py_sales * 100.0) if py_sales else 0.0
         price_cy = (cy_sales / cy_ops) if cy_ops else 0.0
         price_py = (py_sales / py_ops) if py_ops else 0.0
+        d['hay_anterior'] = hay
+        d['ventas'] = cy_sales
+        d['coste'] = cy_cost
         table_rows.append([
             d['name'],
-            round(cy_sales, 2), round(py_sales, 2), round(sales_var_pct, 1),
-            round(cy_cost, 2), round(py_cost, 2),
-            round(cy_margin, 2), round(py_margin, 2),
-            round(cy_margin_pct, 1), round(py_margin_pct, 1),
-            cy_ops, py_ops,
-            round(price_cy, 2), round(price_py, 2)
+            round(cy_sales, 2), celda(hay, round(py_sales, 2)), celda(hay, round(sales_var_pct, 1)),
+            round(cy_cost, 2), celda(hay, round(py_cost, 2)),
+            round(cy_margin, 2), celda(hay, round(py_margin, 2)),
+            round(cy_margin_pct, 1), celda(hay, round(py_margin_pct, 1)),
+            cy_ops, celda(hay, py_ops),
+            round(price_cy, 2), celda(hay, round(price_py, 2))
         ])
     cy_total = handler.compras_totales(empresa, year)
     py_total = handler.compras_totales(empresa, prev)
     top_for_pie = [(labels[i], values[i]) for i in range(min(5, len(values)))]
     top1_name = data[0]['name'] if data else ''
     top1_val = values[0] if values else 0.0
+    aviso, debil = aviso_coste_y_hueco(data, prev)
     return {
+        'aviso': aviso,
+        'datos_debiles': debil,
         'type': 'report',
         'key': 'compras_top_proveedores',
         'kpis': [{'label': f"Top 1: {top1_name}", 'value': round(top1_val, 2), 'suffix': '€', 'color': '#3b82f6'}] if data else [],
