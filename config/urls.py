@@ -11,7 +11,7 @@ from datia.api.semantic_endpoints import (
 )
 from datia.api.introspection_endpoints import (
     get_tables_api, get_columns_api, save_mapping_api, get_mapped_sources_api, 
-    generate_sql_training_batch, get_active_tables_api, reset_source_api,
+    generate_sql_training_batch, examen_preguntas_api, get_active_tables_api, reset_source_api,
     factory_reset_api, reindex_datasource_api
 )
 
@@ -43,6 +43,7 @@ urlpatterns = [
     # [NEW] Configuration Endpoints
     
     # Auto Training / SQL Generation
+    path('api/auto-training/examen', examen_preguntas_api, name='examen_preguntas'),
     path('api/auto-training/generate-sql-batch', generate_sql_training_batch, name='generate_sql_batch'),
     path('api/semantic/active-tables', get_active_tables_api, name='get_active_tables'),
     

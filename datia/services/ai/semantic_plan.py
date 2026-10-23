@@ -59,7 +59,12 @@ FUENTES = {
     'stock_articulo': {'forma': 'stock', 'tabla': 'datia_acumulados_stocks'},
     'lineas_venta': {'forma': 'lineas', 'tabla': 'datiadb_lineasalbarancliente'},
     'lineas_compra': {'forma': 'lineas', 'tabla': 'datiadb_lineasalbaranproveedor'},
+    'ventas_dia': {'forma': 'dia', 'tabla': 'datiadb_cabeceraalbarancliente'},
+    'albaran_cliente': {'forma': 'documento', 'tabla': 'datiadb_cabeceraalbarancliente'},
 }
+
+_PERIODOS = ('ejercicio', 'mes', 'dia', 'ultimo_dia', 'ultimo_documento')
+_REFERENCIAS = ('ninguna', 'hoy', 'ayer', 'anteayer', 'fecha')
 
 _KILOS = 'COALESCE(SUM(CASE WHEN L.precio <> 0 THEN L.importeneto / L.precio END), 0)'
 
@@ -80,14 +85,23 @@ FILTROS = {
     'con_movimiento': 'importe_neto_total <> 0',
 }
 
-_PROMPT = """Devuelve solo un JSON. No escribas SQL.
+_PROMPT = """Devuelve solo un JSON. No escribas SQL ni cifras.
 Claves:
-fuente: ventas_ejercicio | ventas_mes | ventas_cliente | ventas_cliente_mes | ventas_articulo | compras_ejercicio | compras_mes | compras_proveedor | kilos_venta | kilos_compra | kilos_articulo | kilos_articulo_compra | kilos_cliente | stock_articulo | lineas_venta | lineas_compra
+fuente: ventas_ejercicio | ventas_mes | ventas_cliente | ventas_cliente_mes | ventas_articulo | compras_ejercicio | compras_mes | compras_proveedor | kilos_venta | kilos_compra | kilos_articulo | kilos_articulo_compra | kilos_cliente | stock_articulo | lineas_venta | lineas_compra | ventas_dia | albaran_cliente
 metrica: importe | coste | margen | albaranes | conteo | kilos | stock | precio_medio
+periodo: ejercicio | mes | dia | ultimo_dia | ultimo_documento
+referencia: ninguna | hoy | ayer | anteayer | fecha
+fecha: "" o YYYY-MM-DD si el usuario escribió el día
 orden: asc | desc
 limite: entero de 1 a {limite}
 filtro: ninguno | margen_negativo | con_movimiento
-Si la pregunta no cabe en esas fuentes, devuelve {{}}.
+Reglas:
+- último albarán o albarán más reciente: fuente albaran_cliente, periodo ultimo_documento, metrica importe
+- último día de ventas: fuente ventas_dia, periodo ultimo_dia, metrica importe
+- ventas de hoy, ayer o anteayer: fuente ventas_dia, periodo dia, referencia hoy o ayer o anteayer, metrica importe
+- una fecha escrita por el usuario: fuente ventas_dia, periodo dia, referencia fecha, fecha YYYY-MM-DD
+- no calcules la fecha de hoy
+- si la pregunta no cabe, devuelve {{}}
 Pregunta: {pregunta}
 JSON:
 """
@@ -144,6 +158,21 @@ class SemanticPlan:
             plan['texto'] = texto
         if re.fullmatch(r'[A-Za-z0-9._\-]{1,40}', codigo):
             plan['codigo'] = codigo
+        periodo = str(data.get('periodo') or '').lower()
+        if fuente == 'albaran_cliente':
+            periodo = 'ultimo_documento'
+        elif fuente == 'ventas_dia' and periodo not in ('dia', 'ultimo_dia'):
+            periodo = 'dia'
+        elif periodo not in _PERIODOS:
+            periodo = 'mes' if fuente.endswith('_mes') else 'ejercicio'
+        referencia = str(data.get('referencia') or 'ninguna').lower()
+        if referencia not in _REFERENCIAS:
+            referencia = 'ninguna'
+        fecha = str(data.get('fecha') or '').strip()
+        plan['periodo'] = periodo
+        plan['referencia'] = referencia
+        if re.fullmatch(r'\d{4}-\d{2}-\d{2}', fecha):
+            plan['fecha'] = fecha
         return plan
 
     @staticmethod
@@ -335,6 +364,8 @@ class SemanticPlan:
         except (TypeError, ValueError):
             return None
         fuente = FUENTES[normal['fuente']]
+        if fuente.get('forma') in ('dia', 'documento'):
+            return None
         if fuente.get('forma') in ('kilos', 'stock', 'lineas'):
             return SemanticPlan._compilar_operativo(normal, fuente, emp, year, dialecto)
         metrica = METRICAS[normal['metrica']]

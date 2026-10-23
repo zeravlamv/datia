@@ -3,14 +3,14 @@
 
 // Reindex Table (AI Training)
 async function reindexTable(id, tableName) {
-    if (typeof showToast === 'function') showToast(`⚡ Re-entrenando IA para ${tableName}...`);
+    if (typeof showToast === 'function') showToast(`Borrando ejemplos SQL de ${tableName}...`);
 
     try {
         const res = await fetch(`/api/datasource/${id}/reindex`, { method: 'POST' });
         const data = await res.json();
 
         if (data.status === 'ok') {
-            if (typeof showToast === 'function') showToast(`✅ Generadas ${data.generated} preguntas para ${tableName}.`);
+            if (typeof showToast === 'function') showToast(data.message || `Ejemplos SQL de ${tableName} borrados.`);
         } else {
             console.error(data);
             if (typeof showToast === 'function') showToast(`❌ Error: ${data.error}`);

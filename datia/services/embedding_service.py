@@ -3,11 +3,14 @@ from datia.models import MetricsEmbeddings
 from django.db import connections
 from django.utils import timezone
 from django.conf import settings
+import contextvars
 import json
 import numpy as np
 import os
 import requests
 import hashlib
+
+examen_sin_guardar = contextvars.ContextVar('examen_sin_guardar', default=False)
 
 # Lazy placeholder
 SentenceTransformer = None
@@ -456,6 +459,8 @@ class EmbeddingService:
         Guarda una consulta enseñada. La clave es estable entre reinicios
         y queda ligada a la empresa.
         """
+        if examen_sin_guardar.get():
+            return None
         vector = self.embed_text(text)
         empresa_part = '' if empresa is None else str(empresa)
         digest = hashlib.sha256(f"{empresa_part}:{text.strip().lower()}".encode('utf-8')).hexdigest()[:24]

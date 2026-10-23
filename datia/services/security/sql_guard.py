@@ -104,7 +104,23 @@ class SQLGuard:
         domain_hits = ('pedido' in tl) or ('pedidocliente' in tl) or ('pedidoproveedor' in tl) \
                       or ('albaran' in tl) or ('albarancliente' in tl) or ('albaranproveedor' in tl) \
                       or ('delivery' in tl) or ('order' in tl)
-        return domain_hits
+        if domain_hits:
+            return True
+        return tl in SQLGuard._tablas_mapeadas()
+
+    @staticmethod
+    def _tablas_mapeadas():
+        """Nombres locales de las fichas activas. Una tabla mapeada se puede leer."""
+        try:
+            from datia.models.semantic import DataSource
+            nombres = set()
+            for origen in DataSource.objects.filter(is_active=True):
+                local = origen.get_local_table_name()
+                if local:
+                    nombres.add(local.lower())
+            return nombres
+        except Exception:
+            return set()
 
     @staticmethod
     def check_sql(sql: str) -> Dict[str, List[str] | bool]:

@@ -543,7 +543,7 @@ function htmlTablaAlineada(columnas, filas, maxFilas) {
             maximumFractionDigits: decimales
         }).format(n);
     };
-    let html = '<table style="width:100%; border-collapse:collapse; font-size:0.9rem; font-variant-numeric:tabular-nums;">';
+    let html = '<table style="width:max-content; border-collapse:collapse; font-size:0.9rem; font-variant-numeric:tabular-nums;">';
     if (cols.length > 0) {
         html += '<thead><tr style="border-bottom:1px solid #3f3f46; color:#a1a1aa;">';
         cols.forEach(function (titulo, idx) {
@@ -566,7 +566,7 @@ function htmlTablaAlineada(columnas, filas, maxFilas) {
             } else {
                 texto = escaparHtmlTabla(celda);
             }
-            const nowrap = numerica[idx] ? ' white-space:nowrap;' : '';
+            const nowrap = ' white-space:nowrap;';
             html += '<td style="padding:8px 8px; text-align:' + align + '; color:#e4e4e7; vertical-align:baseline;' + nowrap + '">' + texto + '</td>';
         });
         html += '</tr>';
@@ -603,6 +603,10 @@ function anadirTablaInforme(container, table, maxFilas) {
     wrapper.className = 'ai-report-tabla';
     const cols = Array.isArray(table.columns) ? table.columns : [];
     wrapper.innerHTML = htmlTablaAlineada(cols, table.rows, maxFilas);
+    if (maxFilas > 50) {
+        wrapper.style.maxHeight = '28rem';
+        wrapper.style.overflowY = 'auto';
+    }
     container.appendChild(wrapper);
 }
 
@@ -624,6 +628,7 @@ function renderAiReport(container, data, isDeepDive = false) {
         if (typeof v !== 'number') return (v === 0 ? '0' : (v || '--'));
         if (suffix === '€') return `${fmtMoney(v)} €`;
         if (suffix === '%') return `${fmtPercent(v)} %`;
+        if (suffix === 'uds') return `${fmtNumber(v, 0)} ${suffix}`;
         if (suffix) return `${fmtNumber(v, 2)} ${suffix}`;
         return fmtMoney(v);
     };
@@ -701,7 +706,10 @@ function renderAiReport(container, data, isDeepDive = false) {
             anadirGrafico(fila, gettext("Distribución (Top)"), data.chart_pareto);
         }
         if (fila.children.length) container.appendChild(fila);
-        anadirTablaInforme(container, data.table, 30);
+        const topeInforme = (data.completo && data.table && Array.isArray(data.table.rows))
+            ? data.table.rows.length
+            : 30;
+        anadirTablaInforme(container, data.table, topeInforme);
         if (data.chart_pareto || data.chart_pareto_clients || data.chart_pareto_products) {
             const hint = document.createElement('div');
             hint.className = 'ai-report-nota';
@@ -733,7 +741,8 @@ function renderAiReport(container, data, isDeepDive = false) {
         }
         if (fila.children.length) container.appendChild(fila);
         if (data.table && Array.isArray(data.table.rows) && data.table.rows.length > 0) {
-            anadirTablaInforme(container, data.table, 50);
+            const topeDetalle = data.completo ? data.table.rows.length : 50;
+            anadirTablaInforme(container, data.table, topeDetalle);
             detailedRendered = true;
         }
 
@@ -2155,6 +2164,212 @@ if (savedAccent) {
     setAccentColor(savedAccent);
 }
 
+function escaparHtmlTexto(texto) {
+    return String(texto)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function marcarDatosTexto(escapado) {
+    let s = String(escapado);
+    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    s = s.replace(/(\d{1,3}(?:\.\d{3})+,\d{2}|\d{1,3}(?:,\d{3})+\.\d{2}|\d+,\d{2}|\d+\.\d{2})\s*€/g, '<strong>$&</strong>');
+    s = s.replace(/(\d{1,3}(?:\.\d{3})*,\d{1,2}|\d{1,3}(?:,\d{3})*\.\d{1,2}|\d+)\s*%/g, '<strong>$&</strong>');
+    s = s.replace(/\b(20\d{2})\b/g, '<strong>$1</strong>');
+    s = s.replace(/\b([A-ZÁÉÍÓÚÑ]{2,}(?:\s+[A-ZÁÉÍÓÚÑ0-9]{2,})+)\b/g, '<strong>$1</strong>');
+    return s;
+}
+
+function textoSinHtml(texto) {
+    return String(texto)
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/(p|div|h[1-6]|li|tr)>/gi, '\n')
+        .replace(/<h[1-6][^>]*>/gi, '\n# ')
+        .replace(/<li[^>]*>/gi, '\n- ')
+        .replace(/<\/?(strong|b)>/gi, '**')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"');
+}
+
+function sanearHtmlRespuesta(html) {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = String(html);
+    tmp.querySelectorAll('script, iframe, object, embed, link, meta').forEach(nodo => nodo.remove());
+    tmp.querySelectorAll('*').forEach(el => {
+        [...el.attributes].forEach(attr => {
+            const nombre = attr.name.toLowerCase();
+            const valor = attr.value || '';
+            if (nombre.startsWith('on') || nombre === 'srcdoc' || /^javascript:/i.test(valor)) {
+                el.removeAttribute(attr.name);
+            }
+        });
+    });
+    return tmp.innerHTML;
+}
+
+function partirFrasesTexto(texto) {
+    const limpio = String(texto).replace(/\s+/g, ' ').trim();
+    const partes = [];
+    let actual = '';
+    for (let i = 0; i < limpio.length; i++) {
+        const caracter = limpio[i];
+        actual += caracter;
+        if (caracter !== '.' && caracter !== '!' && caracter !== '?') continue;
+        const anterior = actual[actual.length - 2] || '';
+        const siguiente = limpio[i + 1] || '';
+        const trasEspacio = limpio[i + 2] || '';
+        if (caracter === '.' && /\d/.test(anterior) && /\d/.test(siguiente)) continue;
+        if (!siguiente) {
+            partes.push(actual.trim());
+            actual = '';
+            continue;
+        }
+        if (siguiente === ' ' && /[A-ZÁÉÍÓÚÑ«0-9]/.test(trasEspacio)) {
+            partes.push(actual.trim());
+            actual = '';
+            i += 1;
+        }
+    }
+    if (actual.trim()) partes.push(actual.trim());
+    return partes.filter(Boolean);
+}
+
+function fraseEsAviso(frase) {
+    return /coste agregado supera|supera la venta|no tienen métrica|es un hueco|variación no es|se muestra como|Revisa esas líneas|Ese coste suma/i.test(frase);
+}
+
+function htmlDesdeMarcas(lineas) {
+    let html = '';
+    let avisos = [];
+    let lista = [];
+    const cerrarLista = () => {
+        if (!lista.length) return;
+        html += '<ul class="ai-texto-lista">' + lista.map(item => `<li>${marcarDatosTexto(escaparHtmlTexto(item))}</li>`).join('') + '</ul>';
+        lista = [];
+    };
+    const cerrarAvisos = () => {
+        if (!avisos.length) return;
+        html += '<div class="ai-texto-avisos"><div class="ai-texto-avisos-titulo">Avisos</div>' +
+            avisos.map(aviso => `<p>${marcarDatosTexto(escaparHtmlTexto(aviso))}</p>`).join('') + '</div>';
+        avisos = [];
+    };
+    lineas.forEach(linea => {
+        if (linea.startsWith('# ')) {
+            cerrarLista();
+            cerrarAvisos();
+            html += `<h3 class="ai-texto-titulo">${marcarDatosTexto(escaparHtmlTexto(linea.slice(2)))}</h3>`;
+        } else if (linea.startsWith('## ')) {
+            cerrarLista();
+            cerrarAvisos();
+            html += `<h4 class="ai-texto-seccion">${marcarDatosTexto(escaparHtmlTexto(linea.slice(3)))}</h4>`;
+        } else if (linea.startsWith('> ')) {
+            cerrarLista();
+            avisos.push(linea.slice(2));
+        } else if (linea.startsWith('- ')) {
+            cerrarAvisos();
+            lista.push(linea.slice(2));
+        } else {
+            cerrarLista();
+            cerrarAvisos();
+            html += `<p class="ai-texto-parrafo">${marcarDatosTexto(escaparHtmlTexto(linea))}</p>`;
+        }
+    });
+    cerrarLista();
+    cerrarAvisos();
+    return html;
+}
+
+function presentarRespuesta(raw) {
+    let texto = String(raw || '').trim();
+    if (!texto) return '';
+    if (/<(div|table)\b/i.test(texto)) return sanearHtmlRespuesta(texto);
+    if (/<[a-z][\s\S]*>/i.test(texto)) texto = textoSinHtml(texto);
+    const lineas = texto.split(/\n+/).map(linea => linea.trim()).filter(Boolean);
+    const usaMarca = lineas.some(linea => /^(#{1,2}\s|>\s|-\s)/.test(linea) || /\*\*/.test(linea));
+    if (usaMarca) return htmlDesdeMarcas(lineas);
+
+    const frases = partirFrasesTexto(texto);
+    if (!frases.length) return '';
+    let titulo = '';
+    let cuerpo = frases.slice();
+    const corte = frases[0].indexOf(': ');
+    if (corte > 0 && corte <= 60 && !frases[0].slice(0, corte).includes('€')) {
+        titulo = frases[0].slice(0, corte);
+        const resto = frases[0].slice(corte + 2).trim();
+        cuerpo = resto ? [resto.charAt(0).toUpperCase() + resto.slice(1)].concat(frases.slice(1)) : frases.slice(1);
+    }
+    const parrafos = [];
+    const avisos = [];
+    cuerpo.forEach(frase => {
+        if (fraseEsAviso(frase) || (avisos.length && /^(Ese |Revisa |La variación|Si viene)/.test(frase))) avisos.push(frase);
+        else parrafos.push(frase);
+    });
+    let html = '';
+    if (titulo) html += `<h3 class="ai-texto-titulo">${marcarDatosTexto(escaparHtmlTexto(titulo))}</h3>`;
+    parrafos.forEach(parrafo => {
+        html += `<p class="ai-texto-parrafo">${marcarDatosTexto(escaparHtmlTexto(parrafo))}</p>`;
+    });
+    if (avisos.length) {
+        html += '<div class="ai-texto-avisos"><div class="ai-texto-avisos-titulo">Avisos</div>' +
+            avisos.map(aviso => `<p>${marcarDatosTexto(escaparHtmlTexto(aviso))}</p>`).join('') + '</div>';
+    }
+    return html;
+}
+
+function anadirOrigen(container, origen) {
+    if (!origen || !container) return;
+    const detalles = document.createElement('details');
+    detalles.className = 'ai-origen';
+    detalles.style.cssText = 'margin-top:16px; border:1px solid rgba(96,165,250,0.35); border-radius:10px; padding:12px 14px; background:rgba(96,165,250,0.06);';
+    const resumen = document.createElement('summary');
+    resumen.textContent = 'Origen del dato';
+    resumen.style.cssText = 'cursor:pointer; color:#93c5fd; font-size:0.9rem; font-weight:600; width:max-content;';
+    detalles.appendChild(resumen);
+    const cuerpo = document.createElement('div');
+    cuerpo.style.cssText = 'margin-top:10px; color:#d4d4d8; font-size:0.85rem; line-height:1.45;';
+
+    const linea = (titulo, valor) => {
+        if (!valor) return;
+        const bloque = document.createElement('p');
+        bloque.style.margin = '0 0 8px';
+        const etiqueta = document.createElement('strong');
+        etiqueta.textContent = titulo + ' ';
+        etiqueta.style.color = '#a1a1aa';
+        bloque.appendChild(etiqueta);
+        bloque.appendChild(document.createTextNode(String(valor)));
+        cuerpo.appendChild(bloque);
+    };
+
+    if (origen.falta) {
+        const aviso = document.createElement('p');
+        aviso.textContent = String(origen.falta);
+        aviso.style.margin = '0 0 8px';
+        cuerpo.appendChild(aviso);
+    }
+    linea('Tabla', origen.tabla);
+    linea('Fórmula', origen.formula);
+    const filtros = Array.isArray(origen.filtros) ? origen.filtros.filter(Boolean).join(' · ') : '';
+    linea('Filtros', filtros);
+    if (origen.consulta) {
+        const titulo = document.createElement('div');
+        titulo.textContent = 'Consulta';
+        titulo.style.cssText = 'color:#a1a1aa; font-weight:600; margin-bottom:4px;';
+        const pre = document.createElement('pre');
+        pre.textContent = String(origen.consulta);
+        pre.style.cssText = 'white-space:pre-wrap; background:#18181b; border:1px solid #3f3f46; border-radius:8px; padding:10px; color:#93c5fd; font-size:0.75rem; overflow-x:auto;';
+        cuerpo.appendChild(titulo);
+        cuerpo.appendChild(pre);
+    }
+    detalles.appendChild(cuerpo);
+    container.appendChild(detalles);
+}
+
 function renderAiResponse(data, container, options = {}) {
     container.innerHTML = "";
     container.style.position = "relative";
@@ -2207,7 +2422,7 @@ function renderAiResponse(data, container, options = {}) {
     if (data.answer && !shouldSkipText) {
         const titleDiv = document.createElement("div");
         titleDiv.className = "ai-report-texto";
-        titleDiv.innerHTML = data.answer.replace(/\n/g, "<br>");
+        titleDiv.innerHTML = presentarRespuesta(data.answer);
         contentWrapper.appendChild(titleDiv);
     }
 
@@ -2223,6 +2438,11 @@ function renderAiResponse(data, container, options = {}) {
         customRendered = true;
     } else if (data.type === 'table') {
         contentWrapper.appendChild(vizContainer);
+        if (Array.isArray(data.kpis) && data.kpis.length) {
+            const kpiBox = document.createElement('div');
+            contentWrapper.appendChild(kpiBox);
+            renderAiReport(kpiBox, { kpis: data.kpis }, false);
+        }
         // Pass metric from data (check intent_meta for Fast Path)
         const activeMetric = data.metric || (data.intent_meta ? data.intent_meta.metric : 'sales');
         renderAiTable(vizContainer, data.data, data.chart_config, options.isDeepDive || false, activeMetric);
@@ -2248,7 +2468,7 @@ function renderAiResponse(data, container, options = {}) {
             text-align: center;
         `;
 
-        const msg = data.answer || "No hay datos.";
+        const msg = presentarRespuesta(data.answer || "No hay datos.");
         // Escape quotes for the onclick handler
         const questionText = effectiveQuery.replace(/'/g, "\\'");
 
@@ -2296,7 +2516,7 @@ function renderAiResponse(data, container, options = {}) {
             padding: 20px;
             margin-top: 20px;
         `;
-        const msg = data.answer || "Consulta ambigua.";
+        const msg = presentarRespuesta(data.answer || "Consulta ambigua.");
         const items = Array.isArray(data.suggestions) ? data.suggestions : [];
         const inputId = 'amb-free-text-' + (container.id || Date.now());
         let shtml = '';
@@ -2388,6 +2608,8 @@ function renderAiResponse(data, container, options = {}) {
         contentWrapper.appendChild(glassCard);
         customRendered = true;
     }
+
+    anadirOrigen(contentWrapper, data.origen);
 
     // Feedback logic (restored from previous)
     const feedbackDiv = document.createElement("div");
@@ -3121,20 +3343,85 @@ function pintarListaConversaciones(filas) {
         const activa = Number(fila.id) === Number(conversacionActual) ? ' activa' : '';
         return `
             <div class="ia-conversacion-item${activa}" data-id="${fila.id}">
-                <button type="button" class="ia-conversacion-titulo" title="${escaparTexto(fila.titulo)}" onclick="abrirConversacion(${fila.id})">${escaparTexto(fila.titulo)}</button>
+                <button type="button" class="ia-conversacion-titulo" onclick="abrirConversacion(${fila.id})">${escaparTexto(fila.titulo)}</button>
                 <button type="button" class="ia-conversacion-borrar" title="Borrar" onclick="borrarConversacion(event, ${fila.id})">×</button>
             </div>
         `;
     }).join('');
+    prepararVistaPregunta(lista);
+}
+
+function capaPreguntaCompleta() {
+    let capa = document.getElementById('ia-pregunta-completa');
+    if (capa) return capa;
+    capa = document.createElement('div');
+    capa.id = 'ia-pregunta-completa';
+    capa.className = 'ia-pregunta-completa';
+    capa.hidden = true;
+    document.body.appendChild(capa);
+    return capa;
+}
+
+function mostrarPreguntaCompleta(boton) {
+    const texto = (boton.textContent || '').trim();
+    const capa = capaPreguntaCompleta();
+    if (!texto) return;
+    capa.textContent = texto;
+    capa.hidden = false;
+    const rect = boton.getBoundingClientRect();
+    const margen = 12;
+    let izquierda = rect.right + margen;
+    let arriba = rect.top;
+    capa.style.left = izquierda + 'px';
+    capa.style.top = arriba + 'px';
+    const caja = capa.getBoundingClientRect();
+    if (izquierda + caja.width > window.innerWidth - 8) {
+        izquierda = Math.max(8, rect.left - caja.width - margen);
+        capa.style.left = izquierda + 'px';
+    }
+    if (arriba + caja.height > window.innerHeight - 8) {
+        capa.style.top = Math.max(8, window.innerHeight - caja.height - 8) + 'px';
+    }
+}
+
+function ocultarPreguntaCompleta() {
+    const capa = document.getElementById('ia-pregunta-completa');
+    if (capa) capa.hidden = true;
+}
+
+function prepararVistaPregunta(lista) {
+    if (lista.dataset.vistaPregunta) return;
+    lista.dataset.vistaPregunta = '1';
+    lista.addEventListener('mouseover', function (evento) {
+        const boton = evento.target.closest('.ia-conversacion-titulo');
+        if (!boton || !lista.contains(boton)) return;
+        mostrarPreguntaCompleta(boton);
+    });
+    lista.addEventListener('mouseout', function (evento) {
+        const boton = evento.target.closest('.ia-conversacion-titulo');
+        if (!boton) return;
+        if (evento.relatedTarget && boton.contains(evento.relatedTarget)) return;
+        ocultarPreguntaCompleta();
+    });
+    lista.addEventListener('scroll', ocultarPreguntaCompleta);
+    lista.addEventListener('focusin', function (evento) {
+        const boton = evento.target.closest('.ia-conversacion-titulo');
+        if (boton) mostrarPreguntaCompleta(boton);
+    });
+    lista.addEventListener('focusout', function (evento) {
+        const boton = evento.target.closest('.ia-conversacion-titulo');
+        if (!boton) return;
+        if (evento.relatedTarget && boton.contains(evento.relatedTarget)) return;
+        ocultarPreguntaCompleta();
+    });
 }
 
 async function cargarConversaciones() {
     const lista = document.getElementById('ia-conversaciones-lista');
     const empresa = parseInt(currEmpresa, 10);
-    const ejercicio = parseInt(currEjercicio, 10);
-    if (!lista || !empresa || !ejercicio) return;
+    if (!lista || !empresa) return;
     try {
-        const res = await fetch(`${API}/ai/conversaciones?empresa=${empresa}&ejercicio=${ejercicio}`, { credentials: 'same-origin' });
+        const res = await fetch(`${API}/ai/conversaciones?empresa=${empresa}`, { credentials: 'same-origin' });
         const data = await res.json();
         pintarListaConversaciones(data.conversaciones || []);
     } catch (e) {
@@ -3195,7 +3482,8 @@ async function abrirConversacion(id) {
     if (recalculoEnCurso) return;
     recalculoEnCurso = true;
     try {
-        const res = await fetch(`${API}/ai/conversaciones/${id}`, { credentials: 'same-origin' });
+        const empresa = parseInt(currEmpresa, 10);
+        const res = await fetch(`${API}/ai/conversaciones/${id}?empresa=${empresa}`, { credentials: 'same-origin' });
         const data = await res.json();
         const mensajes = data && Array.isArray(data.mensajes) ? data.mensajes : [];
         const primero = mensajes[0] || {};
@@ -3226,7 +3514,8 @@ async function borrarConversacion(evento, id) {
     }
     if (!confirm('¿Borrar esta consulta?')) return;
     try {
-        const res = await fetch(`${API}/ai/conversaciones/${id}`, {
+        const empresa = parseInt(currEmpresa, 10);
+        const res = await fetch(`${API}/ai/conversaciones/${id}?empresa=${empresa}`, {
             method: 'DELETE',
             credentials: 'same-origin',
             headers: {

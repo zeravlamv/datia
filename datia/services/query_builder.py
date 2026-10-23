@@ -548,6 +548,7 @@ class QueryBuilder:
                 f'HAVING {having_importe} '
                 f'ORDER BY 2 {order_kw} LIMIT {int(limit)}'
             )
+            tabla_origen = 'metrics_totales_empresa_ejercicio_cliente_mes'
         else:
             if entity_key == 'cliente':
                 table = 'metrics_totales_empresa_ejercicio_cliente'
@@ -565,6 +566,8 @@ class QueryBuilder:
                 f'AND {filtro_importe} '
                 f'ORDER BY 2 {order_kw} LIMIT {int(limit)}'
             )
+            tabla_origen = table
+        sujeto = 'cliente' if entity_key == 'cliente' else 'artículo'
         return {
             'key': f'ranking_{entity_key}',
             'sql': ' '.join(sql.split()),
@@ -573,6 +576,12 @@ class QueryBuilder:
             'label': f'Top {entity_key.capitalize()}s {target_year}',
             'source': 'deterministic_v2',
             'intent_meta': {'metric': 'sales', 'ejercicio': target_year},
+            'origen': {
+                'tabla': tabla_origen,
+                'formula': f'Importe neto de ventas de cada {sujeto} en el ejercicio, de mayor a menor.',
+                'filtros': [f'Empresa {empresa_id}', f'Ejercicio {target_year}'],
+                'consulta': ' '.join(sql.split()),
+            },
         }
 
     @staticmethod
@@ -951,7 +960,13 @@ class QueryBuilder:
             'chart_type': 'bar',
             'label': f'Top {entity_key.capitalize()}s {target_year}',
             'source': 'deterministic_v2',
-            'intent_meta': {'metric': metric_type}
+            'intent_meta': {'metric': metric_type},
+            'origen': {
+                'tabla': table.strip('"'),
+                'formula': f'Suma del importe de cada {entity_key} en el ejercicio, de mayor a menor.',
+                'filtros': [f'Empresa {empresa}', f'Ejercicio {target_year}'],
+                'consulta': ' '.join(sql.split()),
+            },
         }
 
     @staticmethod
@@ -1366,7 +1381,8 @@ class QueryBuilder:
         'todos', 'todas', 'todo', 'empresa', 'total', 'totales', 'mensual', 'mensuales', 'anual', 'anuales',
         'general', 'resumen', 'evolucion', 'tendencia', 'comparativa', 'albaran', 'albaranes', 'pedido', 'pedidos',
         'neto', 'neta', 'netas', 'bruto', 'bruta', 'brutos', 'ultimo', 'ultima', 'ultimos', 'ultimas',
-        'hoy', 'ayer', 'semana', 'semanas', 'trimestre', 'trimestres', 'semestre', 'semestres',
+        'hoy', 'ayer', 'semana', 'semanas', 'trimestre', 'trimestres', 'trimestral', 'trimestrales',
+        'semestre', 'semestres', 'semestral', 'semestrales',
         'grafico', 'informe', 'detalle', 'detallado', 'articulo', 'articulos', 'producto', 'productos',
         'familia', 'familias', 'agente', 'agentes', 'vendedor', 'vendedores', 'comercial', 'comerciales',
         'zona', 'zonas',
@@ -2213,6 +2229,287 @@ class QueryBuilder:
             }
         return None
 
+    _MESES = (
+        'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+        'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+    )
+
+    @staticmethod
+    def _fecha_hablada(dia):
+        return f'{dia.day} de {QueryBuilder._MESES[dia.month - 1]} de {dia.year}'
+
+    @staticmethod
+    def _euros_hablados(valor):
+        return f"{float(valor):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.') + ' €'
+
+    @staticmethod
+    def _dia_natural(question, hoy=None):
+        """Hoy, ayer o anteayer, solo si la frase pide ventas y no compras."""
+        folded = QueryBuilder._fold_party(question or '')
+        if not folded or not re.search(r'\b(ventas?|albaran\w*|facturacion)\b', folded):
+            return None
+        if re.search(r'\b(compra|compras|proveedor|proveedores)\b', folded):
+            return None
+        if hoy is None:
+            from django.utils import timezone
+            hoy = timezone.localdate()
+        if re.search(r'\banteayer\b', folded):
+            return hoy - datetime.timedelta(days=2), 'anteayer'
+        if re.search(r'\bayer\b', folded):
+            return hoy - datetime.timedelta(days=1), 'ayer'
+        if re.search(r'\bhoy\b', folded):
+            return hoy, 'hoy'
+        return None
+
+    @staticmethod
+    def _pide_ultimo_dia(question):
+        folded = QueryBuilder._fold_party(question or '')
+        if not folded or not re.search(r'\b(ventas?|albaran\w*|facturacion)\b', folded):
+            return False
+        if re.search(r'\b(compra|compras|proveedor|proveedores)\b', folded):
+            return False
+        return bool(re.search(r'\bultim[oa]\s+dia\b', folded))
+
+    @staticmethod
+    def _como_fecha(marca):
+        if isinstance(marca, datetime.datetime):
+            return marca.date()
+        if isinstance(marca, datetime.date):
+            return marca
+        return datetime.date.fromisoformat(str(marca)[:10])
+
+    @staticmethod
+    def _texto_albaranes_del_dia(titulo, dia, fila):
+        cuando = QueryBuilder._fecha_hablada(dia)
+        importe = float((fila or (0, 0))[0] or 0)
+        albaranes = int((fila or (0, 0))[1] or 0)
+        if albaranes == 0:
+            return f'# {titulo}\nEl {cuando} no hubo ventas.'
+        documento = 'albarán' if albaranes == 1 else 'albaranes'
+        return (
+            f'# {titulo}\n'
+            f'El {cuando} los albaranes suman {QueryBuilder._euros_hablados(importe)} en {albaranes} {documento}.'
+        )
+
+    @staticmethod
+    def _ventas_del_ultimo_dia(empresa):
+        try:
+            empresa_id = int(empresa)
+        except (TypeError, ValueError):
+            return QueryBuilder._party_reply('Elige la empresa antes de preguntar por las ventas de un día.')
+        alias = 'analytics' if 'analytics' in connections.databases else 'default'
+        try:
+            with connections[alias].cursor() as cur:
+                cur.execute(
+                    '''
+                    SELECT MAX(fechaalbaran)
+                    FROM datiadb_cabeceraalbarancliente
+                    WHERE codigoempresa = %s
+                    ''',
+                    [empresa_id],
+                )
+                marca = (cur.fetchone() or (None,))[0]
+                if marca is None:
+                    return QueryBuilder._party_reply('# Último día de ventas\nNo hay albaranes de venta.')
+                dia = QueryBuilder._como_fecha(marca)
+                cur.execute(
+                    '''
+                    SELECT COALESCE(SUM(importeneto), 0), COUNT(*)
+                    FROM datiadb_cabeceraalbarancliente
+                    WHERE codigoempresa = %s
+                      AND fechaalbaran >= %s
+                      AND fechaalbaran < %s
+                    ''',
+                    [empresa_id, dia, dia + datetime.timedelta(days=1)],
+                )
+                fila = cur.fetchone()
+        except Exception:
+            logger.exception('QueryBuilder: no se pudo leer el último día de ventas')
+            return QueryBuilder._party_reply('No se pudieron leer los albaranes del último día de ventas.')
+        return QueryBuilder._party_reply(
+            QueryBuilder._texto_albaranes_del_dia('Último día de ventas', dia, fila)
+        )
+
+    @staticmethod
+    def _pide_ultimo_albaran(question):
+        folded = QueryBuilder._fold_party(question or '')
+        if not folded or re.search(r'\b(compra|compras|proveedor|proveedores)\b', folded):
+            return False
+        if re.search(r'\bultim[oa]\s+dia\b', folded):
+            return False
+        return bool(re.search(r'\bultim[oa]\s+albaran\b', folded))
+
+    @staticmethod
+    def _ventas_del_ultimo_albaran(empresa):
+        try:
+            empresa_id = int(empresa)
+        except (TypeError, ValueError):
+            return QueryBuilder._party_reply('Elige la empresa antes de preguntar por el último albarán.')
+        alias = 'analytics' if 'analytics' in connections.databases else 'default'
+        vendor = connections[alias].vendor if alias in connections else 'postgresql'
+        tope = 'SELECT TOP 1' if vendor in ('microsoft', 'mssql') else 'SELECT'
+        limite = '' if vendor in ('microsoft', 'mssql') else ' LIMIT 1'
+        try:
+            with connections[alias].cursor() as cur:
+                cur.execute(
+                    '''
+                    SELECT MAX(fechaalbaran)
+                    FROM datiadb_cabeceraalbarancliente
+                    WHERE codigoempresa = %s
+                    ''',
+                    [empresa_id],
+                )
+                marca = (cur.fetchone() or (None,))[0]
+                if marca is None:
+                    return QueryBuilder._party_reply('# Último albarán\nNo hay albaranes de venta.')
+                dia = QueryBuilder._como_fecha(marca)
+                cur.execute(
+                    f'''
+                    {tope} fechaalbaran, seriealbaran, numeroalbaran, razonsocial, codigocliente, importeneto
+                    FROM datiadb_cabeceraalbarancliente
+                    WHERE codigoempresa = %s
+                      AND fechaalbaran >= %s
+                      AND fechaalbaran < %s
+                    ORDER BY numeroalbaran DESC{limite}
+                    ''',
+                    [empresa_id, dia, dia + datetime.timedelta(days=1)],
+                )
+                fila = cur.fetchone()
+        except Exception:
+            logger.exception('QueryBuilder: no se pudo leer el último albarán')
+            return QueryBuilder._party_reply('No se pudo leer el último albarán de venta.')
+        if not fila:
+            return QueryBuilder._party_reply('# Último albarán\nNo hay albaranes de venta.')
+        fecha, serie, numero, razon, codigo, importe = fila
+        dia = QueryBuilder._como_fecha(fecha)
+        cliente = str(razon or codigo or 'Sin cliente').strip()
+        serie_txt = f', serie {str(serie).strip()}' if str(serie or '').strip() else ''
+        texto = (
+            f'# Último albarán\n'
+            f'El {QueryBuilder._fecha_hablada(dia)}{serie_txt}, número {numero}, '
+            f'cliente {cliente}, importe {QueryBuilder._euros_hablados(importe or 0)}.'
+        )
+        return QueryBuilder._party_reply(texto)
+
+    @staticmethod
+    def _ventas_de_un_dia(question, empresa, hoy=None):
+        if QueryBuilder._pide_ultimo_albaran(question):
+            return QueryBuilder._ventas_del_ultimo_albaran(empresa)
+        if QueryBuilder._pide_ultimo_dia(question):
+            return QueryBuilder._ventas_del_ultimo_dia(empresa)
+        pedido = QueryBuilder._dia_natural(question, hoy)
+        if not pedido:
+            return None
+        return QueryBuilder._ventas_del_dia(empresa, pedido[0], pedido[1])
+
+    @staticmethod
+    def _resolver_referencia(plan, hoy=None):
+        referencia = str((plan or {}).get('referencia') or 'ninguna')
+        if hoy is None:
+            from django.utils import timezone
+            hoy = timezone.localdate()
+        if referencia == 'hoy':
+            return hoy, 'hoy'
+        if referencia == 'ayer':
+            return hoy - datetime.timedelta(days=1), 'ayer'
+        if referencia == 'anteayer':
+            return hoy - datetime.timedelta(days=2), 'anteayer'
+        if referencia == 'fecha' and (plan or {}).get('fecha'):
+            try:
+                dia = datetime.date.fromisoformat(plan['fecha'])
+            except ValueError:
+                return None
+            return dia, QueryBuilder._fecha_hablada(dia)
+        return None
+
+    @staticmethod
+    def _plan_ignora_el_corte(question, plan):
+        periodo = str((plan or {}).get('periodo') or '')
+        if QueryBuilder._pide_ultimo_albaran(question) and periodo != 'ultimo_documento':
+            return True
+        if QueryBuilder._pide_ultimo_dia(question) and periodo != 'ultimo_dia':
+            return True
+        if QueryBuilder._dia_natural(question) and periodo != 'dia':
+            return True
+        return False
+
+    @staticmethod
+    def _ventas_del_dia(empresa, dia, nombre):
+        cuando = QueryBuilder._fecha_hablada(dia)
+        try:
+            empresa_id = int(empresa)
+        except (TypeError, ValueError):
+            return QueryBuilder._party_reply('Elige la empresa antes de preguntar por las ventas de un día.')
+        alias = 'analytics' if 'analytics' in connections.databases else 'default'
+        siguiente = dia + datetime.timedelta(days=1)
+        try:
+            with connections[alias].cursor() as cur:
+                cur.execute(
+                    '''
+                    SELECT COALESCE(SUM(importeneto), 0), COUNT(*)
+                    FROM datiadb_cabeceraalbarancliente
+                    WHERE codigoempresa = %s
+                      AND fechaalbaran >= %s
+                      AND fechaalbaran < %s
+                    ''',
+                    [empresa_id, dia, siguiente],
+                )
+                fila = cur.fetchone()
+        except Exception:
+            logger.exception('QueryBuilder: no se pudieron leer las ventas del día')
+            return QueryBuilder._party_reply(f'No se pudieron leer los albaranes del {cuando}.')
+        importe = float((fila or (0, 0))[0] or 0)
+        albaranes = int((fila or (0, 0))[1] or 0)
+        if albaranes == 0:
+            texto = f'# Ventas de {nombre}\nEl {cuando} no hubo ventas.'
+        else:
+            documento = 'albarán' if albaranes == 1 else 'albaranes'
+            texto = (
+                f'# Ventas de {nombre}\n'
+                f'El {cuando} los albaranes suman {QueryBuilder._euros_hablados(importe)} en {albaranes} {documento}.'
+            )
+        return QueryBuilder._party_reply(texto)
+
+    @staticmethod
+    def _intentar_modelo(question, empresa, ejercicio, limit=10):
+        """El modelo interpreta. Si no forma una ficha, las reglas de palabras siguen después."""
+        from datia.services.ai.open_question import OpenQuestion
+        from datia.services.ai.semantic_plan import SemanticPlan
+        if not OpenQuestion._es_de_negocio(QueryBuilder._fold_party(question or '')):
+            return None
+        bruto = SemanticPlan.desde_modelo(question, limit)
+        plan = SemanticPlan.normalizar(bruto, limit) if bruto else None
+        if not plan or QueryBuilder._plan_ignora_el_corte(question, plan):
+            return None
+        periodo = plan.get('periodo') or 'ejercicio'
+        fuente = plan.get('fuente')
+        if periodo == 'ultimo_documento' or fuente == 'albaran_cliente':
+            return QueryBuilder._ventas_del_ultimo_albaran(empresa)
+        if periodo == 'ultimo_dia':
+            return QueryBuilder._ventas_del_ultimo_dia(empresa)
+        if periodo == 'dia' or fuente == 'ventas_dia':
+            resuelto = QueryBuilder._resolver_referencia(plan)
+            if not resuelto:
+                return None
+            return QueryBuilder._ventas_del_dia(empresa, resuelto[0], resuelto[1])
+        try:
+            emp = int(empresa)
+            year = int(ejercicio)
+        except (TypeError, ValueError):
+            return None
+        sql = SemanticPlan.compilar(plan, emp, year, SemanticPlan.dialecto_actual())
+        if not sql:
+            return None
+        filas = OpenQuestion._ejecutar(sql)
+        if filas is None:
+            return QueryBuilder._party_reply('La base no ha aceptado la consulta de esta pregunta.')
+        if not filas:
+            return QueryBuilder._party_reply(f'No hay datos en {year} para esta pregunta.')
+        OpenQuestion._guardar(question, sql, emp, year, plan)
+        salida = OpenQuestion._match(sql, 'Consulta sobre métricas', 'table', year, source='open_question')
+        salida['plan'] = plan
+        return salida
+
     @staticmethod
     def _construir_consulta(question: str, context: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
@@ -2227,11 +2524,35 @@ class QueryBuilder:
         
         logger.info(f"QueryBuilder v2: Processing '{question}'")
 
+        from datia.services.ai.interprete_mapeo import consultar as consulta_de_mapeo
+        mapeada = consulta_de_mapeo(question, empresa, ejercicio, context.get('limit') or 20)
+        if mapeada:
+            logger.info("QueryBuilder: la consulta sale del catalogo mapeado")
+            return mapeada
+
+        from datia.services.ai.plan_diccionario import responder as plan_del_diccionario
+        planeada = plan_del_diccionario(question, empresa, ejercicio, context.get('limit') or 10)
+        if planeada:
+            logger.info("QueryBuilder: el plan del diccionario responde")
+            return planeada
+
         from datia.services.ai.open_question import OpenQuestion
         abierta = OpenQuestion.plantilla(question, empresa, ejercicio, context.get('limit') or 10)
         if abierta:
             logger.info("QueryBuilder: la pregunta encaja en una plantilla de métricas")
             return abierta
+
+        interpretada = QueryBuilder._intentar_modelo(
+            question, empresa, ejercicio, context.get('limit') or 10,
+        )
+        if interpretada:
+            logger.info("QueryBuilder: la ficha la ha escrito el modelo")
+            return interpretada
+
+        del_dia = QueryBuilder._ventas_de_un_dia(question, empresa)
+        if del_dia:
+            logger.info("QueryBuilder: el modelo no formó la ficha; se usa el día o el albarán")
+            return del_dia
 
         medida = QueryBuilder._medida_pedida(q_lower)
         if medida:
@@ -2355,6 +2676,12 @@ class QueryBuilder:
         semantic = QueryBuilder._semantic_if_entity(question, q_lower, empresa, ejercicio)
         if semantic is not None:
             return semantic
+
+        from datia.services.ai.compilador_mapeo import responder as consulta_mapeada
+        mapeada = consulta_mapeada(question, empresa, ejercicio, context.get('limit') or 20)
+        if mapeada:
+            logger.info("QueryBuilder: la consulta sale del mapeo")
+            return mapeada
 
         # --- STEP 2: MEMORY FALLBACK ---
         memory = QueryBuilder._memory_hit(question, empresa, ejercicio, 0.5)

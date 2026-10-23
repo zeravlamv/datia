@@ -181,7 +181,8 @@ class IntentRouter:
 
         # 2. Ranking / Top Lists (Regex High Confidence)
         ranking_keywords = ['top', 'ranking', 'mejores', 'mejor', 'mayor', 'best', 'mas vend', 'peores']
-        if any(x in q_lower for x in ranking_keywords):
+        from datia.services.ai.interprete_mapeo import _pide_conjunto
+        if any(x in q_lower for x in ranking_keywords) and not _pide_conjunto(question):
             # Derivar directamente a QueryBuilder para ranking determinista por entidad
             # Detectar entidad objetivo por keywords
             target_entity = None

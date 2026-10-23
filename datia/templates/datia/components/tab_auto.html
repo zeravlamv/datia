@@ -33,7 +33,7 @@
             {% trans "Relaciones (Joins)" %}
         </button>
         <button onclick="switchAutoTab('subtab-training')" id="btn-tab-training" class="sub-nav-btn auto-tab-btn" data-tab="subtab-training">
-            {% trans "Entrenamiento IA" %}
+            {% trans "Examen" %}
         </button>
     </div>
 
@@ -213,7 +213,7 @@
             <h3 style="color: #fff; margin-bottom: 1rem;">Copiar datos a Postgres</h3>
             <p style="color: #d1d5db; margin-bottom: 1rem; max-width: 720px; margin-left: auto; margin-right: auto;">
                 SQL Server solo se lee. Este paso escribe en Postgres y, al terminar, calcula los totales que usa el chat.
-                Las frases de la IA se entrenan aparte, en la pestaña Entrenamiento IA.
+                Las preguntas de la IA se comprueban en la pestaña Examen.
             </p>
             <div id="sync-steps" style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-bottom: 1.5rem;">
                 <div data-step="copy" style="min-width:180px; padding:10px 14px; border-radius:10px; border:1px solid rgba(255,255,255,0.12); color:#e4e4e7;">1. Copiar a datiadb_</div>
@@ -362,85 +362,31 @@
     <div id="subtab-standard-fields" class="auto-subtab" style="display:none">
         {% include "datia/components/standard_fields_manager.html" %}
     </div>
-    <!-- Mass SQL Training Section -->
     <div id="subtab-training" class="auto-subtab" style="display:none">
         <div style="padding: 2rem; background: rgba(124, 58, 237, 0.05); border: 1px solid rgba(168, 85, 247, 0.2); border-radius: 16px; margin-top: 3rem;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1.5rem; margin-bottom: 1.5rem;">
                 <div>
-                    <h3 style="color: #fff; margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
-                        <span>⚡</span> {% trans "Entrenamiento Masivo de IA" %}
+                    <h3 style="color: #fff; margin: 0 0 0.5rem 0;">
+                        {% trans "Examen de preguntas" %}
                     </h3>
-                    <p style="color: #a1a1aa; font-size: 0.9rem; margin: 0;">
-                        Genera automáticamente consultas SQL de ejemplo para todas las tablas migradas y entrena la base
-                        de
-                        conocimiento
+                    <p style="color: #a1a1aa; font-size: 0.9rem; margin: 0; max-width: 46rem;">
+                        Preguntas sobre los datos mapeados de la empresa y el ejercicio. Se ven al abrir la pestaña. El botón las lanza de una en una.
                     </p>
                 </div>
-            </div>
-
-            <!-- Controls -->
-            <div style="display: flex; gap: 1.5rem; align-items: center; margin-bottom: 2rem;">
-
-                <div style="display: flex; flex-direction: column; gap: 0.5rem; width: 200px;">
-                    <label style="color: #a1a1aa; font-size: 0.85rem;">Consultas por tabla</label>
-                    <select id="sel-training-count" style="background: rgba(0,0,0,0.3); border: 1px solid #a855f7; border-radius: 8px; color: #fff; padding: 0.8rem;">
-                        <option value="100">100 (Rápido)</option>
-                        <option value="200" selected>200 (Estándar)</option>
-                        <option value="500">500 (Profundo)</option>
-                        <option value="10000">10000 (Exhaustivo)</option>
-                    </select>
-                </div>
-
-                <div style="display: flex; align-items: center; margin-top: 1.5rem;">
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: #e4e4e7; font-size: 0.9rem;">
-                        <input type="checkbox" id="chk-force-train" style="accent-color: #a855f7; width: 16px; height: 16px;">
-                        Forzar re-entrenamiento
-                    </label>
-                </div>
-
-                <button id="btn-start-training" onclick="startMassTraining()" class="btn-glow" style="padding: 1rem 2.5rem; margin-top: 1.8rem; background: #9333ea; border: 1px solid #a855f7; color: #fff; font-weight: 600;">
-                    ⚡ Iniciar Entrenamiento
+                <button id="btn-start-examen" onclick="startExamen()" class="btn-glow" style="padding: 1rem 1.6rem; background: #9333ea; border: 1px solid #a855f7; color: #fff; font-weight: 600; white-space: nowrap;">
+                    Hacer el examen
                 </button>
             </div>
-
-            <!-- Progress Section (hidden by default) -->
-            <div id="training-progress" style="display: none; margin-top: 2rem;">
-                <div style="background: rgba(0,0,0,0.3); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
-                    <!-- Status Header -->
-                    <div class="mass-training-status" id="mass-training-status" style="display: none;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <span id="mt-spinner">⏳</span>
-                                <strong id="mt-status-text">Iniciando...</strong>
-                            </div>
-                            <!-- Timer -->
-                            <div id="training-timer" style="font-family: 'Courier New', monospace; font-weight: bold; color: #a855f7; background: rgba(168, 85, 247, 0.1); padding: 2px 8px; border-radius: 4px;">
-                                00:00</div>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="mt-progress-bar" style="width: 0%;"></div>
-                        </div>
-                        <div style="text-align: right; font-size: 0.8rem; color: #71717a; margin-top: 5px;">
-                            <span id="mt-progress-text">0/0</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Current Query Display -->
-                <div style="background: rgba(168, 85, 247, 0.1); padding: 1rem; border-radius: 8px; border-left: 4px solid #a855f7; margin-bottom: 1.5rem;">
-                    <div style="color: #a1a1aa; font-size: 0.75rem; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">
-                        Query Actual
-                    </div>
-                    <div id="current-query" style="color: #fff; font-size: 0.95rem; font-style: italic;">
-                        Esperando...
-                    </div>
-                </div>
-
-                <!-- Tables Progress Grid -->
-                <div id="tables-progress" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(500px, 1fr)); gap: 1rem;">
-                    <!-- Dynamic table cards will be inserted here -->
+            <div id="examen-ahora" style="display: none; margin-bottom: 1.25rem; padding: 1rem 1.2rem; border-radius: 12px; border: 1px solid #a855f7; background: rgba(147, 51, 234, 0.15);">
+                <div id="examen-paso" style="color: #d8b4fe; font-size: 0.8rem; letter-spacing: 0.04em; text-transform: uppercase;"></div>
+                <div id="examen-frase" style="color: #fff; font-size: 1.15rem; font-weight: 600; margin: 0.35rem 0 0.8rem;"></div>
+                <div style="height: 8px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden;">
+                    <div id="examen-barra" style="height: 100%; width: 0%; background: #a855f7; border-radius: 99px;"></div>
                 </div>
             </div>
+            <div id="examen-resumen" style="display: none; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.5rem;"></div>
+            <div id="examen-estado" style="color: #e4e4e7; font-size: 1rem; margin-bottom: 1rem;"></div>
+            <div id="examen-resultado" style="display: flex; flex-direction: column; gap: 0.75rem;"></div>
         </div>
     </div>
 
@@ -625,11 +571,11 @@
 </div>
 
 <!-- SCRIPTS MODULES -->
-<script src="{% static 'js/tab_auto_core.js' %}?v=45"></script>
+<script src="{% static 'js/tab_auto_core.js' %}?v=46"></script>
 <script src="{% static 'js/tab_auto_dashboard.js' %}"></script>
 <script src="{% static 'js/tab_auto_mapping.js' %}?v=45"></script>
 <script src="{% static 'js/tab_auto_sync.js' %}?v=45"></script>
-<script src="{% static 'js/tab_auto_training.js' %}?v=45"></script>
+<script src="{% static 'js/tab_auto_training.js' %}?v=48"></script>
 <script src="{% static 'js/tab_auto_relations.js' %}?v=45"></script>
 <script src="{% static 'js/tab_standard_fields.js' %}"></script>
 

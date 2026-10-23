@@ -2,6 +2,7 @@ import re
 from typing import Dict, Any, List, Optional, Tuple
 
 from datia.services.ai.comparison import aviso_coste_y_hueco, celda
+from datia.services.ai.presentacion import origen
 
 
 def _months_es() -> List[str]:
@@ -124,6 +125,15 @@ def build_compras_top_proveedores(handler, empresa: int, year: int, prev: int, l
         'chart_pareto': handler.bar_h(labels, values, "Proveedores con menores compras" if worst else "Mejores proveedores", "Compras (€)"),
         'chart_concentration': handler.concentration_pie(top_for_pie, sum(values), 'Concentración de compras'),
         'table': {'title': 'Detalle', 'columns': ['Proveedor', f'Compras {year} (€)', f'Compras {prev} (€)', 'Var %', f'Coste {year} (€)', f'Coste {prev} (€)', f'Margen {year} (€)', f'Margen {prev} (€)', f'Margen {year} %', f'Margen {prev} %', f'Ops {year}', f'Ops {prev}', f'Precio medio {year} (€)', f'Precio medio {prev} (€)'], 'rows': table_rows},
+        'origen': origen(
+            'metrics_totales_empresa_ejercicio_proveedor',
+            'Importe neto de compras de cada proveedor en el ejercicio, de mayor a menor.',
+            [f'Empresa {empresa}', f'Ejercicio {year}', f'Comparado con {prev}'],
+            'SELECT nombre, importe_neto_total, importe_coste_total, albaranes_count '
+            'FROM metrics_totales_empresa_ejercicio_proveedor '
+            f'WHERE empresa = {int(empresa)} AND ejercicio = {int(year)} '
+            'ORDER BY importe_neto_total DESC',
+        ),
     }
 
 

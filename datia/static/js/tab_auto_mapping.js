@@ -144,14 +144,6 @@ function renderMappedList() {
                     </div>
                     
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <button onclick="event.stopPropagation(); reindexTable(${s.id}, '${(s.name || s.table).replace(/'/g, "\\'")}');" 
-                                title="Regenerar preguntas de ejemplo"
-                                style="background: #7c3aed; border: 1px solid #a855f7; color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s;"
-                                onmouseover="this.style.background='#6d28d9'" 
-                                onmouseout="this.style.background='#7c3aed'">
-                            ⚡ Re-Entrenar
-                        </button>
-                        
                         <button class="delete-btn" 
                                 onclick="event.stopPropagation(); showNuclearModal('${s.table}', () => resetTable(${s.id}));" 
                                 title="Eliminar tabla"

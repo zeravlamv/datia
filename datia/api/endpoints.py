@@ -1867,6 +1867,8 @@ def qa_query(request, response: HttpResponse, question: str, empresa: int = 1, e
             "table": svc_response.get('table'),
             "data": svc_response.get('data'),
             "kpis": svc_response.get('kpis'), # Critical: Needed for report rendering
+            "completo": bool(svc_response.get('completo')),
+            "origen": svc_response.get('origen'),
             "top_clients": svc_response.get('top_clients'),
             "top_products": svc_response.get('top_products'),
             "action": svc_response.get('action'), # [FIX] Pass action for frontend logic
@@ -1933,6 +1935,7 @@ def submit_feedback(request, payload: FeedbackInput):
                     "chart_concentration": response.get('chart_concentration'),
                     "kpis": response.get('kpis'),
                     "data": response.get('data'),
+                    "origen": response.get('origen'),
                     "query": query,
                     "key": response.get('key'),
                     "lang": response.get('lang', 'es')
@@ -2172,32 +2175,28 @@ def _pregunta_guardada(fila) -> str:
     return fila.titulo or ""
 
 
-def _copias_de_la_pregunta(modelo, user_id, empresa, ejercicio, pregunta):
+def _copias_de_la_pregunta(modelo, empresa, pregunta):
     clave = _norma_pregunta(pregunta)
     if not clave:
         return []
     return [
-        fila for fila in modelo.objects.filter(
-            usuario_id=user_id,
-            empresa=int(empresa),
-            ejercicio=int(ejercicio),
-        )
+        fila for fila in modelo.objects.filter(empresa=int(empresa))
         if _norma_pregunta(_pregunta_guardada(fila)) == clave
     ]
 
 
-def _dejar_una_copia(modelo, user_id, empresa, ejercicio, pregunta, conservar_id):
+def _dejar_una_copia(modelo, empresa, pregunta, conservar_id):
     sobran = [
-        fila.id for fila in _copias_de_la_pregunta(modelo, user_id, empresa, ejercicio, pregunta)
+        fila.id for fila in _copias_de_la_pregunta(modelo, empresa, pregunta)
         if fila.id != conservar_id
     ]
     if sobran:
-        modelo.objects.filter(id__in=sobran, usuario_id=user_id).delete()
+        modelo.objects.filter(id__in=sobran, empresa=int(empresa)).delete()
 
 
-def _fusionar_consultas_iguales(modelo, user_id, empresa, ejercicio):
+def _fusionar_consultas_iguales(modelo, empresa):
     grupos = {}
-    for fila in modelo.objects.filter(usuario_id=user_id, empresa=int(empresa), ejercicio=int(ejercicio)):
+    for fila in modelo.objects.filter(empresa=int(empresa)):
         grupos.setdefault(_norma_pregunta(_pregunta_guardada(fila)), []).append(fila)
     for grupo in grupos.values():
         if len(grupo) < 2:
@@ -2205,7 +2204,7 @@ def _fusionar_consultas_iguales(modelo, user_id, empresa, ejercicio):
         grupo.sort(key=lambda fila: fila.actualizado_at, reverse=True)
         modelo.objects.filter(
             id__in=[fila.id for fila in grupo[1:]],
-            usuario_id=user_id,
+            empresa=int(empresa),
         ).delete()
 
 
@@ -2214,14 +2213,10 @@ def listar_conversaciones(request, empresa: int = 0, ejercicio: int = 0):
     from datia.models import ConsultaConversacion
 
     user = _usuario_chat(request)
-    if not user:
+    if not user or not empresa:
         return {"conversaciones": []}
-    _fusionar_consultas_iguales(ConsultaConversacion, user.id, empresa, ejercicio)
-    filas = ConsultaConversacion.objects.filter(
-        usuario_id=user.id,
-        empresa=int(empresa),
-        ejercicio=int(ejercicio),
-    )
+    _fusionar_consultas_iguales(ConsultaConversacion, empresa)
+    filas = ConsultaConversacion.objects.filter(empresa=int(empresa))
     return {
         "conversaciones": [
             {
@@ -2236,14 +2231,14 @@ def listar_conversaciones(request, empresa: int = 0, ejercicio: int = 0):
 
 
 @router.get("/ai/conversaciones/{conversacion_id}")
-def abrir_conversacion(request, conversacion_id: int):
+def abrir_conversacion(request, conversacion_id: int, empresa: int = 0):
     from datia.models import ConsultaConversacion
 
     user = _usuario_chat(request)
-    if not user:
+    if not user or not empresa:
         return {"status": "error", "message": "Authentication required"}
     try:
-        fila = ConsultaConversacion.objects.get(id=conversacion_id, usuario_id=user.id)
+        fila = ConsultaConversacion.objects.get(id=conversacion_id, empresa=int(empresa))
     except ConsultaConversacion.DoesNotExist:
         return {"status": "error", "message": "No encontrada"}
     return {
@@ -2273,12 +2268,12 @@ def guardar_conversacion(request, payload: ConversacionInput):
     }
     empresa = int(payload.empresa)
     ejercicio = int(payload.ejercicio)
-    iguales = _copias_de_la_pregunta(ConsultaConversacion, user.id, empresa, ejercicio, pregunta)
+    iguales = _copias_de_la_pregunta(ConsultaConversacion, empresa, pregunta)
     fila = None
     if payload.conversacion_id:
         fila = ConsultaConversacion.objects.filter(
             id=payload.conversacion_id,
-            usuario_id=user.id,
+            empresa=empresa,
         ).first()
     if fila is None and iguales:
         fila = iguales[0]
@@ -2295,26 +2290,28 @@ def guardar_conversacion(request, payload: ConversacionInput):
         fila.titulo = _titulo_consulta(pregunta)
         fila.empresa = empresa
         fila.ejercicio = ejercicio
-        fila.save(update_fields=['mensajes', 'titulo', 'empresa', 'ejercicio', 'actualizado_at'])
+        fila.usuario_id = user.id
+        fila.save(update_fields=['mensajes', 'titulo', 'empresa', 'ejercicio', 'usuario_id', 'actualizado_at'])
     else:
         mensajes = list(fila.mensajes or [])
         mensajes.append(mensaje)
         fila.mensajes = mensajes[-40:]
-        fila.save(update_fields=['mensajes', 'actualizado_at'])
-    _dejar_una_copia(ConsultaConversacion, user.id, empresa, ejercicio, pregunta, fila.id)
+        fila.usuario_id = user.id
+        fila.save(update_fields=['mensajes', 'usuario_id', 'actualizado_at'])
+    _dejar_una_copia(ConsultaConversacion, empresa, pregunta, fila.id)
     return {"status": "saved", "id": fila.id, "titulo": fila.titulo}
 
 
 @router.delete("/ai/conversaciones/{conversacion_id}")
-def borrar_conversacion(request, conversacion_id: int):
+def borrar_conversacion(request, conversacion_id: int, empresa: int = 0):
     from datia.models import ConsultaConversacion
 
     user = _usuario_chat(request)
-    if not user:
+    if not user or not empresa:
         return {"status": "error", "message": "Authentication required"}
     borradas, _ = ConsultaConversacion.objects.filter(
         id=conversacion_id,
-        usuario_id=user.id,
+        empresa=int(empresa),
     ).delete()
     if not borradas:
         return {"status": "error", "message": "No encontrada"}
@@ -2512,23 +2509,19 @@ def get_sync_status(request, job_id: str):
 
 @router.post("/datasource/{datasource_id}/reindex")
 def reindex_datasource(request, datasource_id: int):
-    """
-    Regenerates synthetic queries for a specific datasource.
-    """
-    from datia.models import DataSource
-    from datia.services.synthetic_generator import SyntheticSQLGenerator
-    
+    """Borra las consultas de ejemplo de una tabla. Ya no genera SQL sintético."""
+    from datia.models import DataSource, MetricsEmbeddings
+
     try:
         ds = DataSource.objects.get(id=datasource_id)
-        generator = SyntheticSQLGenerator()
-        
-        # Generate
-        queries = generator.generate_batch(ds)
-        
-        # Save
-        count = generator.save_batch(queries, ds)
-        
-        return {"status": "ok", "generated": len(queries), "saved": count}
+        borradas, _ = MetricsEmbeddings.objects.filter(kind='qa', metadata__source_table=ds.name).delete()
+        return {
+            "status": "ok",
+            "generated": 0,
+            "saved": 0,
+            "purged": borradas,
+            "message": "Las consultas de ejemplo se han borrado.",
+        }
     except DataSource.DoesNotExist:
         return {"error": "DataSource not found"}
     except Exception as e:
@@ -2540,8 +2533,7 @@ def reindex_orders(request):
     Specific endpoint to reindex 'Pedidos' table.
     """
     from datia.models import DataSource
-    from datia.services.synthetic_generator import SyntheticSQLGenerator
-    
+
     try:
         # Try to find 'Pedidos' or 'Orders'
         ds = DataSource.objects.filter(name__icontains='pedidos').first()
@@ -2550,12 +2542,10 @@ def reindex_orders(request):
             
         if not ds:
             return {"error": "Table 'Pedidos' or 'Orders' not found"}
-            
-        generator = SyntheticSQLGenerator()
-        queries = generator.generate_batch(ds)
-        count = generator.save_batch(queries, ds)
-        
-        return {"status": "ok", "table": ds.name, "generated": len(queries), "saved": count}
+
+        from datia.models import MetricsEmbeddings
+        borradas, _ = MetricsEmbeddings.objects.filter(kind='qa', metadata__source_table=ds.name).delete()
+        return {"status": "ok", "table": ds.name, "generated": 0, "saved": 0, "purged": borradas}
     except Exception as e:
         return {"error": str(e)}
 class ErpConfigSchema(Schema):

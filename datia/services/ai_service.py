@@ -139,12 +139,12 @@ class IAService:
             if isinstance(detalle, dict):
                 detalle['query'] = question
                 detalle['lang'] = lang
-                return detalle
+                return self._con_origen(detalle, empresa, ejercicio, question)
 
         # --- 2. Route Intent ---
         result = self._responder(question, context, lang, force_reload)
-        if context.get('_ya_reintento') or _respuesta_tiene_valor(result):
-            return result
+        if (result or {}).get('dato_no_cargado') or context.get('_ya_reintento') or _respuesta_tiene_valor(result):
+            return self._con_origen(result, empresa, ejercicio, question)
 
         logger.info("IAService: la primera vía no dejó un resultado; el modelo escribe la consulta")
         context['training_enabled'] = True
@@ -153,12 +153,12 @@ class IAService:
         segundo = self._consulta_del_modelo(question, context, lang)
         if _respuesta_tiene_valor(segundo):
             segundo['reentrenado'] = True
-            return segundo
+            return self._con_origen(segundo, empresa, ejercicio, question)
         aviso = (
             "No he podido obtener un resultado para esta pregunta. "
             "Prueba nombrando el dato: ventas, compras, clientes, artículos, margen o coste."
         )
-        return {
+        return self._con_origen({
             "type": "text",
             "text": aviso,
             "answer": aviso,
@@ -166,7 +166,13 @@ class IAService:
             "query": question,
             "lang": lang,
             "reentrenado": True,
-        }
+        }, empresa, ejercicio, question)
+
+    def _con_origen(self, result, empresa, ejercicio, question):
+        from datia.services.ai.presentacion import asegurar_origen
+        if isinstance(result, dict) and not result.get('query'):
+            result['query'] = question
+        return asegurar_origen(result, empresa, ejercicio)
 
     def _responder(self, question, context, lang, force_reload):
         handler_class, intent_data = self.router.resolve(question, context)

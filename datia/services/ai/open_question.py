@@ -5,6 +5,8 @@ import unicodedata
 
 from django.db import connections, transaction
 
+from datia.services.ai.presentacion import barras, origen, variacion
+
 logger = logging.getLogger('query_builder')
 
 _TABLAS_LINEA = (
@@ -332,10 +334,32 @@ class OpenQuestion:
         total = sum(fila['pendiente'] for fila in filas)
         efectos = sum(fila['efectos'] for fila in filas)
         visibles = filas[:limit]
+        try:
+            anteriores = OpenQuestion._leer_deuda(empresa, int(year) - 1, tipo)
+        except Exception:
+            anteriores = []
+        total_anterior = sum(fila['pendiente'] for fila in anteriores)
         texto = (
             f"En {year} los {sujeto} tienen un {titulo.lower()} de {OpenQuestion._eur(total)} "
             f"en {efectos} efectos y {len(filas)} cuentas. "
             f"El importe es lo facturado menos lo ya cobrado o pagado, sin efectos liquidados."
+        )
+        tarjeta = {
+            'label': titulo,
+            'value': round(total, 2),
+            'suffix': '€',
+            'color': '#fbbf24',
+        }
+        cambio = variacion(total, total_anterior, int(year) - 1) if anteriores else ''
+        if cambio:
+            tarjeta['change'] = cambio
+        consulta = (
+            'SELECT SUM(importe - importe_cobrado) AS pendiente '
+            'FROM datia_financial_cartera '
+            f'WHERE empresa = {int(empresa)} AND ejercicio = {int(year)} '
+            f"AND tipo_efecto = '{tipo}' "
+            "AND COALESCE(estado, '') NOT IN ('COBRADO', 'PAGADO', 'LIQUIDADO', 'ANULADO') "
+            'GROUP BY codigo_titular ORDER BY pendiente DESC'
         )
         return {
             'reply': {
@@ -344,12 +368,12 @@ class OpenQuestion:
                 'text': texto,
                 'answer': texto,
                 'source': 'cartera',
-                'kpis': [{
-                    'label': titulo,
-                    'value': round(total, 2),
-                    'suffix': '€',
-                    'color': '#fbbf24',
-                }],
+                'kpis': [tarjeta],
+                'chart_config': barras(
+                    [fila['nombre'] for fila in visibles],
+                    [{'label': titulo, 'data': [fila['pendiente'] for fila in visibles], 'color': '#fbbf24'}],
+                    horizontal=True,
+                ),
                 'table': {
                     'title': f'{titulo} por cuenta',
                     'columns': ['Cuenta', f'{titulo} (€)', 'Efectos'],
@@ -358,6 +382,13 @@ class OpenQuestion:
                         for fila in visibles
                     ],
                 },
+                'origen': origen(
+                    'datia_financial_cartera',
+                    'Pendiente = importe − importe cobrado, agrupado por titular. '
+                    'Quedan fuera los efectos cobrados, pagados, liquidados o anulados.',
+                    [f'Empresa {empresa}', f'Ejercicio {year}', f'Tipo {tipo}'],
+                    consulta,
+                ),
             }
         }
 
@@ -425,11 +456,16 @@ class OpenQuestion:
                 'answer': texto,
                 'source': 'metricas_compra',
                 'kpis': [{
-                    'label': 'Compra',
+                    'label': primero['nombre'],
                     'value': round(primero['importe'], 2),
                     'suffix': '€',
                     'color': '#34d399',
                 }],
+                'chart_config': barras(
+                    [fila['nombre'] for fila in filas],
+                    [{'label': 'Compra', 'data': [fila['importe'] for fila in filas], 'color': '#a855f7'}],
+                    horizontal=True,
+                ),
                 'table': {
                     'title': 'Compras por proveedor',
                     'columns': ['Proveedor', 'Compra (€)', 'Albaranes'],
@@ -438,6 +474,15 @@ class OpenQuestion:
                         for fila in filas
                     ],
                 },
+                'origen': origen(
+                    'metrics_totales_empresa_ejercicio_proveedor',
+                    'Importe neto de compras de cada proveedor en el ejercicio, ordenado de mayor a menor.',
+                    [f'Empresa {empresa}', f'Ejercicio {year}'],
+                    'SELECT nombre, importe_neto_total, albaranes_count '
+                    'FROM metrics_totales_empresa_ejercicio_proveedor '
+                    f'WHERE empresa = {int(empresa)} AND ejercicio = {int(year)} '
+                    'ORDER BY importe_neto_total DESC',
+                ),
             }
         }
 
@@ -473,7 +518,7 @@ class OpenQuestion:
         return f"{float(valor):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.') + ' €'
 
     @staticmethod
-    def _match(sql, titulo, tipo, year, nota='', source='open_question'):
+    def _match(sql, titulo, tipo, year, nota='', source='open_question', formula=''):
         clave = 'conteo' if tipo == 'conteo' else 'open_question'
         out = {
             'key': clave,
@@ -487,7 +532,36 @@ class OpenQuestion:
         }
         if nota:
             out['nota'] = nota
+        out['origen'] = OpenQuestion._origen_de_sql(sql, formula or nota, year, tipo)
         return out
+
+    @staticmethod
+    def _origen_de_sql(sql, formula, year, tipo):
+        tablas = []
+        for nombre in re.findall(r'(?i)\b(?:from|join)\s+([a-z_][a-z0-9_]*)', sql or ''):
+            clave = nombre.lower()
+            if clave not in tablas:
+                tablas.append(clave)
+        if not formula:
+            consulta = (sql or '').lower()
+            if tipo == 'conteo' and 'albaranes_count' in consulta:
+                formula = 'Número de albaranes de venta del ejercicio.'
+            elif tipo == 'conteo':
+                formula = 'Número de filas con importe neto distinto de cero.'
+            elif tipo == 'card':
+                formula = 'Margen = importe neto − coste. El porcentaje es ese margen partido por el importe neto.'
+            else:
+                formula = 'Filas de la métrica del ejercicio, con el corte de la consulta.'
+        filtros = []
+        empresa = re.search(r'(?i)\bempresa\s*=\s*(\d+)', sql or '')
+        ejercicio = re.search(r'(?i)\bejercicio\s*=\s*(\d+)', sql or '')
+        if empresa:
+            filtros.append(f'Empresa {empresa.group(1)}')
+        if ejercicio:
+            filtros.append(f'Ejercicio {ejercicio.group(1)}')
+        elif year:
+            filtros.append(f'Ejercicio {year}')
+        return origen(', '.join(tablas), formula, filtros, sql)
 
     @staticmethod
     def _nota_coste():

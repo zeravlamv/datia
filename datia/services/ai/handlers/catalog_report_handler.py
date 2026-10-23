@@ -175,10 +175,10 @@ class CatalogReportHandler(BaseHandler):
         fallback_answer = self._build_fallback_answer(payload, intent_id, context)
         aviso = payload.get('aviso') or ''
         if fallback_answer:
-            payload["answer"] = f"{fallback_answer} {aviso}".strip()
+            payload["answer"] = "\n\n".join(parte for parte in (fallback_answer, aviso) if parte).strip()
             payload["text"] = payload["answer"]
         elif aviso:
-            payload["answer"] = f"{payload.get('answer') or ''} {aviso}".strip()
+            payload["answer"] = "\n\n".join(parte for parte in (payload.get("answer") or payload.get("text") or "", aviso) if parte).strip()
             payload["text"] = payload["answer"]
         if payload.get('datos_debiles'):
             return payload
@@ -233,6 +233,7 @@ class CatalogReportHandler(BaseHandler):
             "- Sé específico: evita frases vacías como 'crecimiento sólido' si no explicas contra qué y cuánto.\n"
             "- Si los datos son débiles o contradictorios, dilo explícitamente.\n"
             "- Máximo 220 palabras.\n"
+            "- Forma del texto: primera línea «# Título», luego párrafos cortos. Las cifras, nombres y años van entre **. Cada aviso en su línea, empezando por «> ».\n"
             "No inventes cifras que no aparezcan en el contexto. No repitas literalmente el JSON."
         )
 
@@ -258,18 +259,19 @@ class CatalogReportHandler(BaseHandler):
     def _build_fallback_answer(self, payload: Dict[str, Any], intent_id: str, context: Dict) -> str:
         empresa = context.get("empresa")
         ejercicio = context.get("ejercicio")
+
+        def fnum(v, decimales=2):
+            try:
+                return f"{float(v or 0):,.{decimales}f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            except Exception:
+                return "0,00"
+
         if intent_id == "finanzas.resumen_ejercicio":
             totals = payload.get("totals") or {}
             snapshot = (totals.get("snapshot") or {}) if isinstance(totals, dict) else {}
             py = (snapshot.get("py") or {}) if isinstance(snapshot, dict) else {}
             var = (snapshot.get("var") or {}) if isinstance(snapshot, dict) else {}
             ratios = ((totals.get("ratios") or {}).get("ratios") or {}) if isinstance(totals, dict) else {}
-
-            def fnum(v):
-                try:
-                    return f"{float(v or 0):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-                except Exception:
-                    return "0,00"
 
             ingresos = float(snapshot.get("ingresos") or 0)
             gastos = float(snapshot.get("gastos") or 0)
@@ -287,17 +289,21 @@ class CatalogReportHandler(BaseHandler):
             pago = float(((ratios.get("periodo_pago") or {}).get("value")) or 0)
 
             return (
-                f"Situación actual: en {ejercicio}, la empresa {empresa} registra ingresos de {fnum(ingresos)} €,"
-                f" gastos de {fnum(gastos)} € y un resultado de explotación de {fnum(resultado)} €. "
-                f"Además, los otros ingresos suman {fnum(otros_ing)} € y los otros gastos {fnum(otros_gast)} €.\n\n"
-                f"Variación vs año anterior: frente a {ejercicio - 1}, los ingresos cambian un {fnum(ing_pct)} %"
-                f" ({fnum(ingresos - ing_py)} €) y el resultado de explotación cambia un {fnum(res_pct)} %"
-                f" ({fnum(resultado - res_py)} €).\n\n"
-                f"Riesgos y oportunidades: el margen EBITDA se sitúa en {fnum(margen)} %, la liquidez corriente en {fnum(liquidez)}x"
-                f" y el endeudamiento en {fnum(endeud)} %. El periodo medio de cobro es {fnum(cobro)} días"
-                f" y el de pago {fnum(pago)} días.\n\n"
-                f"Acciones recomendadas: revisar la estructura de otros gastos, defender margen en líneas rentables"
-                f" y ajustar circulante para reducir tensión entre cobro y pago."
+                f"# Situación {ejercicio}\n"
+                f"## Situación actual\n"
+                f"En {ejercicio}, la empresa {empresa} registra ingresos de {fnum(ingresos)} €, "
+                f"gastos de {fnum(gastos)} € y un resultado de explotación de {fnum(resultado)} €. "
+                f"Los otros ingresos suman {fnum(otros_ing)} € y los otros gastos {fnum(otros_gast)} €.\n\n"
+                f"## Variación frente a {int(ejercicio) - 1 if ejercicio else 'el año anterior'}\n"
+                f"Los ingresos cambian un {fnum(ing_pct)} % ({fnum(ingresos - ing_py)} €) "
+                f"y el resultado de explotación cambia un {fnum(res_pct)} % ({fnum(resultado - res_py)} €).\n\n"
+                f"## Riesgos y oportunidades\n"
+                f"El margen EBITDA se sitúa en {fnum(margen)} %, la liquidez corriente en {fnum(liquidez)}x "
+                f"y el endeudamiento en {fnum(endeud)} %. El periodo medio de cobro es {fnum(cobro)} días "
+                f"y el de pago {fnum(pago)} días.\n\n"
+                f"## Acciones recomendadas\n"
+                f"Revisar la estructura de otros gastos, defender margen en líneas rentables "
+                f"y ajustar circulante para reducir tensión entre cobro y pago."
             )
 
         if intent_id == "ventas.top_clientes":
@@ -320,11 +326,11 @@ class CatalogReportHandler(BaseHandler):
                 if py is None:
                     frente = f"sin métrica de {int(ejercicio) - 1}" if ejercicio else "sin métrica del ejercicio anterior"
                 else:
-                    frente = f"frente a {py:,.2f} € del ejercicio anterior ({(varpct or 0):.1f} %)"
+                    frente = f"frente a {fnum(py)} € del ejercicio anterior ({fnum(varpct or 0, 1)} %)"
                 return (
-                    f"Ranking comercial {ejercicio}: el cliente líder es {c} con ventas de {v:,.2f} €,"
-                    f" {frente}. "
-                    f"Los tres primeros clientes concentran {top3:,.2f} € sobre un total analizado de {total:,.2f} €. "
+                    f"# Ranking comercial {ejercicio}\n"
+                    f"El cliente líder es {c} con ventas de {fnum(v)} €, {frente}.\n\n"
+                    f"Los tres primeros clientes concentran {fnum(top3)} € sobre un total analizado de {fnum(total)} €.\n\n"
                     f"Conviene revisar concentración, evolución del margen y dependencia comercial sobre la cabecera del ranking."
                 )
 
@@ -333,8 +339,9 @@ class CatalogReportHandler(BaseHandler):
             if kpis:
                 k = kpis[0]
                 return (
-                    f"Ventas {ejercicio}: volumen neto de {k.get('value', 0):,.2f} {k.get('suffix', '')}. "
-                    f"La evolución interanual es {k.get('change', 0)} %. "
+                    f"# Ventas {ejercicio}\n"
+                    f"Volumen neto de {fnum(k.get('value', 0))} {k.get('suffix', '')}.\n\n"
+                    f"La evolución interanual es {k.get('change', 0)} %.\n\n"
                     f"El análisis debe centrarse en estacionalidad mensual, concentración de clientes y protección del margen."
                 )
 

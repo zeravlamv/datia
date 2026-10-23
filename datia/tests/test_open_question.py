@@ -1,3 +1,4 @@
+import datetime
 import os
 import sys
 import unittest
@@ -22,6 +23,34 @@ from datia.services.ai.open_question import OpenQuestion
 from datia.services.ai.semantic_plan import SemanticPlan
 from datia.services.ai.profundizar import Profundizar
 from datia.services.query_builder import QueryBuilder
+
+
+class TestOrigenSiempre(SimpleTestCase):
+    def test_el_ranking_de_productos_lleva_tabla_y_consulta(self):
+        from datia.services.ai.presentacion import asegurar_origen
+        salida = asegurar_origen({
+            'type': 'report',
+            'key': 'ventas_top_productos',
+            'answer': 'Mejores productos del ejercicio 2025.',
+            'query': 'los 10 mejores productos 2025',
+        }, 1, 2025)
+        self.assertIn('metrics_totales_empresa_ejercicio_articulo', salida['origen']['tabla'])
+        self.assertIn('venta neta', salida['origen']['formula'])
+        self.assertIn('ejercicio = 2025', salida['origen']['consulta'])
+
+    def test_no_pisa_un_origen_que_ya_existe(self):
+        from datia.services.ai.presentacion import asegurar_origen
+        salida = asegurar_origen({
+            'type': 'report',
+            'key': 'ventas_top_productos',
+            'origen': {'tabla': 'ya', 'formula': 'hecha', 'filtros': [], 'consulta': 'SELECT 1'},
+        }, 1, 2025)
+        self.assertEqual(salida['origen']['tabla'], 'ya')
+
+    def test_la_ambiguedad_no_lleva_origen(self):
+        from datia.services.ai.presentacion import asegurar_origen
+        salida = asegurar_origen({'type': 'ambiguity_alert', 'answer': 'Indica si buscas productos.'}, 1, 2025)
+        self.assertNotIn('origen', salida)
 
 
 class TestCubreLaPregunta(SimpleTestCase):
@@ -64,6 +93,8 @@ class TestPlantillasAbiertas(SimpleTestCase):
         hit = OpenQuestion.plantilla('cuantos clientes en 2025', 1, 2025, 10)
         self.assertEqual(hit['key'], 'conteo')
         self.assertIn('count(*)', hit['sql'].lower())
+        self.assertEqual(hit['origen']['tabla'], 'metrics_totales_empresa_ejercicio_cliente')
+        self.assertIn('importe neto', hit['origen']['formula'])
 
     def test_cuanto_deben_se_distingue_de_un_pedido_pendiente(self):
         self.assertEqual(OpenQuestion.clasificar_deuda('cuanto deben los clientes'), 'C')
@@ -386,6 +417,148 @@ class TestProfundizar(SimpleTestCase):
         detalle = Profundizar.responder('cuantos kilos de cafe se han vendido en 2025', 1, 2025)
         self.assertEqual(detalle['type'], 'text')
         self.assertNotIn('table', detalle)
+
+
+class TestVentasDeUnDia(SimpleTestCase):
+    def test_ayer_es_el_dia_anterior_y_no_el_ejercicio(self):
+        hoy = datetime.date(2026, 10, 21)
+        self.assertIsNone(QueryBuilder._dia_natural('ventas por mes de 2025', hoy))
+        self.assertIsNone(QueryBuilder._dia_natural('compras de ayer', hoy))
+        dia, nombre = QueryBuilder._dia_natural('dime las ventas que hicimos ayer', hoy)
+        self.assertEqual(nombre, 'ayer')
+        self.assertEqual(dia, datetime.date(2026, 10, 20))
+        self.assertEqual(QueryBuilder._dia_natural('ventas de hoy', hoy)[0], hoy)
+        self.assertEqual(QueryBuilder._dia_natural('albaranes de anteayer', hoy)[0], datetime.date(2026, 10, 19))
+
+    def test_la_consulta_filtra_el_dia_y_la_empresa(self):
+        hoy = datetime.date(2026, 10, 21)
+        cur = _CursorDia((1234.5, 2))
+        with patch('datia.services.query_builder.connections') as conexiones:
+            conexiones.databases = {}
+            conexiones.__getitem__.return_value.cursor.return_value = cur
+            respuesta = QueryBuilder._ventas_de_un_dia('dime las ventas que hicimos ayer', 1, hoy)
+        texto = respuesta['reply']['answer']
+        self.assertIn('20 de octubre de 2026', texto)
+        self.assertIn('1.234,50 €', texto)
+        self.assertIn('2 albaranes', texto)
+        self.assertNotIn('ejercicio', cur.sql.lower())
+        self.assertEqual(cur.params[0], 1)
+        self.assertEqual(cur.params[1], datetime.date(2026, 10, 20))
+        self.assertEqual(cur.params[2], datetime.date(2026, 10, 21))
+        self.assertTrue(_respuesta_tiene_valor(respuesta['reply']))
+
+    def test_sin_albaranes_no_cambia_al_grafico_del_ano(self):
+        cur = _CursorDia((0, 0))
+        with patch('datia.services.query_builder.connections') as conexiones:
+            conexiones.databases = {}
+            conexiones.__getitem__.return_value.cursor.return_value = cur
+            respuesta = QueryBuilder._construir_consulta(
+                'dime las ventas que hicimos ayer',
+                {'empresa': 2, 'ejercicio': 2025},
+            )
+        self.assertIn('no hubo ventas', respuesta['reply']['answer'])
+        self.assertNotIn('metrics_totales', cur.sql)
+        self.assertTrue(_respuesta_tiene_valor(respuesta['reply']))
+
+    def test_el_ultimo_dia_es_la_fecha_mas_reciente_con_albaranes(self):
+        self.assertFalse(QueryBuilder._pide_ultimo_dia('ventas por mes de 2025'))
+        self.assertFalse(QueryBuilder._pide_ultimo_dia('compras del ultimo dia'))
+        self.assertTrue(QueryBuilder._pide_ultimo_dia('el último día de ventas'))
+        cur = _CursorCola([
+            (datetime.datetime(2026, 9, 3, 18, 30),),
+            (800.25, 4),
+        ])
+        with patch('datia.services.query_builder.connections') as conexiones:
+            conexiones.databases = {}
+            conexiones.__getitem__.return_value.cursor.return_value = cur
+            respuesta = QueryBuilder._construir_consulta(
+                'el último día de ventas',
+                {'empresa': 2, 'ejercicio': 2025},
+            )
+        texto = respuesta['reply']['answer']
+        self.assertIn('Último día de ventas', texto)
+        self.assertIn('3 de septiembre de 2026', texto)
+        self.assertIn('800,25 €', texto)
+        self.assertIn('4 albaranes', texto)
+        self.assertNotIn('ejercicio', cur.llamadas[0][0].lower())
+        self.assertNotIn('metrics_totales', cur.llamadas[1][0])
+        self.assertEqual(cur.llamadas[1][1], [2, datetime.date(2026, 9, 3), datetime.date(2026, 9, 4)])
+        self.assertTrue(_respuesta_tiene_valor(respuesta['reply']))
+
+    def test_el_ultimo_albaran_es_el_documento_no_el_resumen_del_ano(self):
+        self.assertTrue(QueryBuilder._pide_ultimo_albaran('el ultimo albaran'))
+        self.assertTrue(QueryBuilder._pide_ultimo_albaran('el último albarán'))
+        self.assertFalse(QueryBuilder._pide_ultimo_albaran('el último día de ventas'))
+        self.assertFalse(QueryBuilder._pide_ultimo_albaran('ultimo albaran de proveedor'))
+        cur = _CursorCola([
+            (datetime.datetime(2026, 9, 3, 18, 30),),
+            (datetime.datetime(2026, 9, 3, 18, 30), 'A', 4521, 'CAFES RONDA', '100', 1234.5),
+        ])
+        with patch('datia.services.query_builder.connections') as conexiones:
+            conexiones.databases = {}
+            conexiones.__contains__.return_value = True
+            conexiones.__getitem__.return_value.vendor = 'postgresql'
+            conexiones.__getitem__.return_value.cursor.return_value = cur
+            respuesta = QueryBuilder._construir_consulta(
+                'el ultimo albaran',
+                {'empresa': 2, 'ejercicio': 2025},
+            )
+        texto = respuesta['reply']['answer']
+        self.assertIn('Último albarán', texto)
+        self.assertIn('3 de septiembre de 2026', texto)
+        self.assertIn('serie A', texto)
+        self.assertIn('número 4521', texto)
+        self.assertIn('CAFES RONDA', texto)
+        self.assertIn('1.234,50 €', texto)
+        self.assertNotIn('Resumen Ejecutivo', texto)
+        self.assertNotIn('ejercicio', cur.llamadas[0][0].lower())
+        self.assertNotIn('metrics_totales', cur.llamadas[1][0])
+        self.assertIn('ORDER BY numeroalbaran DESC', cur.llamadas[1][0])
+        self.assertEqual(cur.llamadas[1][1][0], 2)
+        self.assertEqual(cur.llamadas[1][1][1], datetime.date(2026, 9, 3))
+        self.assertTrue(_respuesta_tiene_valor(respuesta['reply']))
+
+
+class _CursorCola:
+    def __init__(self, filas):
+        self.filas = list(filas)
+        self.llamadas = []
+        self.sql = ''
+        self.params = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+    def execute(self, sql, params):
+        self.sql = sql
+        self.params = params
+        self.llamadas.append((sql, params))
+
+    def fetchone(self):
+        return self.filas.pop(0)
+
+
+class _CursorDia:
+    def __init__(self, fila):
+        self.fila = fila
+        self.sql = ''
+        self.params = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+    def execute(self, sql, params):
+        self.sql = sql
+        self.params = params
+
+    def fetchone(self):
+        return self.fila
 
 
 if __name__ == '__main__':

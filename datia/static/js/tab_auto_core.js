@@ -33,6 +33,8 @@ function switchAutoTab(tabId) {
         if (typeof loadStandardFields === 'function') loadStandardFields();
     } else if (tabId === 'subtab-sync') {
         if (typeof prepareSyncScreen === 'function') prepareSyncScreen();
+    } else if (tabId === 'subtab-training') {
+        if (typeof cargarListaExamen === 'function') cargarListaExamen();
     }
 }
 

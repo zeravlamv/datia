@@ -19,6 +19,22 @@ class ResponseFormatter:
         response_type = match_meta.get('type', 'text')
         label = match_meta.get('label', 'Resultados')
         
+        if not rows and response_type == 'listado':
+            return {
+                'text': 'No hay registros.',
+                'answer': 'No hay registros.',
+                'type': 'report',
+                'sql': match_meta.get('sql'),
+                'source': match_meta.get('source'),
+                'completo': bool(match_meta.get('completo')),
+                'kpis': [{'label': 'Registros', 'value': 0, 'suffix': 'uds'}],
+                'table': {
+                    'title': label,
+                    'columns': match_meta.get('titulos') or [],
+                    'rows': [],
+                },
+            }
+
         if not rows:
             # [FIX] Improve UX for "Auto-Training" generic labels
             display_label = label
@@ -39,6 +55,9 @@ class ResponseFormatter:
         count_only = ResponseFormatter._count_only_answer(rows, match_meta)
         if count_only:
             return count_only
+
+        if response_type == 'listado':
+            return ResponseFormatter._format_listado(label, rows, match_meta)
 
         if response_type == 'cantidad':
             return ResponseFormatter._format_cantidad(rows, match_meta, ejercicio)
@@ -77,6 +96,41 @@ class ResponseFormatter:
         return {"text": msg, "answer": msg, "sql": match_meta['sql']}
 
     @staticmethod
+    def _format_listado(label: str, rows: List[Dict], match_meta: Dict) -> Dict:
+        columnas = match_meta.get('columnas') or list(rows[0].keys())
+        titulos = match_meta.get('titulos') or columnas
+        if len(titulos) != len(columnas):
+            titulos = columnas
+        completo = bool(match_meta.get('completo'))
+        total = len(rows)
+        visibles = rows[:10000] if completo and total > 10000 else rows
+        tabla = []
+        for fila in visibles:
+            tabla.append([fila.get(columna) for columna in columnas])
+        texto = label
+        if completo and total > 10000:
+            texto = f'La lista está incompleta. Hay {total} registros y se muestran 10.000. {label}'
+        return {
+            'text': texto,
+            'answer': texto,
+            'type': 'report',
+            'sql': match_meta.get('sql'),
+            'source': match_meta.get('source'),
+            'completo': completo,
+            'kpis': [{
+                'label': 'Registros',
+                'value': total,
+                'suffix': 'uds',
+            }],
+            'table': {
+                'title': label,
+                'columns': titulos,
+                'rows': tabla,
+            },
+            'origen': match_meta.get('origen'),
+        }
+
+    @staticmethod
     def _count_only_answer(rows: List[Dict], match_meta: Dict) -> Optional[Dict]:
         amount_keys = {
             'val', 'neto', 'importe', 'importe_neto', 'importe_neto_total',
@@ -102,13 +156,16 @@ class ResponseFormatter:
             msg = f"{match_meta.get('label') or 'Conteo'}: {shown}."
         else:
             msg = f"El resultado es un conteo de {shown} registros. No es el importe del ejercicio."
-        return {
+        salida = {
             "text": msg,
             "answer": msg,
             "sql": match_meta.get('sql'),
             "type": "text",
             "source": match_meta.get('source'),
         }
+        if isinstance(match_meta.get('origen'), dict):
+            salida['origen'] = match_meta['origen']
+        return salida
 
     @staticmethod
     def _format_cantidad(rows: List[Dict], match_meta: Dict, ejercicio: int) -> Dict:
@@ -236,7 +293,7 @@ class ResponseFormatter:
          </div>
          {methodology}
         '''
-        return {
+        salida = {
             "text": text_answer + html,
             "answer": text_answer + html, # [FIX] Frontend expects 'answer'
             "sql": sql,
@@ -245,6 +302,9 @@ class ResponseFormatter:
             "key": match_meta.get('key') if match_meta else None,
             "source": match_meta.get('source') if match_meta else None
         }
+        if match_meta and isinstance(match_meta.get('origen'), dict):
+            salida['origen'] = match_meta['origen']
+        return salida
 
     @staticmethod
     def _format_line_chart(label: str, ejercicio: int, rows: List[Dict], sql: str, lang: str, match_meta: Dict = None) -> Dict:
@@ -1227,5 +1287,16 @@ class ResponseFormatter:
                     "datasets": chart_datasets
                 }
             }
+
+        if str(match_meta.get('key') or '').startswith('ranking_') and formatted_rows:
+            primero = formatted_rows[0]
+            result['kpis'] = [{
+                'label': str(primero.get('label') or 'Primero')[:80],
+                'value': round(float(primero.get('val') or 0), 2),
+                'suffix': '€',
+                'color': '#60a5fa',
+            }]
+        if isinstance(match_meta.get('origen'), dict):
+            result['origen'] = match_meta['origen']
         
         return result

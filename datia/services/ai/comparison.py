@@ -34,5 +34,5 @@ def aviso_coste_y_hueco(filas, ejercicio_anterior):
             f"{huecos} filas no tienen métrica de {ejercicio_anterior}. "
             "La variación no es 0 %: es un hueco y se muestra como «sin datos»."
         )
-    texto = ' '.join(partes)
+    texto = "\n".join(f"> {parte}" for parte in partes)
     return texto, bool(texto)

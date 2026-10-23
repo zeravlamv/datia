@@ -536,7 +536,8 @@ function renderAiChart(container, config) {
                 formatter: function (params) {
                     let res = `<div style="font-family: 'Inter', sans-serif; font-size: 0.85rem; margin-bottom: 4px; color: #a1a1aa;">${params[0].name}</div>`;
                     params.forEach(p => {
-                        const val = typeof p.value === 'number' ? p.value.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €' : p.value;
+                        const sufijo = config.suffix === undefined ? ' €' : config.suffix;
+                        const val = typeof p.value === 'number' ? p.value.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + sufijo : p.value;
                         res += `<div style="display: flex; justify-content: space-between; gap: 15px; font-family: 'Inter', sans-serif;">
                                     <span style="color: ${p.color}">${p.marker} ${p.seriesName}</span>
                                     <span style="font-weight: 600; color: #fff;">${val}</span>

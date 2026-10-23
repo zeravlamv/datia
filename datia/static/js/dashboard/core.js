@@ -1502,6 +1502,10 @@ async function loadFilters() {
                 applyEmpresaName(empName);
             }
         } catch (_) { }
+        const examenPanel = document.getElementById('subtab-training');
+        if (examenPanel && examenPanel.style.display === 'block' && typeof cargarListaExamen === 'function' && currEmpresa && currEjercicio) {
+            cargarListaExamen();
+        }
         const panelAnat = document.getElementById('sub-anatomia');
         if (panelAnat && (panelAnat.classList.contains('active') || panelAnat.style.display !== 'none')) {
             if (typeof loadUtilityAnatomy === 'function') {
