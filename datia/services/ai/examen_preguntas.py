@@ -136,6 +136,23 @@ def clasificar(spec, respuesta) -> str:
     modo = spec.get('modo')
     datos = resp.get('data') or []
 
+    if modo == 'rechazo':
+        esperado = str(spec.get('texto') or '')
+        hay_dato = bool(kpis or filas or datos or _numeros_en_texto(texto))
+        if hay_dato:
+            return 'otra_cifra'
+        if esperado and esperado not in texto:
+            return 'otra_cifra'
+        return 'cifra_tabla'
+
+    if spec.get('vinculo') == 'continuacion':
+        if resp.get('vinculo') != 'continuacion':
+            return 'otra_cifra'
+        if list(resp.get('sustituye') or []) != list(spec.get('sustituye') or []):
+            return 'otra_cifra'
+    if spec.get('vinculo') == 'sola' and resp.get('hereda'):
+        return 'otra_cifra'
+
     if modo == 'sin_cifra':
         if kpis or filas or _numeros_en_texto(texto):
             return 'otra_cifra'
@@ -487,6 +504,191 @@ def _spec_de(pregunta, salida):
     }
 
 
+_FORMAS = (
+    'filtrar', 'varios_filtros', 'agrupar', 'sumar', 'contar', 'promediar',
+    'maximo', 'minimo', 'listar', 'conjunto', 'numero', 'periodo',
+    'comparacion', 'tabla', 'grafica',
+)
+_CACHE_REVISION = 3
+
+
+def _frases_forma(ejercicio):
+    anio = int(ejercicio)
+    previo = anio - 1
+    return {
+        'filtrar': 'ventas del producto 01110',
+        'varios_filtros': 'ventas del producto 01110 del cliente 43000008820',
+        'agrupar': 'ventas por cliente',
+        'sumar': 'ventas del ejercicio',
+        'contar': 'cuantos clientes hay',
+        'promediar': 'promedio de ventas del ejercicio',
+        'maximo': 'maximo de ventas del ejercicio',
+        'minimo': 'minimo de ventas del ejercicio',
+        'listar': 'lista de articulos con el codigo y la descripcion',
+        'conjunto': 'lista de todos los articulos con el codigo, la descripcion y la familia',
+        'numero': 'los 10 primeros articulos con el codigo y la descripcion',
+        'periodo': f'ventas del ejercicio {anio}',
+        'comparacion': f'grafica de ventas comparativa {previo} vs {anio}',
+        'tabla': 'ventas por cliente',
+        'grafica': f'grafica de ventas comparativa {previo} vs {anio}',
+    }
+
+
+def _frase_sola_distinta(frase):
+    if 'articulo' in frase:
+        return 'ventas del ejercicio'
+    return 'lista de todos los articulos con el codigo y la descripcion'
+
+
+def _lectura_publica(salida):
+    lectura = (salida or {}).get('lectura') or {}
+    return lectura if lectura.get('plan') else None
+
+
+def cubrir_territorio(campos, relaciones, columnas, ejercicio, consultar_fn):
+    """Una pregunta por columna, relación y forma, más la pareja de memoria. No es el producto cartesiano."""
+    from datia.services.ai.compilador_mapeo import nombre_fisico
+    from datia.services.ai.interprete_mapeo import _MENSAJE
+
+    preguntas = []
+    faltan = []
+    sqls = []
+
+    def anotar(pieza, frase, vinculo='sola', lectura_previa=None, sustituye=None):
+        try:
+            salida = consultar_fn(frase, lectura_previa)
+        except Exception:
+            logger.exception('Examen: no se pudo preparar %s', frase)
+            faltan.append(pieza)
+            return None
+        if not isinstance(salida, dict) or salida.get('reply') or not salida.get('sql'):
+            faltan.append(pieza)
+            return None
+        if vinculo == 'continuacion' and salida.get('vinculo') != 'continuacion':
+            faltan.append(pieza)
+            return None
+        if vinculo == 'sola' and salida.get('vinculo') not in (None, 'sola'):
+            faltan.append(pieza)
+            return None
+        if vinculo == 'sola' and salida.get('hereda'):
+            faltan.append(pieza)
+            return None
+        item = {
+            'pregunta': frase,
+            'vinculo': salida.get('vinculo') or vinculo,
+            'pieza': pieza,
+            'sql': salida.get('sql') or '',
+            'salida': salida,
+            'lectura_previa': lectura_previa,
+            'sustituye': list(salida.get('sustituye') or sustituye or []),
+            'hereda': list(salida.get('hereda') or []),
+            'es_probe': False,
+        }
+        preguntas.append(item)
+        sqls.append(item['sql'].lower())
+        return item
+
+    formas = _frases_forma(ejercicio)
+    for forma in _FORMAS:
+        base = anotar(f'forma:{forma}', formas[forma])
+        if base is None:
+            faltan.append(f'pareja:{forma}')
+            continue
+        previo = int(ejercicio) - 1
+        anotar(
+            f'pareja:{forma}:continuacion',
+            f'y en {previo}',
+            vinculo='continuacion',
+            lectura_previa=_lectura_publica(base['salida']),
+            sustituye=['periodo'],
+        )
+        anotar(f'pareja:{forma}:sola', _frase_sola_distinta(formas[forma]), vinculo='sola')
+
+    for campo in campos:
+        fisico = nombre_fisico(campo, columnas.get(campo.source_id, set()) if isinstance(columnas, dict) else set())
+        token = str(fisico or '').lower()
+        if token and any(token in sql for sql in sqls):
+            continue
+        faltan.append(f'columna:{getattr(campo, "business_name", None) or getattr(campo, "field_name", campo.id)}')
+
+    vistos = set()
+    for relacion in relaciones or []:
+        par = (relacion.source_id, relacion.target_id)
+        if par in vistos:
+            continue
+        vistos.add(par)
+        origen = str(getattr(relacion.source, 'get_local_table_name', lambda: '')() or '').lower()
+        destino = str(getattr(relacion.target, 'get_local_table_name', lambda: '')() or '').lower()
+        if origen and destino and any(origen in sql and destino in sql for sql in sqls):
+            continue
+        faltan.append('relacion:' + str(par[0]) + '-' + str(par[1]))
+
+    probes = []
+    for frase, texto in (
+        ('que tiempo hace hoy', ''),
+        ('listado de clientes con el motivo', _MENSAJE),
+    ):
+        try:
+            salida = consultar_fn(frase, None)
+        except Exception:
+            salida = None
+        respuesta = ''
+        if isinstance(salida, dict):
+            respuesta = ((salida.get('reply') or {}).get('answer')) or salida.get('answer') or ''
+        probes.append({
+            'pregunta': frase,
+            'vinculo': 'rechazo',
+            'es_probe': True,
+            'modo': 'rechazo',
+            'texto': texto,
+            'esperado': texto or 'Sin cifra de la empresa',
+            'respuesta': respuesta,
+        })
+    return {
+        'preguntas': preguntas,
+        'probes': probes,
+        'incompleta': bool(faltan),
+        'falta': faltan[0] if faltan else '',
+        'faltan': faltan,
+    }
+
+
+def revision_aceptada(incompleta, coinciden, total, rechazos, probes) -> bool:
+    """Solo se acepta con territorio completo, todas las preguntas coincidiendo y todos los probes rechazados."""
+    return (not incompleta) and total > 0 and coinciden == total and rechazos == probes
+
+
+def empaquetar_revision(empresa, ejercicio, preguntas, probes, incompleta, falta, aviso=''):
+    visibles = []
+    for spec in list(preguntas or []) + list(probes or []):
+        visibles.append({
+            'pregunta': spec.get('pregunta') or '',
+            'esperado': spec.get('esperado') or '',
+            'vinculo': spec.get('vinculo') or '',
+            'es_probe': bool(spec.get('es_probe')),
+            'pieza': spec.get('pieza') or '',
+        })
+    return {
+        'empresa': int(empresa),
+        'ejercicio': int(ejercicio),
+        'estado': 'Preparada',
+        'aviso': aviso,
+        'incompleta': bool(incompleta),
+        'falta': falta or '',
+        'territorio': len(preguntas or []),
+        'probes': [
+            {'pregunta': item.get('pregunta') or '', 'esperado': item.get('esperado') or ''}
+            for item in (probes or [])
+        ],
+        'puede_aceptarse': False,
+        'total': len(visibles),
+        'preguntas': [
+            {'indice': i, **item}
+            for i, item in enumerate(visibles)
+        ],
+    }
+
+
 def _banco_mapeado(empresa, ejercicio):
     from datia.services.ai.compilador_mapeo import _mapa
     from datia.services.ai.interprete_mapeo import _cargar as cargar_catalogo
@@ -553,55 +755,121 @@ def _banco_mapeado(empresa, ejercicio):
             continue
         if not spec:
             continue
+        spec['vinculo'] = (salida.get('vinculo') or 'sola')
+        spec['sustituye'] = list(salida.get('sustituye') or [])
+        spec['hereda'] = list(salida.get('hereda') or [])
         if frase == _FRASE_CATALOGO:
             catalogo = spec
             continue
         banco.append(spec)
-        if len(banco) >= _TOPE:
-            break
     if catalogo:
         banco.insert(0, catalogo)
+
+    def consultar_fn(frase, lectura=None):
+        return consultar(
+            frase,
+            empresa,
+            anio,
+            10,
+            campos=campos,
+            relaciones=relaciones,
+            columnas=columnas,
+            pedir=_sin_modelo,
+            dialecto=None,
+            sondear=False,
+            lectura=lectura,
+        )
+
+    cubierto = cubrir_territorio(campos, relaciones, columnas, anio, consultar_fn)
+    ya = {item['pregunta'] for item in banco}
+    for item in cubierto['preguntas']:
+        clave = item['pregunta']
+        if item.get('vinculo') != 'continuacion' and clave in ya:
+            continue
+        try:
+            spec = _spec_de(item['pregunta'], item['salida'])
+        except Exception:
+            logger.exception('Examen: no se pudo calcular la cifra esperada')
+            connections[alias].rollback()
+            continue
+        if not spec:
+            continue
+        spec['vinculo'] = item.get('vinculo') or 'sola'
+        spec['pieza'] = item.get('pieza') or ''
+        spec['lectura_previa'] = item.get('lectura_previa')
+        spec['sustituye'] = list(item.get('sustituye') or [])
+        spec['hereda'] = list(item.get('hereda') or [])
+        banco.append(spec)
+        ya.add(clave)
+    for probe in cubierto['probes']:
+        banco.append(probe)
     aviso = ''
-    if len(banco) < _TOPE:
-        aviso = f'Solo he podido preparar {len(banco)} preguntas con los datos mapeados de esta empresa.'
-    return aviso, banco
+    if cubierto['incompleta']:
+        aviso = 'La revisión está incompleta. Falta ' + str(cubierto['falta'])
+    return {
+        'aviso': aviso,
+        'banco': banco,
+        'incompleta': cubierto['incompleta'],
+        'falta': cubierto['falta'],
+    }
 
 
 def _cargar(empresa, ejercicio):
-    clave = (int(empresa), int(ejercicio))
+    clave = (int(empresa), int(ejercicio), _CACHE_REVISION)
     guardado = _CACHE.get(clave)
     if guardado is not None:
         return guardado
     try:
-        aviso, banco = _banco_mapeado(clave[0], clave[1])
+        paquete = _banco_mapeado(clave[0], clave[1])
     except Exception:
         logger.exception('Examen: no se pudieron preparar las preguntas')
-        aviso = 'No he podido preparar las preguntas de los datos mapeados.'
-        banco = []
-    if banco:
-        _CACHE[clave] = (aviso, banco)
-    return aviso, banco
+        paquete = {
+            'aviso': 'No he podido preparar las preguntas de los datos mapeados.',
+            'banco': [],
+            'incompleta': True,
+            'falta': 'territorio',
+        }
+    if paquete.get('banco'):
+        _CACHE[clave] = paquete
+    return paquete
 
 
 def listar(empresa, ejercicio):
-    aviso, banco = _cargar(empresa, ejercicio)
-    return {
-        'empresa': int(empresa),
-        'ejercicio': int(ejercicio),
-        'aviso': aviso,
-        'total': len(banco),
-        'preguntas': [
-            {'indice': i, 'pregunta': spec['pregunta'], 'esperado': spec.get('esperado') or ''}
-            for i, spec in enumerate(banco)
-        ],
-    }
+    paquete = _cargar(empresa, ejercicio)
+    banco = paquete.get('banco') or []
+    preguntas = [spec for spec in banco if not spec.get('es_probe')]
+    probes = [spec for spec in banco if spec.get('es_probe')]
+    vista = empaquetar_revision(
+        empresa,
+        ejercicio,
+        preguntas,
+        probes,
+        paquete.get('incompleta'),
+        paquete.get('falta') or '',
+        paquete.get('aviso') or '',
+    )
+    vista['preguntas'] = [
+        {
+            'indice': i,
+            'pregunta': spec.get('pregunta') or '',
+            'esperado': spec.get('esperado') or '',
+            'vinculo': spec.get('vinculo') or '',
+            'es_probe': bool(spec.get('es_probe')),
+            'pieza': spec.get('pieza') or '',
+        }
+        for i, spec in enumerate(banco)
+    ]
+    vista['total'] = len(banco)
+    vista['territorio'] = len(preguntas)
+    return vista
 
 
 def responder_una(empresa, ejercicio, indice):
     from datia.services.ai_service import IAService
     from datia.services.embedding_service import examen_sin_guardar
 
-    _aviso, banco = _cargar(empresa, ejercicio)
+    paquete = _cargar(empresa, ejercicio)
+    banco = paquete.get('banco') or []
     if indice < 0 or indice >= len(banco):
         raise IndexError('Esa pregunta no está en el examen.')
     spec = banco[indice]
@@ -613,6 +881,7 @@ def responder_una(empresa, ejercicio, indice):
                 int(empresa),
                 int(ejercicio),
                 training_enabled=False,
+                lectura=spec.get('lectura_previa'),
             )
         except Exception:
             logger.exception('Examen: la pregunta no se pudo ejecutar')

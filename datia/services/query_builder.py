@@ -2524,49 +2524,87 @@ class QueryBuilder:
         
         logger.info(f"QueryBuilder v2: Processing '{question}'")
 
+        from datia.services.ai.lectura_completa import cubre as _cubre
+        from datia.services.ai.lectura_completa import exigidos as _exigidos
+        from datia.services.ai.lectura_completa import respuesta_incompleta
+        from datia.services.ai.interprete_mapeo import _anio_del_hilo
+        pedido = _exigidos(question, context.get('lectura'), ejercicio)
+        negativa = {}
+        anio_plan = _anio_del_hilo(context.get('lectura')) or ejercicio
+
+        def devolver(respuesta):
+            if not respuesta:
+                return None
+            if pedido and not _cubre(question, respuesta, context.get('lectura'), anio_plan, pedido):
+                reply = respuesta.get('reply') if isinstance(respuesta, dict) else None
+                if isinstance(reply, dict) and reply.get('dato_no_cargado') and 'valor' not in negativa:
+                    negativa['valor'] = respuesta
+                return None
+            return respuesta
+
+        from datia.services.ai.reglas_negocio import respuesta_informe
+        informe = devolver(respuesta_informe(question, context))
+        if informe:
+            logger.info("QueryBuilder: la frase encaja en una regla de informe")
+            return informe
+
         from datia.services.ai.interprete_mapeo import consultar as consulta_de_mapeo
-        mapeada = consulta_de_mapeo(question, empresa, ejercicio, context.get('limit') or 20)
+        from datia.services.ai.interprete_mapeo import _rechazo, senala_mapeo, _cargar
+        mapeada = devolver(consulta_de_mapeo(
+            question, empresa, ejercicio, context.get('limit') or 20,
+            lectura=context.get('lectura'),
+            pendiente=context.get('pendiente'),
+        ))
         if mapeada:
             logger.info("QueryBuilder: la consulta sale del catalogo mapeado")
             return mapeada
+        medida = QueryBuilder._medida_pedida(q_lower)
+        if medida:
+            cantidad = devolver(QueryBuilder._handle_cantidad(q_lower, empresa, ejercicio, medida))
+            if cantidad:
+                logger.info("QueryBuilder: la pregunta pide %s, no un ranking en euros", medida)
+                return cantidad
+        try:
+            campos_catalogo, _relaciones_catalogo = _cargar()
+        except Exception:
+            campos_catalogo = None
+        if campos_catalogo is not None and not senala_mapeo(question, campos_catalogo):
+            logger.info("QueryBuilder: la frase no nombra datos mapeados")
+            rechazo = devolver(_rechazo())
+            if rechazo:
+                return rechazo
 
         from datia.services.ai.plan_diccionario import responder as plan_del_diccionario
-        planeada = plan_del_diccionario(question, empresa, ejercicio, context.get('limit') or 10)
+        planeada = devolver(plan_del_diccionario(question, empresa, anio_plan, context.get('limit') or 10))
         if planeada:
             logger.info("QueryBuilder: el plan del diccionario responde")
             return planeada
 
         from datia.services.ai.open_question import OpenQuestion
-        abierta = OpenQuestion.plantilla(question, empresa, ejercicio, context.get('limit') or 10)
+        abierta = devolver(OpenQuestion.plantilla(question, empresa, ejercicio, context.get('limit') or 10))
         if abierta:
             logger.info("QueryBuilder: la pregunta encaja en una plantilla de métricas")
             return abierta
 
-        interpretada = QueryBuilder._intentar_modelo(
-            question, empresa, ejercicio, context.get('limit') or 10,
-        )
-        if interpretada:
-            logger.info("QueryBuilder: la ficha la ha escrito el modelo")
-            return interpretada
-
-        del_dia = QueryBuilder._ventas_de_un_dia(question, empresa)
+        del_dia = devolver(QueryBuilder._ventas_de_un_dia(question, empresa))
         if del_dia:
             logger.info("QueryBuilder: el modelo no formó la ficha; se usa el día o el albarán")
             return del_dia
 
-        medida = QueryBuilder._medida_pedida(q_lower)
-        if medida:
-            cantidad = QueryBuilder._handle_cantidad(q_lower, empresa, ejercicio, medida)
-            if cantidad:
-                logger.info("QueryBuilder: la pregunta pide %s, no un ranking en euros", medida)
-                return cantidad
+        if not pedido:
+            interpretada = QueryBuilder._intentar_modelo(
+                question, empresa, ejercicio, context.get('limit') or 10,
+            )
+            if interpretada:
+                logger.info("QueryBuilder: la ficha la ha escrito el modelo")
+                return interpretada
 
-        colloquial = QueryBuilder._colloquial_ranking(q_lower, empresa, ejercicio)
+        colloquial = devolver(QueryBuilder._colloquial_ranking(q_lower, empresa, ejercicio))
         if colloquial:
             logger.info("QueryBuilder: ranking en lenguaje llano, sin entrenamiento")
             return colloquial
 
-        learned = QueryBuilder._memory_hit(question, empresa, ejercicio, 0.82, scopes=['learned'])
+        learned = devolver(QueryBuilder._memory_hit(question, empresa, ejercicio, 0.82, scopes=['learned']))
         if learned:
             logger.info("QueryBuilder: consulta aprendida de esta empresa")
             return learned
@@ -2574,20 +2612,22 @@ class QueryBuilder:
         party = QueryBuilder._extract_named_party(q_lower)
         if party:
             logger.info("QueryBuilder: ventas o compras de un tercero concreto")
-            party_result = QueryBuilder._handle_named_party(q_lower, empresa, ejercicio, party)
-            if party['kind'] != 'cliente' or not QueryBuilder._is_catalog_miss(party_result) or QueryBuilder._token_is_code(party['name']):
+            party_result = devolver(QueryBuilder._handle_named_party(q_lower, empresa, ejercicio, party))
+            if party_result and (party['kind'] != 'cliente' or not QueryBuilder._is_catalog_miss(party_result) or QueryBuilder._token_is_code(party['name'])):
                 return party_result
-            semantic = QueryBuilder._semantic_answer(question, empresa, ejercicio, 'cliente')
-            return semantic or party_result
+            semantic = devolver(QueryBuilder._semantic_answer(question, empresa, ejercicio, 'cliente'))
+            if semantic or party_result:
+                return semantic or party_result
 
         stock_query = QueryBuilder._extract_stock_query(q_lower)
         if stock_query:
             logger.info("QueryBuilder: stock de un artículo concreto")
-            stock_result = QueryBuilder._handle_stock_query(q_lower, empresa, ejercicio, stock_query)
-            if QueryBuilder._contains_article_code(stock_query) or not QueryBuilder._is_catalog_miss(stock_result):
+            stock_result = devolver(QueryBuilder._handle_stock_query(q_lower, empresa, ejercicio, stock_query))
+            if stock_result and (QueryBuilder._contains_article_code(stock_query) or not QueryBuilder._is_catalog_miss(stock_result)):
                 return stock_result
-            semantic = QueryBuilder._semantic_answer(question, empresa, ejercicio, 'articulo')
-            return semantic or stock_result
+            semantic = devolver(QueryBuilder._semantic_answer(question, empresa, ejercicio, 'articulo'))
+            if semantic or stock_result:
+                return semantic or stock_result
 
         # --- STEP 1: INTENT ROUTING ---
         
@@ -2600,33 +2640,40 @@ class QueryBuilder:
                 # Check singular and plural
                 if entity_key in q_lower or entity_key + 's' in q_lower:
                     logger.info(f"Router: Detected RANKING for {entity_key}")
-                    result = QueryBuilder._handle_ranking(q_lower, empresa, ejercicio, entity_key)
-                    if result: return result
+                    result = devolver(QueryBuilder._handle_ranking(q_lower, empresa, ejercicio, entity_key))
+                    if result:
+                        return result
                     
             # Synonym checks
             if 'producto' in q_lower or 'articulo' in q_lower:
-                return QueryBuilder._handle_ranking(q_lower, empresa, ejercicio, 'articulo')
+                result = devolver(QueryBuilder._handle_ranking(q_lower, empresa, ejercicio, 'articulo'))
+                if result:
+                    return result
             if 'vendedor' in q_lower or 'comercial' in q_lower:
-                return QueryBuilder._handle_ranking(q_lower, empresa, ejercicio, 'agente')
+                result = devolver(QueryBuilder._handle_ranking(q_lower, empresa, ejercicio, 'agente'))
+                if result:
+                    return result
             if 'region' in q_lower:
-                return QueryBuilder._handle_ranking(q_lower, empresa, ejercicio, 'zona')
+                result = devolver(QueryBuilder._handle_ranking(q_lower, empresa, ejercicio, 'zona'))
+                if result:
+                    return result
             if sold_rank and 'cliente' not in q_lower and 'proveedor' not in q_lower:
                 logger.info("Router: Detected RANKING for articulo (mas vendidos)")
-                result = QueryBuilder._handle_ranking(q_lower, empresa, ejercicio, 'articulo')
+                result = devolver(QueryBuilder._handle_ranking(q_lower, empresa, ejercicio, 'articulo'))
                 if result:
                     return result
 
         # A.1 RANKING HEURÍSTICO (Clientes que más ...)
         if (('cliente' in q_lower or 'clientes' in q_lower) and 
             ((' mas ' in q_lower) or ('más' in q_lower) or ('mayor' in q_lower) or ('compr' in q_lower))):
-            result = QueryBuilder._handle_ranking(q_lower, empresa, ejercicio, 'cliente')
+            result = devolver(QueryBuilder._handle_ranking(q_lower, empresa, ejercicio, 'cliente'))
             if result: 
                 return result
         
         # A.2 GROUPING HEURÍSTICO (Métrica por Cliente, p.ej. Margen por cliente ...)
         # Hace falta una métrica comercial. La palabra cliente sola no es un ranking de ventas.
         if ('cliente' in q_lower or 'clientes' in q_lower) and QueryBuilder._pide_desglose_comercial(q_lower):
-            result = QueryBuilder._handle_grouping(q_lower, empresa, ejercicio, 'cliente')
+            result = devolver(QueryBuilder._handle_grouping(q_lower, empresa, ejercicio, 'cliente'))
             if result:
                 return result
  
@@ -2641,22 +2688,28 @@ class QueryBuilder:
             and OpenQuestion.clasificar_ranking_proveedor(q_lower) is None
         ):
              logger.info("Router: Detected PURCHASE EVOLUTION")
-             return QueryBuilder._handle_evolution(q_lower, empresa, ejercicio, is_purchase=True)
+             evolucion = devolver(QueryBuilder._handle_evolution(q_lower, empresa, ejercicio, is_purchase=True))
+             if evolucion:
+                 return evolucion
              
         # Check Purchase Orders
         if 'pedido' in q_lower and ('compra' in q_lower or 'proveedor' in q_lower):
              logger.info("Router: Detected PURCHASE ORDERS")
              # Use evolution handler but with is_purchase=True and it handles 'pedido' logic
-             return QueryBuilder._handle_evolution(q_lower, empresa, ejercicio, is_purchase=True)
+             evolucion = devolver(QueryBuilder._handle_evolution(q_lower, empresa, ejercicio, is_purchase=True))
+             if evolucion:
+                 return evolucion
 
         # Check Sales
-        figure = QueryBuilder._handle_company_figure(q_lower, empresa, ejercicio)
+        figure = devolver(QueryBuilder._handle_company_figure(q_lower, empresa, ejercicio))
         if figure:
             return figure
         sales_triggers = ['ventas', 'pedidos', 'sales', 'evolucion', 'tendencia', 'mensual', 'albaran', 'albaranes']
         if any(t in q_lower for t in sales_triggers):
              logger.info("Router: Detected SALES EVOLUTION")
-             return QueryBuilder._handle_evolution(q_lower, empresa, ejercicio, is_purchase=False)
+             evolucion = devolver(QueryBuilder._handle_evolution(q_lower, empresa, ejercicio, is_purchase=False))
+             if evolucion:
+                 return evolucion
 
         detector = IntentDetector()
         intent = detector.detect(question, empresa)
@@ -2665,30 +2718,37 @@ class QueryBuilder:
             mapping = {'product': 'articulo', 'client': 'cliente', 'agent': 'agente', 'zone': 'zona', 'family': 'familia'}
             target_entity = mapping.get(grouping)
             if target_entity:
-                result = QueryBuilder._handle_grouping(q_lower, empresa, ejercicio, target_entity)
+                result = devolver(QueryBuilder._handle_grouping(q_lower, empresa, ejercicio, target_entity))
                 if result:
                     return result
 
         if QueryBuilder._is_year_analysis(q_lower):
             logger.info("QueryBuilder: análisis del ejercicio")
-            return QueryBuilder._handle_year_analysis(q_lower, empresa, ejercicio)
+            analisis = devolver(QueryBuilder._handle_year_analysis(q_lower, empresa, ejercicio))
+            if analisis:
+                return analisis
 
-        semantic = QueryBuilder._semantic_if_entity(question, q_lower, empresa, ejercicio)
+        semantic = devolver(QueryBuilder._semantic_if_entity(question, q_lower, empresa, ejercicio))
         if semantic is not None:
             return semantic
 
         from datia.services.ai.compilador_mapeo import responder as consulta_mapeada
-        mapeada = consulta_mapeada(question, empresa, ejercicio, context.get('limit') or 20)
+        mapeada = devolver(consulta_mapeada(question, empresa, ejercicio, context.get('limit') or 20))
         if mapeada:
             logger.info("QueryBuilder: la consulta sale del mapeo")
             return mapeada
 
         # --- STEP 2: MEMORY FALLBACK ---
-        memory = QueryBuilder._memory_hit(question, empresa, ejercicio, 0.5)
+        memory = devolver(QueryBuilder._memory_hit(question, empresa, ejercicio, 0.5))
         if memory:
             logger.info("QueryBuilder: respuesta recuperada de la memoria de la empresa")
             return memory
 
+        if pedido:
+            if negativa.get('valor') and not any(item.startswith('medida:') or item == 'kilos' for item in pedido):
+                return negativa['valor']
+            logger.info("QueryBuilder: ninguna respuesta cubre %s", ', '.join(sorted(pedido)))
+            return respuesta_incompleta()
         return None
 
     @staticmethod

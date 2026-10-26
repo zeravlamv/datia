@@ -1,5 +1,5 @@
 from ninja import Router
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from datia.factories import RepositoryFactory, ServiceFactory
 from django.shortcuts import get_object_or_404
 import threading
@@ -1764,15 +1764,25 @@ from django.http import HttpResponse
 from django.conf import settings
 
 @router.post("/qa")
-def qa_query(request, response: HttpResponse, question: str, empresa: int = 1, ejercicio: int = 2025, training_enabled: bool = False, model: str = None, profundizar: bool = False):
+def qa_query(request, response: HttpResponse, question: str, empresa: int = 1, ejercicio: int = 2025, training_enabled: bool = False, model: str = None, profundizar: bool = False, conversacion_id: int = 0):
     try:
         svc = ServiceFactory.get_ai_service()
-        # --- Context/Memory Logic ---
-        # [DISABLED BY USER REQUEST]
-        # Each query is treated independently. No dialogue history.
         effective_question = question
-        last_query = None
-        is_short = False
+        lectura_previa = None
+        pendiente_previa = None
+        if conversacion_id:
+            from datia.models import ConsultaConversacion
+            fila = ConsultaConversacion.objects.filter(
+                id=int(conversacion_id),
+                empresa=int(empresa),
+            ).first()
+            if fila is not None:
+                lectura_previa = fila.lectura_aceptada or None
+                mensajes = fila.mensajes or []
+                ultimo = mensajes[-1] if mensajes and isinstance(mensajes[-1], dict) else {}
+                respuesta_ultima = ultimo.get('respuesta') if isinstance(ultimo.get('respuesta'), dict) else {}
+                if respuesta_ultima.get('vinculo') == 'aviso' and isinstance(respuesta_ultima.get('pendiente'), dict):
+                    pendiente_previa = respuesta_ultima.get('pendiente')
         
         # Call the AI Service
         # SAFEGUARD: Ensure boolean if Ninja didn't cast it (paranoia check)
@@ -1782,7 +1792,7 @@ def qa_query(request, response: HttpResponse, question: str, empresa: int = 1, e
         # [FIX] ISS-035: Increase timeout or catch it specifically
         # Currently the service handles it, but let's be explicit if possible.
         # The AI Service (datia.services.ai_service.py) does the heavy lifting.
-        svc_response = svc.generate_answer(effective_question, empresa, ejercicio, training_enabled=training_enabled, model=model, request=request, profundizar=profundizar)
+        svc_response = svc.generate_answer(effective_question, empresa, ejercicio, training_enabled=training_enabled, model=model, request=request, profundizar=profundizar, lectura=lectura_previa, pendiente=pendiente_previa)
         
         # [NEW] Force Language Cookie if changed
         if svc_response.get('lang') and svc_response.get('action') == 'RELOAD':
@@ -1818,7 +1828,12 @@ def qa_query(request, response: HttpResponse, question: str, empresa: int = 1, e
         
         fallback_msg = ""
         question_names_year = bool(re.search(r'\b20\d{2}\b', question or ''))
-        if ((not has_real_data) or text_implies_empty) and not question_names_year and not svc_response.get('profundizado'):
+        if (
+            ((not has_real_data) or text_implies_empty)
+            and not question_names_year
+            and not svc_response.get('profundizado')
+            and svc_response.get('vinculo') not in ('rechazo', 'aviso', 'continuacion')
+        ):
             prev_year = ejercicio - 1
             response_prev = svc.generate_answer(
                 effective_question,
@@ -1827,6 +1842,7 @@ def qa_query(request, response: HttpResponse, question: str, empresa: int = 1, e
                 training_enabled=training_enabled,
                 model=model,
                 request=request,
+                lectura=lectura_previa,
             )
             
             # Use prev year ONLY if it actually has something > 0
@@ -1842,15 +1858,8 @@ def qa_query(request, response: HttpResponse, question: str, empresa: int = 1, e
                 fallback_msg = f" (Mostrando datos de {prev_year} por falta de datos en {ejercicio})"
                 svc_response['text'] += fallback_msg
 
-        # Update Memory if successful (and not an error response)
-
-        # Update Memory if successful (and not an error response)
-        # We classify partial success as success.
-        if svc_response.get('sql'):
-            # [DISABLED] Do not save context
-            pass 
-            # request.session['ai_last_query'] = effective_question
-        
+        vinculo = svc_response.get('vinculo')
+        lectura_aceptada = svc_response.get('lectura') if vinculo in ('sola', 'continuacion') else None
         return {
             "answer": svc_response.get('answer') or svc_response.get('text'),
             "sql": svc_response.get('sql'),
@@ -1876,7 +1885,12 @@ def qa_query(request, response: HttpResponse, question: str, empresa: int = 1, e
             "profundizado": bool(svc_response.get('profundizado')),
             "query": effective_question, # New RLHF Field
             "source": svc_response.get('source'), # AI Flag for UI Badge
-            "debug_context": f"Context used: {last_query}" if is_short else "New context"
+            "vinculo": vinculo,
+            "lectura_aceptada": lectura_aceptada,
+            "pendiente": svc_response.get('pendiente'),
+            "partes": svc_response.get('partes') or [],
+            "recorrido": svc_response.get('recorrido') or (svc_response.get('reply') or {}).get('recorrido'),
+            "debug_context": svc_response.get('recorrido') or ""
         }
 
     except Exception as e:
@@ -2150,6 +2164,14 @@ class ConversacionInput(Schema):
     respuesta: Dict[str, Any]
     conversacion_id: int = 0
     reemplazar: bool = False
+    lectura_aceptada: Optional[Dict[str, Any]] = None
+
+
+class RecalcularInput(Schema):
+    empresa: int
+    ejercicio: int
+    indice: int = 0
+    lectura: Optional[Dict[str, Any]] = None
 
 
 def _usuario_chat(request):
@@ -2173,6 +2195,20 @@ def _pregunta_guardada(fila) -> str:
     if mensajes and isinstance(mensajes[0], dict):
         return mensajes[0].get("pregunta") or fila.titulo or ""
     return fila.titulo or ""
+
+
+def _preguntas_del_hilo(fila):
+    vistas = []
+    for indice, mensaje in enumerate(fila.mensajes or []):
+        if not isinstance(mensaje, dict):
+            continue
+        texto = " ".join(str(mensaje.get("pregunta") or "").split())
+        if not texto:
+            continue
+        vistas.append({"indice": indice, "texto": texto})
+    if not vistas and fila.titulo:
+        vistas.append({"indice": 0, "texto": fila.titulo})
+    return vistas
 
 
 def _copias_de_la_pregunta(modelo, empresa, pregunta):
@@ -2224,6 +2260,7 @@ def listar_conversaciones(request, empresa: int = 0, ejercicio: int = 0):
                 "titulo": fila.titulo,
                 "actualizado_at": fila.actualizado_at.isoformat(),
                 "mensajes": len(fila.mensajes or []),
+                "preguntas": _preguntas_del_hilo(fila),
             }
             for fila in filas
         ]
@@ -2275,8 +2312,12 @@ def guardar_conversacion(request, payload: ConversacionInput):
             id=payload.conversacion_id,
             empresa=empresa,
         ).first()
-    if fila is None and iguales:
+    abierta = bool(payload.conversacion_id and fila is not None)
+    if fila is None and iguales and not abierta:
         fila = iguales[0]
+    campos_guardar = []
+    if isinstance(payload.lectura_aceptada, dict) and payload.lectura_aceptada:
+        campos_guardar.append('lectura_aceptada')
     if fila is None:
         fila = ConsultaConversacion.objects.create(
             usuario_id=user.id,
@@ -2284,38 +2325,167 @@ def guardar_conversacion(request, payload: ConversacionInput):
             ejercicio=ejercicio,
             titulo=_titulo_consulta(pregunta),
             mensajes=[mensaje],
+            lectura_aceptada=payload.lectura_aceptada if 'lectura_aceptada' in campos_guardar else None,
         )
-    elif payload.reemplazar or iguales:
+    elif payload.reemplazar or (iguales and not abierta):
         fila.mensajes = [mensaje]
         fila.titulo = _titulo_consulta(pregunta)
         fila.empresa = empresa
         fila.ejercicio = ejercicio
         fila.usuario_id = user.id
-        fila.save(update_fields=['mensajes', 'titulo', 'empresa', 'ejercicio', 'usuario_id', 'actualizado_at'])
+        if 'lectura_aceptada' in campos_guardar:
+            fila.lectura_aceptada = payload.lectura_aceptada
+        fila.save(update_fields=['mensajes', 'titulo', 'empresa', 'ejercicio', 'usuario_id', 'actualizado_at', *campos_guardar])
     else:
         mensajes = list(fila.mensajes or [])
         mensajes.append(mensaje)
         fila.mensajes = mensajes[-40:]
         fila.usuario_id = user.id
-        fila.save(update_fields=['mensajes', 'usuario_id', 'actualizado_at'])
-    _dejar_una_copia(ConsultaConversacion, empresa, pregunta, fila.id)
-    return {"status": "saved", "id": fila.id, "titulo": fila.titulo}
+        if 'lectura_aceptada' in campos_guardar:
+            fila.lectura_aceptada = payload.lectura_aceptada
+        fila.save(update_fields=['mensajes', 'usuario_id', 'actualizado_at', *campos_guardar])
+    if not abierta:
+        _dejar_una_copia(ConsultaConversacion, empresa, pregunta, fila.id)
+    return {
+        "status": "saved",
+        "id": fila.id,
+        "titulo": fila.titulo,
+        "indice": len(fila.mensajes or []) - 1,
+    }
+
+
+def _valor_guardable(valor):
+    if isinstance(valor, dict):
+        return {
+            str(clave): _valor_guardable(item)
+            for clave, item in valor.items()
+            if clave != 'request'
+        }
+    if isinstance(valor, (list, tuple)):
+        return [_valor_guardable(item) for item in valor]
+    if hasattr(valor, 'quantize'):
+        return float(valor)
+    if isinstance(valor, (str, int, float, bool)) or valor is None:
+        return valor
+    return str(valor)
+
+
+def _lectura_de_mensaje(mensaje):
+    if not isinstance(mensaje, dict):
+        return None
+    respuesta = mensaje.get('respuesta') if isinstance(mensaje.get('respuesta'), dict) else {}
+    lectura = respuesta.get('lectura')
+    if respuesta.get('vinculo') in ('sola', 'continuacion') and isinstance(lectura, dict) and lectura:
+        return lectura
+    return None
+
+
+def _ultima_lectura(mensajes):
+    ultima = None
+    for mensaje in mensajes or []:
+        lectura = _lectura_de_mensaje(mensaje)
+        if lectura:
+            ultima = lectura
+    return ultima
+
+
+def _lectura_que_sigue(respuesta, previa):
+    if not isinstance(respuesta, dict):
+        return previa if isinstance(previa, dict) else None
+    vinculo = respuesta.get('vinculo')
+    lectura = respuesta.get('lectura')
+    if vinculo in ('sola', 'continuacion') and isinstance(lectura, dict) and lectura:
+        return lectura
+    return previa if isinstance(previa, dict) else None
+
+
+@router.post("/ai/conversaciones/{conversacion_id}/recalcular")
+def recalcular_conversacion(request, conversacion_id: int, payload: RecalcularInput):
+    """Vuelve a ejecutar una pregunta del hilo, con la lectura de las anteriores."""
+    from datia.models import ConsultaConversacion
+    from datia.factories import ServiceFactory
+    from django.utils import timezone
+
+    user = _usuario_chat(request)
+    if not user or not payload.empresa:
+        return {"status": "error", "message": "Authentication required"}
+    fila = ConsultaConversacion.objects.filter(
+        id=conversacion_id,
+        empresa=int(payload.empresa),
+    ).first()
+    if fila is None:
+        return {"status": "error", "message": "No encontrada"}
+    mensajes = list(fila.mensajes or [])
+    if not mensajes:
+        return {"status": "error", "message": "Consulta vacía"}
+    indice = int(payload.indice or 0)
+    if indice < 0 or indice >= len(mensajes):
+        return {"status": "error", "message": "Pregunta no encontrada"}
+    mensaje = mensajes[indice] if isinstance(mensajes[indice], dict) else {}
+    pregunta = str(mensaje.get('pregunta') or '').strip()
+    if not pregunta:
+        return {"status": "error", "message": "Consulta vacía"}
+    previa = payload.lectura if isinstance(payload.lectura, dict) and payload.lectura else None
+    svc = ServiceFactory.get_ai_service()
+    respuesta = svc.generate_answer(
+        pregunta,
+        int(payload.empresa),
+        int(payload.ejercicio or fila.ejercicio),
+        request=request,
+        lectura=previa,
+    )
+    guardada = _valor_guardable(respuesta if isinstance(respuesta, dict) else {})
+    mensajes[indice] = {
+        "pregunta": pregunta,
+        "respuesta": guardada,
+        "ts": timezone.now().isoformat(),
+    }
+    fila.mensajes = mensajes
+    campos = ['mensajes', 'usuario_id', 'actualizado_at']
+    siguiente = _lectura_que_sigue(guardada, previa)
+    if indice == len(mensajes) - 1 and isinstance(siguiente, dict) and siguiente:
+        fila.lectura_aceptada = siguiente
+        campos.append('lectura_aceptada')
+    fila.usuario_id = user.id
+    fila.save(update_fields=campos)
+    return {
+        "status": "saved",
+        "id": fila.id,
+        "indice": indice,
+        "pregunta": pregunta,
+        "respuesta": guardada,
+        "lectura_siguiente": siguiente,
+    }
 
 
 @router.delete("/ai/conversaciones/{conversacion_id}")
-def borrar_conversacion(request, conversacion_id: int, empresa: int = 0):
+def borrar_conversacion(request, conversacion_id: int, empresa: int = 0, indice: int = 0):
+    """Borra una pregunta. Si era la única, desaparece la consulta."""
     from datia.models import ConsultaConversacion
 
     user = _usuario_chat(request)
     if not user or not empresa:
         return {"status": "error", "message": "Authentication required"}
-    borradas, _ = ConsultaConversacion.objects.filter(
+    fila = ConsultaConversacion.objects.filter(
         id=conversacion_id,
         empresa=int(empresa),
-    ).delete()
-    if not borradas:
+    ).first()
+    if fila is None:
         return {"status": "error", "message": "No encontrada"}
-    return {"status": "deleted", "id": conversacion_id}
+    mensajes = [mensaje for mensaje in (fila.mensajes or []) if isinstance(mensaje, dict)]
+    if indice < 0 or indice >= len(mensajes):
+        return {"status": "error", "message": "Pregunta no encontrada"}
+    del mensajes[indice]
+    if not mensajes:
+        fila.delete()
+        return {"status": "deleted", "id": conversacion_id}
+    fila.mensajes = mensajes
+    if indice == 0:
+        fila.titulo = _titulo_consulta(str(mensajes[0].get('pregunta') or ''))
+    fila.lectura_aceptada = _ultima_lectura(mensajes)
+    fila.usuario_id = user.id
+    fila.save(update_fields=['mensajes', 'titulo', 'lectura_aceptada', 'usuario_id', 'actualizado_at'])
+    return {"status": "trimmed", "id": fila.id, "indice": indice, "titulo": fila.titulo}
 
 
 @router.post("/ai/history/{query_id}/refresh")

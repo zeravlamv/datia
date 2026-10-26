@@ -32,6 +32,9 @@
         <button onclick="switchAutoTab('subtab-relationships')" id="btn-tab-relationships" class="sub-nav-btn auto-tab-btn" data-tab="subtab-relationships">
             {% trans "Relaciones (Joins)" %}
         </button>
+        <button onclick="switchAutoTab('subtab-reglas')" id="btn-tab-reglas" class="sub-nav-btn auto-tab-btn" data-tab="subtab-reglas">
+            {% trans "Reglas" %}
+        </button>
         <button onclick="switchAutoTab('subtab-training')" id="btn-tab-training" class="sub-nav-btn auto-tab-btn" data-tab="subtab-training">
             {% trans "Examen" %}
         </button>
@@ -493,6 +496,30 @@
         </div>
     </div>
 
+    <div id="subtab-reglas" class="auto-subtab" style="display:none">
+        <div class="glass-card" style="padding: 1.5rem; background: rgba(24, 24, 27, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; margin-bottom:1rem;">
+                <div>
+                    <h3 style="color:#fff; margin:0 0 0.4rem;">Reglas de negocio</h3>
+                    <p style="color:#a1a1aa; margin:0; font-size:0.85rem;">Los ficheros se leen en orden de nombre. La primera regla que encaja responde. <code>informe</code> y <code>kilos</code> las aplica el chat al guardar. <code>mapeo</code> lo aplica el intérprete.</p>
+                </div>
+                <button type="button" onclick="nuevaRegla()" class="btn-glow" style="padding:0.7rem 1.2rem; white-space:nowrap;">Nuevo</button>
+            </div>
+            <div style="display:grid; grid-template-columns: 240px 1fr; gap:1.25rem; align-items:start;">
+                <div id="reglas-lista" style="display:flex; flex-direction:column; gap:0.4rem; max-height:70vh; overflow:auto;"></div>
+                <div>
+                    <label style="display:block; color:#d4d4d8; margin-bottom:0.4rem; font-size:0.85rem;">Nombre</label>
+                    <input id="reglas-nombre" type="text" readonly style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.3); border:1px solid #3f3f46; border-radius:8px; color:#fff; padding:0.7rem 0.9rem; margin-bottom:0.8rem;">
+                    <textarea id="reglas-texto" rows="26" spellcheck="false" style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.3); border:1px solid #3f3f46; border-radius:8px; color:#e4e4e7; padding:1rem; font-family:ui-monospace, Consolas, monospace; font-size:0.85rem; line-height:1.45; resize:vertical;"></textarea>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.8rem; gap:1rem;">
+                        <span id="reglas-estado" style="color:#a1a1aa; font-size:0.85rem;"></span>
+                        <button type="button" onclick="guardarRegla()" class="btn-glow" style="padding:0.7rem 1.4rem;">Guardar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <!-- MODALS -->
@@ -571,12 +598,13 @@
 </div>
 
 <!-- SCRIPTS MODULES -->
-<script src="{% static 'js/tab_auto_core.js' %}?v=46"></script>
+<script src="{% static 'js/tab_auto_core.js' %}?v=47"></script>
 <script src="{% static 'js/tab_auto_dashboard.js' %}"></script>
 <script src="{% static 'js/tab_auto_mapping.js' %}?v=45"></script>
 <script src="{% static 'js/tab_auto_sync.js' %}?v=45"></script>
-<script src="{% static 'js/tab_auto_training.js' %}?v=48"></script>
+<script src="{% static 'js/tab_auto_training.js' %}?v=49"></script>
 <script src="{% static 'js/tab_auto_relations.js' %}?v=45"></script>
+<script src="{% static 'js/tab_auto_reglas.js' %}?v=1"></script>
 <script src="{% static 'js/tab_standard_fields.js' %}"></script>
 
 <script>

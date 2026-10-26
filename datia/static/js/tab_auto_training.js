@@ -38,8 +38,9 @@ function cargarListaExamen() {
             examenListaCargada = clave;
             pintarListaExamen(data.preguntas);
             const aviso = data.aviso ? `${data.aviso} ` : '';
+            const falta = data.incompleta && data.falta ? ` Falta ${data.falta}.` : '';
             if (estado) {
-                estado.textContent = `${aviso}${data.preguntas.length} preguntas preparadas. Pulsa Hacer el examen para lanzarlas.`;
+                estado.textContent = `${aviso}${data.preguntas.length} preguntas preparadas.${falta} Pulsa Hacer el examen para lanzarlas.`;
             }
         })
         .catch(() => {
@@ -78,7 +79,8 @@ function startExamen() {
                 return;
             }
             pintarListaExamen(data.preguntas);
-            const cuentas = { cifra_tabla: 0, otra_cifra: 0, sin_respuesta: 0 };
+            const cuentas = { cifra_tabla: 0, otra_cifra: 0, sin_respuesta: 0, territorio: 0, coinciden: 0, rechazadas: 0 };
+            const incompleta = Boolean(data.incompleta);
             for (let i = 0; i < data.preguntas.length; i += 1) {
                 marcarPreguntaExamen(i, 'ahora');
                 mostrarPasoExamen(i + 1, data.preguntas.length, data.preguntas[i].pregunta);
@@ -101,11 +103,20 @@ function startExamen() {
                     };
                 }
                 if (cuentas[fila.veredicto] !== undefined) cuentas[fila.veredicto] += 1;
-                pintarResumenExamen(cuentas);
+                const esProbe = Boolean(data.preguntas[i].es_probe);
+                if (!esProbe) cuentas.territorio += 1;
+                if (fila.veredicto === 'cifra_tabla' && esProbe) cuentas.rechazadas += 1;
+                if (fila.veredicto === 'cifra_tabla' && !esProbe) cuentas.coinciden += 1;
+                pintarResumenExamen(cuentas, { incompleta: incompleta, falta: data.falta || '' });
                 marcarPreguntaExamen(i, fila.veredicto, fila);
             }
             ocultarPasoExamen();
-            if (estado) estado.textContent = 'Examen terminado.';
+            const aceptada = !incompleta && cuentas.territorio > 0 && cuentas.coinciden === cuentas.territorio && cuentas.rechazadas === data.preguntas.filter((fila) => fila.es_probe).length;
+            if (estado) {
+                estado.textContent = aceptada
+                    ? 'Revisión aceptada.'
+                    : `Revisión rechazada.${incompleta && data.falta ? ` Falta ${data.falta}.` : ''}`;
+            }
         })
         .catch(() => {
             if (estado) estado.textContent = 'No he podido conectar con el examen.';
@@ -146,6 +157,7 @@ function pintarListaExamen(preguntas) {
                 <strong style="color: #fff;">${i + 1}. ${escaparExamen(fila.pregunta)}</strong>
                 <span class="examen-etiqueta" style="color: #a1a1aa; font-size: 0.85rem; white-space: nowrap;">En espera</span>
             </div>
+            <p class="examen-vinculo" style="color: #a1a1aa; margin: 0.35rem 0 0;">${escaparExamen(fila.vinculo || (fila.es_probe ? 'rechazo' : 'sola'))}</p>
             <p class="examen-esperado" style="color: #d4d4d8; margin: 0.6rem 0 0.3rem;">Esperado: ${escaparExamen(fila.esperado)}</p>
             <p class="examen-obtenido" style="color: #a1a1aa; margin: 0;"></p>
         </article>`
@@ -170,20 +182,21 @@ function marcarPreguntaExamen(indice, veredicto, fila) {
     card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 
-function pintarResumenExamen(cuentas) {
+function pintarResumenExamen(cuentas, meta) {
     const resumen = document.getElementById('examen-resumen');
     if (!resumen) return;
     resumen.style.display = 'grid';
+    const nota = meta && meta.incompleta ? `Incompleta: ${meta.falta || 'falta una pieza'}` : '';
     resumen.innerHTML = [
-        ['Cifra de la tabla', cuentas.cifra_tabla || 0, EXAMEN_COLORES.cifra_tabla],
-        ['Otra cifra', cuentas.otra_cifra || 0, EXAMEN_COLORES.otra_cifra],
-        ['Sin respuesta', cuentas.sin_respuesta || 0, EXAMEN_COLORES.sin_respuesta],
+        ['Cubren el territorio', cuentas.territorio || 0, EXAMEN_COLORES.espera],
+        ['Coinciden', cuentas.coinciden || 0, EXAMEN_COLORES.cifra_tabla],
+        ['Fuera rechazadas', cuentas.rechazadas || 0, EXAMEN_COLORES.sin_respuesta],
     ].map(([titulo, valor, color]) => (
         `<div style="padding: 1rem 1.2rem; border-radius: 12px; border: 1px solid ${color.borde}; background: ${color.fondo};">
             <div style="color: ${color.texto}; font-size: 0.8rem;">${titulo}</div>
             <div style="color: #fff; font-size: 1.8rem; font-weight: 700;">${valor}</div>
         </div>`
-    )).join('');
+    )).join('') + (nota ? `<p style="grid-column: 1 / -1; color: #fcd34d; margin: 0.4rem 0 0;">${escaparExamen(nota)}</p>` : '');
 }
 
 function escaparExamen(valor) {

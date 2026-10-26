@@ -15,7 +15,7 @@ logger = logging.getLogger('datia')
 AI_PROGRESS = {}
 
 _TIPOS_CON_RESPUESTA = {
-    'text', 'report', 'table', 'chart', 'card', 'cantidad',
+    'text', 'report', 'table', 'chart', 'card', 'cantidad', 'resumen',
     'ambiguity_alert', 'training_ask', 'no_data_option',
 }
 
@@ -65,7 +65,7 @@ class IAService:
         self.router = IntentRouter(self.embedding_service)
         self.formatter = ResponseFormatter()
 
-    def generate_answer(self, question: str, empresa: int, ejercicio: int, threshold: float = 0.60, training_enabled: bool = False, model: str = None, request = None, profundizar: bool = False) -> dict:
+    def generate_answer(self, question: str, empresa: int, ejercicio: int, threshold: float = 0.60, training_enabled: bool = False, model: str = None, request = None, profundizar: bool = False, lectura=None, pendiente=None) -> dict:
         q_lower = question.lower()
         
         # --- 1. Parameter Extraction ---
@@ -130,7 +130,9 @@ class IAService:
             'lang': lang,
             'training_enabled': training_enabled,
             'model': model,
-            'request': request
+            'request': request,
+            'lectura': lectura,
+            'pendiente': pendiente,
         }
 
         if profundizar:

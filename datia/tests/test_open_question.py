@@ -18,7 +18,7 @@ from django.test import SimpleTestCase
 
 from datia.services.ai.comparison import aviso_coste_y_hueco, celda
 from datia.services.ai_service import _respuesta_tiene_valor
-from datia.services.ai.nlq_catalog import cubre_la_pregunta, match_intent
+from datia.services.ai.nlq_catalog import cubre_la_pregunta, informe_adelantado, match_intent
 from datia.services.ai.open_question import OpenQuestion
 from datia.services.ai.semantic_plan import SemanticPlan
 from datia.services.ai.profundizar import Profundizar
@@ -66,6 +66,21 @@ class TestCubreLaPregunta(SimpleTestCase):
 
     def test_ventas_y_compras_no_caben_en_el_resumen_de_ventas(self):
         self.assertFalse(cubre_la_pregunta('ventas y compras de 2025', 'ventas.resumen_ejercicio'))
+
+    def test_el_chat_no_adelanta_el_informe_comercial(self):
+        from datia.services.ai.reglas_negocio import decidir
+        for frase in ('resumen 2024', 'top articulos', 'resumen de ingresos'):
+            self.assertIsNone(informe_adelantado(frase))
+            self.assertIsNone(decidir(frase, ejercicio=2024))
+
+    def test_el_informe_con_nombre_sale_de_las_reglas(self):
+        from datia.services.ai.reglas_negocio import decidir
+        for frase in ('resumen financiero', 'tesoreria', 'presupuesto 2025', 'ratios', 'coste por cada 100'):
+            self.assertIsNone(informe_adelantado(frase))
+            self.assertEqual(decidir(frase, ejercicio=2025)['motor'], 'informe')
+        analisis = decidir('analisis financiero del 2025', ejercicio=2024)
+        self.assertEqual(analisis['informe'], 'finanzas.resumen_ejercicio')
+        self.assertEqual(analisis['anio'], 2025)
 
 
 class TestPlantillasAbiertas(SimpleTestCase):

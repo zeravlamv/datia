@@ -3176,15 +3176,15 @@ body:has(#tab-ia.active) {
 .ia-stream,
 .ia-conversaciones-lista,
 .ai-report-tabla {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+    scrollbar-width: auto;
+    scrollbar-color: rgba(255, 255, 255, 0.45) transparent;
 }
 
 .ia-stream::-webkit-scrollbar,
 .ia-conversaciones-lista::-webkit-scrollbar,
 .ai-report-tabla::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 10px;
+    height: 10px;
 }
 
 .ia-stream::-webkit-scrollbar-track,
@@ -3196,7 +3196,7 @@ body:has(#tab-ia.active) {
 .ia-stream::-webkit-scrollbar-thumb,
 .ia-conversaciones-lista::-webkit-scrollbar-thumb,
 .ai-report-tabla::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.45);
     border-radius: 99px;
 }
 
@@ -3206,14 +3206,59 @@ body:has(#tab-ia.active) {
     background: rgba(255, 255, 255, 0.34);
 }
 
+.ia-conversacion-arbol {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.ia-conversacion-arbol + .ia-conversacion-arbol {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #27272a;
+}
+
 .ia-conversacion-item {
     display: flex;
     align-items: center;
     gap: 6px;
     border-radius: 8px;
-    padding: 8px 8px 8px 10px;
+    padding: 8px 8px 8px calc(8px + min(var(--nivel, 0), 8) * 12px);
     color: #e4e4e7;
     cursor: pointer;
+}
+
+.ia-conversacion-item[hidden] {
+    display: none;
+}
+
+.ia-conversacion-item.con-hijos {
+    color: #c084fc;
+}
+
+.ia-conversacion-item.sin-niveles {
+    color: #38bdf8;
+}
+
+.ia-conversacion-plegar {
+    flex: 0 0 auto;
+    width: 14px;
+    border: none;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    padding: 0;
+    font-size: 0.75rem;
+    line-height: 1;
+}
+
+.ia-conversacion-rama {
+    flex: 0 0 auto;
+    width: 10px;
+    height: 10px;
+    border-left: 1.5px solid #a1a1aa;
+    border-bottom: 1.5px solid #a1a1aa;
+    align-self: center;
 }
 
 .ia-conversacion-item:hover,
@@ -3489,7 +3534,7 @@ html.is-phone .ia-conversaciones {
 
 .ai-report-tabla {
     margin-top: 4px;
-    overflow: auto;
+    overflow: visible;
 }
 
 .ai-report-tabla table {

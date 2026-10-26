@@ -16,6 +16,7 @@ from datia.api.introspection_endpoints import (
 )
 
 from datia.api.relationship_endpoints import relationships_api, relationship_detail_api
+from datia.api.reglas_endpoints import reglas_detalle_api, reglas_lista_api
 from django.views.i18n import JavaScriptCatalog
 
 urlpatterns = [
@@ -44,6 +45,8 @@ urlpatterns = [
     
     # Auto Training / SQL Generation
     path('api/auto-training/examen', examen_preguntas_api, name='examen_preguntas'),
+    path('api/auto-training/reglas', reglas_lista_api, name='reglas_lista'),
+    path('api/auto-training/reglas/<str:nombre>', reglas_detalle_api, name='reglas_detalle'),
     path('api/auto-training/generate-sql-batch', generate_sql_training_batch, name='generate_sql_batch'),
     path('api/semantic/active-tables', get_active_tables_api, name='get_active_tables'),
     

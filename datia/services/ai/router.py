@@ -13,13 +13,10 @@ from .handlers.dynamic_handler import DynamicHandler
 from .handlers.generative_handler import GenerativeHandler
 from .handlers.training_handler import TrainingHandler
 from .handlers.compute_handler import PythonComputeHandler
-from .handlers.catalog_report_handler import CatalogReportHandler
 from .conversation_manager import ConversationManager
 from .title_generator import TitleGenerator
 from .ambiguity_analyzer import AmbiguityAnalyzer
 from datia.models.master import GlobalConfig
-from .nlq_catalog import match_intent, cubre_la_pregunta
-
 class IntentRouter:
     MONTHS = {
         'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4, 'mayo': 5, 'junio': 6,
@@ -34,7 +31,6 @@ class IntentRouter:
         Main routing logic. Strict "Tabula Rasa" Flow.
         Returns: (HandlerClass, intent_data_dict)
         """
-        cat_backup = None
         try:
             from django.conf import settings
             import os
@@ -60,9 +56,9 @@ class IntentRouter:
                 user_id = req.user.id
             else:
                 user_id = context.get('user_id')
-            enriched_q, enriched_ctx, delta, conv_id = cm.enrich(question, context, user_id)
-            context = enriched_ctx
-            question = enriched_q
+            _pregunta_con_pista, enriched_ctx, delta, conv_id = cm.enrich(question, context, user_id)
+            context['conversation_id'] = enriched_ctx.get('conversation_id')
+            context['conversation_state'] = enriched_ctx.get('conversation_state')
         except Exception:
             conv_id = None
             delta = {}
@@ -71,21 +67,6 @@ class IntentRouter:
         if q_lower.startswith('informe detallado y '):
             q_lower = q_lower.replace('informe detallado y ', '').strip()
             context['detailed'] = True
-
-        cat = match_intent(q_lower)
-        cat_backup = None
-        if cat and cubre_la_pregunta(q_lower, cat.get('intent_id')):
-            try:
-                cat['query'] = question
-            except Exception:
-                pass
-            return CatalogReportHandler, cat
-        if cat:
-            try:
-                cat['query'] = question
-            except Exception:
-                pass
-            cat_backup = cat
 
         # --- 0. Language Change Intent ---
         # Regex to detect: "cambiar a ingles", "speak in english", "ponlo en frances"
@@ -171,7 +152,7 @@ class IntentRouter:
         report_keywords = ['informe anual', 'informe general', 'situacion global', 'resumen anual', 'balance anual']
         
         # Check for 'como va' but ensure it's not 'como va el pedido X'
-        if q_lower in ['como va', 'como vamos', 'situacion', 'resumen', 'balance', 'report', 'status']:
+        if q_lower in ['como va', 'como vamos', 'situacion', 'balance', 'report', 'status']:
              data = {'key': 'annual_report', 'type': 'report', 'display_mode': 'annual'}
              return ReportHandler, data
              
@@ -196,6 +177,8 @@ class IntentRouter:
                 target_entity = 'zona'
             elif ('familia' in q_lower) or ('familias' in q_lower):
                 target_entity = 'familia'
+            if target_entity in ('cliente', 'articulo', 'proveedor'):
+                target_entity = None
             if target_entity:
                 result = QueryBuilder._handle_ranking(q_lower, empresa, ejercicio, target_entity)
                 if result:
@@ -213,7 +196,7 @@ class IntentRouter:
                     return DynamicHandler, result
             # Si no se detecta entidad explícita, continuar al QueryBuilder general
         # 2.1 Compute Intent
-        compute_keywords = ['media mov', 'moving average', 'ratio', 'normaliz', 'pronostic', 'tendenc', 'correl']
+        compute_keywords = ['media mov', 'moving average', 'normaliz', 'pronostic', 'tendenc', 'correl']
         if any(x in q_lower for x in compute_keywords):
             return PythonComputeHandler, {'query': question}
 
@@ -300,9 +283,6 @@ class IntentRouter:
         except Exception as e:
             print(f"Router: QueryBuilder Error: {e}")
 
-        if cat_backup:
-            return CatalogReportHandler, cat_backup
-
         if not training_enabled:
             return None, {
                 'type': 'text',
@@ -326,8 +306,6 @@ class IntentRouter:
                     return DynamicHandler, retry
         except Exception as exc:
             print(f"Router: entrenamiento de sinónimos no disponible: {exc}")
-        if cat_backup:
-            return CatalogReportHandler, cat_backup
         return None, {
             'type': 'text',
             'text': (

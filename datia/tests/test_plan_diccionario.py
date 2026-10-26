@@ -96,7 +96,7 @@ class TestEncajar(SimpleTestCase):
         self.assertEqual(variacion(1000, 10, 2024), '')
 
     def test_el_plan_responde_antes_que_el_modelo(self):
-        marca = {'reply': {'type': 'text', 'text': 'hecho', 'answer': 'hecho'}}
+        marca = {'reply': {'type': 'text', 'text': 'hecho', 'answer': 'hecho', 'source': 'plan'}}
         with patch('datia.services.ai.plan_diccionario.responder', return_value=marca) as plan:
             with patch('datia.services.ai.semantic_plan.SemanticPlan.desde_modelo') as modelo:
                 salida = QueryBuilder._construir_consulta(

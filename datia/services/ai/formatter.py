@@ -16,6 +16,13 @@ class ResponseFormatter:
 
     @staticmethod
     def format_response(match_meta: Dict, rows: List[Dict], ejercicio: int, limit: int = 20, lang: str = 'es') -> Dict:
+        lectura = match_meta.get('lectura') if isinstance(match_meta, dict) else None
+        periodo = lectura.get('periodo') if isinstance(lectura, dict) else None
+        if isinstance(periodo, list) and periodo:
+            try:
+                ejercicio = int(periodo[-1])
+            except (TypeError, ValueError):
+                pass
         response_type = match_meta.get('type', 'text')
         label = match_meta.get('label', 'Resultados')
         
@@ -162,6 +169,7 @@ class ResponseFormatter:
             "sql": match_meta.get('sql'),
             "type": "text",
             "source": match_meta.get('source'),
+            "data": rows,
         }
         if isinstance(match_meta.get('origen'), dict):
             salida['origen'] = match_meta['origen']
@@ -1226,7 +1234,8 @@ class ResponseFormatter:
         elif is_dynamic:
              text = LanguageService.get_text('list_title', lang, label=label, ejercicio=ejercicio)
         else:
-             text = LanguageService.get_text('ranking_title', lang, label=label, ejercicio=ejercicio, limit=limit)
+             tope_titulo = len(rows) if match_meta.get('completo') else limit
+             text = LanguageService.get_text('ranking_title', lang, label=label, ejercicio=ejercicio, limit=tope_titulo)
 
         # [NEW] Append Consultant Summary
         summary_html = ""
@@ -1260,7 +1269,8 @@ class ResponseFormatter:
             "key": match_meta.get('key'),
             "query": match_meta.get('query_orig'), # If we had it, but API sets it.
             "source": match_meta.get('source'),
-            "limit": limit
+            "limit": limit,
+            "completo": bool(match_meta.get('completo')),
         }
 
         # Only add chart if it's a numeric ranking, not a document list

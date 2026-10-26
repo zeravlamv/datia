@@ -14,7 +14,7 @@ django.setup()
 
 from django.test import SimpleTestCase
 
-from datia.services.ai.examen_preguntas import clasificar
+from datia.services.ai.examen_preguntas import clasificar, empaquetar_revision, revision_aceptada
 
 
 class TestClasificarExamen(SimpleTestCase):
@@ -167,6 +167,44 @@ class TestClasificarExamen(SimpleTestCase):
             'answer': 'Puedo responder sobre ventas, compras, clientes, artículos, proveedores, margen, coste y stock de la empresa.',
         }
         self.assertEqual(clasificar(spec, respuesta), 'sin_respuesta')
+
+
+    def test_una_continuacion_que_hereda_de_mas_es_otra_cifra(self):
+        spec = {'modo': 'importe', 'valor': 10, 'vinculo': 'continuacion', 'sustituye': ['periodo']}
+        respuesta = {'vinculo': 'continuacion', 'sustituye': ['periodo', 'concepto'], 'kpis': [{'value': 10}], 'text': '10'}
+        self.assertEqual(clasificar(spec, respuesta), 'otra_cifra')
+
+    def test_una_frase_sola_que_hereda_es_otra_cifra(self):
+        spec = {'modo': 'importe', 'valor': 10, 'vinculo': 'sola'}
+        respuesta = {'vinculo': 'sola', 'hereda': ['periodo'], 'kpis': [{'value': 10}], 'text': '10'}
+        self.assertEqual(clasificar(spec, respuesta), 'otra_cifra')
+
+    def test_el_dato_no_mapeado_coincide_con_la_negativa_fija(self):
+        spec = {'modo': 'rechazo', 'texto': 'Esa pregunta no está en los datos mapeados.'}
+        respuesta = {'type': 'text', 'text': 'Esa pregunta no está en los datos mapeados.', 'answer': 'Esa pregunta no está en los datos mapeados.'}
+        self.assertEqual(clasificar(spec, respuesta), 'cifra_tabla')
+
+    def test_una_frase_ajena_con_cifra_de_la_empresa_no_coincide(self):
+        spec = {'modo': 'rechazo', 'texto': ''}
+        respuesta = {'kpis': [{'value': 10, 'suffix': '€'}], 'text': 'Ventas 10 €'}
+        self.assertEqual(clasificar(spec, respuesta), 'otra_cifra')
+
+    def test_la_lista_previa_ensenya_vinculo_esperado_y_la_pieza_que_falta(self):
+        vista = empaquetar_revision(
+            1, 2025,
+            [{'pregunta': 'ventas del ejercicio', 'esperado': '1,00 €', 'vinculo': 'sola'}],
+            [{'pregunta': 'que tiempo hace hoy', 'esperado': 'Sin cifra de la empresa'}],
+            True,
+            'columna:Telefono',
+        )
+        self.assertEqual(vista['estado'], 'Preparada')
+        self.assertTrue(vista['incompleta'])
+        self.assertEqual(vista['falta'], 'columna:Telefono')
+        self.assertEqual(vista['preguntas'][0]['vinculo'], 'sola')
+        self.assertIn('esperado', vista['preguntas'][0])
+        self.assertTrue(vista['probes'])
+        self.assertFalse(revision_aceptada(True, 1, 1, 1, 1))
+        self.assertTrue(revision_aceptada(False, 4, 4, 2, 2))
 
 
 if __name__ == '__main__':

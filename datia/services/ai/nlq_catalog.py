@@ -145,6 +145,11 @@ CATALOG: List[CatalogIntent] = [
 ]
 
 
+def informe_adelantado(question: str) -> Optional[Dict[str, Any]]:
+    """El chat no responde con un informe preparado. La pregunta pasa por el mapeo."""
+    return None
+
+
 def match_intent(question: str) -> Optional[Dict[str, Any]]:
     q = (question or "").strip()
     if not q:

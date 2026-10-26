@@ -35,6 +35,8 @@ function switchAutoTab(tabId) {
         if (typeof prepareSyncScreen === 'function') prepareSyncScreen();
     } else if (tabId === 'subtab-training') {
         if (typeof cargarListaExamen === 'function') cargarListaExamen();
+    } else if (tabId === 'subtab-reglas') {
+        if (typeof cargarReglas === 'function') cargarReglas();
     }
 }
 

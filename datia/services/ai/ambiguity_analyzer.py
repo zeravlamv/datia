@@ -37,7 +37,8 @@ class AmbiguityAnalyzer:
             amount = int(amount_match.group(1))
         year_label = ejercicio if ejercicio else ''
 
-        if is_ranking and not (has_cliente or has_articulo or has_proveedor):
+        lectura = context.get('lectura') if isinstance(context.get('lectura'), dict) else {}
+        if is_ranking and not (has_cliente or has_articulo or has_proveedor) and not lectura.get('conceptos'):
             categories.append('linguistica')
             reasons.append('ranking_sin_entidad')
             suggestions.extend([

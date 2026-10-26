@@ -18,8 +18,10 @@ from django.test import SimpleTestCase
 
 from datia.services.ai.formatter import ResponseFormatter
 from datia.services.ai.interprete_mapeo import (
+    _MENSAJE,
     compilar_plan,
     consultar,
+    lectura_de_plan,
     plan_determinista,
     senala_mapeo,
     validar_plan,
@@ -357,6 +359,7 @@ class TestConsultar(SimpleTestCase):
         self.assertEqual(salida['chart_type'], 'line')
         self.assertIn('2024', salida['sql'])
         self.assertIn('2025', salida['sql'])
+        self.assertIn('recorrido', salida)
         self.assertIn('AS serie', salida['sql'])
         self.assertIn('datiadb_cabeceraalbarancliente', salida['sql'])
         self.assertNotIn('proveedor', salida['sql'])
@@ -405,6 +408,437 @@ class TestConsultar(SimpleTestCase):
             2025,
         )
         self.assertEqual(len(salida['chart_config']['data']['datasets']), 2)
+
+
+class TestMemoriaYClasificacion(SimpleTestCase):
+    def _salida(self, frase, lectura=None, campos=None, relaciones=None, columnas=None, pendiente=None):
+        campos, relaciones, columnas = (campos, relaciones, columnas) if campos is not None else _catalogo()
+        with patch('datia.services.ai.interprete_mapeo._probar', return_value=True), \
+             patch('datia.services.security.sql_guard.SQLGuard.check_sql', return_value={'allowed': True}):
+            return consultar(
+                frase, 1, 2025, 10,
+                campos=campos, relaciones=relaciones, columnas=columnas,
+                pedir=lambda *_args: (_ for _ in ()).throw(AssertionError('el modelo no debía entrar')),
+                dialecto='postgres', sondear=False, lectura=lectura, pendiente=pendiente,
+            )
+
+    def _catalogo_dos_razones(self):
+        campos, relaciones, columnas = _catalogo()
+        proveedores = _fuente(70, 'Proveedores', 'datiadb_proveedores')
+        campos = list(campos) + [
+            _campo(30, proveedores, 'CodigoProveedor', 'Proveedor', 'nombre', key=True),
+            _campo(31, proveedores, 'RazonSocial', 'Razon social', 'agrupador'),
+        ]
+        columnas = dict(columnas)
+        columnas[70] = {'codigoproveedor', 'razon_social'}
+        return campos, relaciones, columnas
+
+    def test_dos_conceptos_piden_distinguir_y_no_mezclan(self):
+        campos, relaciones, columnas = self._catalogo_dos_razones()
+        salida = self._salida('listado con la razon social', campos=campos, relaciones=relaciones, columnas=columnas)
+        self.assertIn('clientes', salida['reply']['answer'])
+        self.assertIn('proveedores', salida['reply']['answer'])
+        self.assertNotIn('sql', salida)
+        self.assertIsNone(salida['lectura'])
+
+    def test_si_la_frase_nombra_un_concepto_esa_es_la_lectura(self):
+        campos, relaciones, columnas = self._catalogo_dos_razones()
+        salida = self._salida(
+            'lista de todos los clientes con el codigo y la razon social',
+            campos=campos, relaciones=relaciones, columnas=columnas,
+        )
+        self.assertEqual(salida['vinculo'], 'sola')
+        self.assertIn('datiadb_clientes', salida['sql'])
+        self.assertNotIn('proveedores', salida['sql'])
+
+    def test_dos_relaciones_piden_distinguir(self):
+        campos, relaciones, columnas = _catalogo()
+        cabecera = next(campo for campo in campos if campo.id == 9).source_id and _fuente(30, 'CabeceraAlbaranCliente', 'datiadb_cabeceraalbarancliente')
+        clientes = _fuente(40, 'Clientes', 'datiadb_clientes')
+        contable = _campo(40, cabecera, 'CodigoContable', 'Codigo contable', 'agrupador', key=True)
+        alterno = _campo(41, cabecera, 'CodigoAlterno', 'Codigo alterno', 'agrupador', key=True)
+        destino_c = _campo(42, clientes, 'CodigoContable', 'Codigo contable', 'agrupador')
+        destino_a = _campo(43, clientes, 'CodigoAlterno', 'Codigo alterno', 'agrupador')
+        relaciones = [
+            rel for rel in relaciones
+            if not (rel.source_id == 30 and rel.target_id == 40 and _clave_visible(rel))
+        ] + [_rel(cabecera, clientes, contable, destino_c), _rel(cabecera, clientes, alterno, destino_a)]
+        salida = self._salida('ventas por cliente', campos=list(campos) + [contable, alterno, destino_c, destino_a], relaciones=relaciones, columnas=columnas)
+        self.assertIn('contable', salida['reply']['answer'].lower())
+        self.assertIn('alterno', salida['reply']['answer'].lower())
+        self.assertNotIn('sql', salida)
+        self.assertIsNone(salida['lectura'])
+
+    def _dos_albaranes(self):
+        campos, relaciones, columnas = _catalogo()
+        compras = _fuente(50, 'LineasAlbaranProveedor', 'datiadb_lineasalbaranproveedor')
+        campos = list(campos) + [
+            _campo(51, compras, 'CodigoEmpresa', 'Empresa', 'agrupador', key=True),
+            _campo(52, compras, 'EjercicioAlbaran', 'Ejercicio albaran', 'fecha'),
+        ]
+        return campos, relaciones, columnas
+
+    def _lectura_venta(self):
+        return {
+            'clase': 'cifra',
+            'conceptos': ['cliente'],
+            'columnas': [7],
+            'filtros': [],
+            'corte': None,
+            'periodo': [2025],
+            'forma': 'tabla',
+            'plan': {
+                'campos': [{'id': 7, 'agregado': 'avg'}],
+                'filtros': [],
+                'agrupar': [],
+                'orden': {'id': 7, 'sentido': 'desc'},
+                'limite': None,
+                'forma': 'tabla',
+                'periodos': [2025],
+                'medida': 'precio_medio',
+                'lado': 'venta',
+            },
+        }
+
+    def test_sin_hilo_el_numero_de_lineas_pregunta_las_dos_opciones(self):
+        campos, relaciones, columnas = self._dos_albaranes()
+        salida = self._salida(
+            'numero de lineas de albaran',
+            campos=campos, relaciones=relaciones, columnas=columnas,
+        )
+        texto = salida['reply']['answer']
+        self.assertIn('albarán de cliente', texto)
+        self.assertIn('albarán de proveedor', texto)
+        self.assertNotIn('sql', salida)
+        self.assertIsNone(salida['lectura'])
+        self.assertEqual(salida['pendiente']['pregunta'], 'numero de lineas de albaran')
+
+    def test_el_hilo_de_venta_cuenta_las_lineas_de_cliente(self):
+        campos, relaciones, columnas = self._dos_albaranes()
+        salida = self._salida(
+            'numero de lineas de albaran',
+            lectura=self._lectura_venta(),
+            campos=campos, relaciones=relaciones, columnas=columnas,
+        )
+        self.assertEqual(salida['vinculo'], 'continuacion')
+        self.assertIn('concepto', salida['hereda'])
+        self.assertIn('periodo', salida['hereda'])
+        self.assertIn('COUNT(*) AS registros', salida['sql'])
+        self.assertIn('datiadb_lineasalbarancliente', salida['sql'])
+        self.assertIn('2025', salida['sql'])
+        self.assertNotIn('proveedor', salida['sql'])
+
+    def test_si_la_frase_dice_cliente_cuenta_esas_lineas(self):
+        campos, relaciones, columnas = self._dos_albaranes()
+        lectura = self._lectura_venta()
+        lectura['periodo'] = [2024]
+        lectura['plan']['periodos'] = [2024]
+        salida = self._salida(
+            'numero de lineas de albaran de cliente',
+            lectura=lectura,
+            campos=campos, relaciones=relaciones, columnas=columnas,
+        )
+        self.assertEqual(salida['vinculo'], 'continuacion')
+        self.assertEqual(salida['hereda'], ['periodo'])
+        self.assertIn('datiadb_lineasalbarancliente', salida['sql'])
+        self.assertIn('2024', salida['sql'])
+        self.assertNotIn('2025', salida['sql'])
+        self.assertNotIn('proveedor', salida['sql'])
+
+    def test_la_opcion_elegida_cuenta_esas_lineas(self):
+        campos, relaciones, columnas = self._dos_albaranes()
+        aviso = self._salida(
+            'numero de lineas de albaran',
+            campos=campos, relaciones=relaciones, columnas=columnas,
+        )
+        salida = self._salida(
+            'de cliente',
+            pendiente=aviso['pendiente'],
+            campos=campos, relaciones=relaciones, columnas=columnas,
+        )
+        self.assertEqual(salida['vinculo'], 'sola')
+        self.assertIn('COUNT(*) AS registros', salida['sql'])
+        self.assertIn('datiadb_lineasalbarancliente', salida['sql'])
+        self.assertNotIn('proveedor', salida['sql'])
+
+    def test_el_hilo_elige_la_razon_social_de_clientes(self):
+        campos, relaciones, columnas = self._catalogo_dos_razones()
+        salida = self._salida(
+            'listado con la razon social',
+            lectura=self._lectura_venta(),
+            campos=campos, relaciones=relaciones, columnas=columnas,
+        )
+        self.assertEqual(salida['vinculo'], 'continuacion')
+        self.assertIn('datiadb_clientes', salida['sql'])
+        self.assertNotIn('proveedores', salida['sql'])
+
+    def test_el_motivo_no_rellena_huecos(self):
+        base = self._salida('ventas del ejercicio')
+        self.assertEqual(base['vinculo'], 'sola')
+        salida = self._salida('listado con el motivo', lectura=base['lectura'])
+        self.assertEqual(salida['reply']['answer'], _MENSAJE)
+        self.assertIsNone(salida['lectura'])
+        self.assertEqual(salida['vinculo'], 'rechazo')
+
+    def test_y_en_2024_continua_y_sustituye_el_periodo(self):
+        base = self._salida('ventas del ejercicio')
+        lectura = lectura_de_plan(base['lectura']['plan'], _catalogo()[0])
+        self.assertTrue(lectura['clase'])
+        self.assertTrue(lectura['conceptos'])
+        self.assertEqual(lectura['forma'], 'tabla')
+        salida = self._salida('y en 2024', lectura=base['lectura'])
+        self.assertEqual(salida['vinculo'], 'continuacion')
+        self.assertIn('2024', salida['sql'])
+        self.assertNotIn('2025', salida['sql'])
+        self.assertEqual(salida['sustituye'], ['periodo'])
+        self.assertIn('concepto', salida['hereda'])
+        self.assertIn('recorrido', salida)
+
+    def test_la_continuacion_no_deja_entrar_al_modelo(self):
+        campos, relaciones, columnas = _catalogo()
+        base = self._salida('ventas del ejercicio')
+        llamadas = []
+
+        def pedir(*args):
+            llamadas.append(args)
+            return {'campos': [{'id': 1, 'agregado': 'sum'}], 'filtros': [], 'forma': 'tabla'}
+
+        with patch('datia.services.ai.interprete_mapeo._probar', return_value=True), \
+             patch('datia.services.security.sql_guard.SQLGuard.check_sql', return_value={'allowed': True}):
+            salida = consultar(
+                'y en 2024', 1, 2025, 10,
+                campos=campos, relaciones=relaciones, columnas=columnas,
+                pedir=pedir, dialecto='postgres', sondear=False, lectura=base['lectura'],
+            )
+        self.assertEqual(llamadas, [])
+        self.assertEqual(salida['vinculo'], 'continuacion')
+        self.assertIn('2024', salida['sql'])
+
+    def test_el_precio_medio_de_venta_es_el_importe_partido_por_albaranes(self):
+        campos, relaciones, columnas = _catalogo()
+        lectura_previa = {
+            'clase': 'agrupacion',
+            'conceptos': ['articulo'],
+            'forma': 'tabla',
+            'plan': {
+                'campos': [{'id': 1, 'agregado': 'sum'}],
+                'agrupar': [20],
+                'limite': 10,
+                'periodos': [2024],
+                'forma': 'tabla',
+            },
+        }
+
+        def falso(compra, empresa, year, mes):
+            if compra:
+                return (400, 8)
+            if year == 2024:
+                return (100, 4)
+            return (8687377.42, 5292)
+
+        with patch('datia.services.ai.interprete_mapeo._leer_totales', side_effect=falso):
+            salida = self._salida(
+                'precio medio de venta', lectura=lectura_previa,
+                campos=campos, relaciones=relaciones, columnas=columnas,
+            )
+            seguido = self._salida(
+                'y en 2024', lectura=salida['lectura'],
+                campos=campos, relaciones=relaciones, columnas=columnas,
+            )
+            compra = self._salida(
+                'importe medio de compra',
+                campos=campos, relaciones=relaciones, columnas=columnas,
+            )
+        texto = salida['reply']['text']
+        self.assertEqual(salida['vinculo'], 'continuacion')
+        self.assertEqual(salida['hereda'], ['periodo'])
+        self.assertIn('Precio medio de venta en 2024: 25,00 € por albarán.', texto)
+        self.assertIn('100,00 €', texto)
+        self.assertIn('4 albaranes', texto)
+        self.assertNotIn(_MENSAJE, texto)
+        self.assertNotIn('2025', texto)
+        self.assertEqual(seguido['vinculo'], 'continuacion')
+        self.assertIn('periodo', seguido['sustituye'])
+        self.assertIn('2024: 25,00 € por albarán.', seguido['reply']['text'])
+        self.assertIn('Importe medio de compra en 2025: 50,00 € por albarán.', compra['reply']['text'])
+
+    def test_top_20_sigue_los_productos_y_cambia_el_corte(self):
+        campos, relaciones, columnas = _catalogo()
+        lineas = _fuente(10, 'LineasAlbaranCliente', 'datiadb_lineasalbarancliente')
+        articulos = _fuente(60, 'Articulos', 'datiadb_articulos')
+        codigo_linea = next(campo for campo in campos if campo.id == 2)
+        codigo_articulo = next(campo for campo in campos if campo.id == 20)
+        empresa_linea = next(campo for campo in campos if campo.id == 3)
+        empresa_articulo = next(campo for campo in campos if campo.id == 22)
+        relaciones = list(relaciones) + [
+            _rel(lineas, articulos, codigo_linea, codigo_articulo),
+            _rel(lineas, articulos, empresa_linea, empresa_articulo),
+        ]
+        columnas = dict(columnas)
+        columnas[10] = set(columnas[10]) | {'importecoste'}
+        base = self._salida(
+            'productos vendidos en 2024',
+            campos=campos, relaciones=relaciones, columnas=columnas,
+        )
+        self.assertEqual(base['vinculo'], 'sola')
+        self.assertIn('datiadb_lineasalbarancliente', base['sql'])
+        self.assertIn('AS coste', base['sql'])
+        self.assertIn('AS ops', base['sql'])
+        self.assertNotIn('cabecera', base['sql'])
+        self.assertIn('2024', base['sql'])
+        self.assertIn('LIMIT 10', base['sql'])
+        salida = self._salida(
+            'top 20', lectura=base['lectura'],
+            campos=campos, relaciones=relaciones, columnas=columnas,
+        )
+        self.assertEqual(salida['vinculo'], 'continuacion')
+        self.assertEqual(salida['sustituye'], ['corte'])
+        self.assertIn('concepto', salida['hereda'])
+        self.assertIn('periodo', salida['hereda'])
+        self.assertIn('LIMIT 20', salida['sql'])
+        self.assertIn('2024', salida['sql'])
+        self.assertNotIn('2025', salida['sql'])
+        todos = self._salida(
+            'todos', lectura=salida['lectura'],
+            campos=campos, relaciones=relaciones, columnas=columnas,
+        )
+        self.assertEqual(todos['vinculo'], 'continuacion')
+        self.assertEqual(todos['sustituye'], ['corte'])
+        self.assertTrue(todos['completo'])
+        self.assertNotIn('LIMIT', todos['sql'])
+        self.assertIn('GROUP BY', todos['sql'])
+        self.assertIn('2024', todos['sql'])
+        self.assertIn('datiadb_lineasalbarancliente', todos['sql'])
+
+    def test_resumen_de_un_ano_es_la_venta_y_el_top_hereda_el_ano(self):
+        campos, relaciones, columnas = _catalogo()
+        lineas = _fuente(10, 'LineasAlbaranCliente', 'datiadb_lineasalbarancliente')
+        articulos = _fuente(60, 'Articulos', 'datiadb_articulos')
+        relaciones = list(relaciones) + [
+            _rel(lineas, articulos, next(campo for campo in campos if campo.id == 2), next(campo for campo in campos if campo.id == 20)),
+            _rel(lineas, articulos, next(campo for campo in campos if campo.id == 3), next(campo for campo in campos if campo.id == 22)),
+        ]
+        resumen = self._salida(
+            'resumen 2024',
+            campos=campos, relaciones=relaciones, columnas=columnas,
+        )
+        self.assertEqual(resumen['vinculo'], 'sola')
+        self.assertIn('SUM', resumen['sql'])
+        self.assertIn('datiadb_cabeceraalbarancliente', resumen['sql'])
+        self.assertIn('2024', resumen['sql'])
+        self.assertNotIn('proveedor', resumen['sql'])
+        self.assertEqual(resumen['lectura']['periodo'], [2024])
+        secciones = resumen['secciones']
+        self.assertEqual([item['label'] for item in secciones], ['Artículos', 'Clientes'])
+        self.assertIn('datiadb_lineasalbarancliente', secciones[0]['sql'])
+        self.assertIn('LIMIT 10', secciones[0]['sql'])
+        self.assertIn('2024', secciones[0]['sql'])
+        self.assertIn('LIMIT 10', secciones[1]['sql'])
+        self.assertIn('2024', secciones[1]['sql'])
+        self.assertNotIn('proveedor', secciones[1]['sql'])
+        top = self._salida(
+            'top articulos',
+            lectura=resumen['lectura'],
+            campos=campos, relaciones=relaciones, columnas=columnas,
+        )
+        self.assertEqual(top['vinculo'], 'continuacion')
+        self.assertIn('periodo', top['hereda'])
+        self.assertIn('datiadb_lineasalbarancliente', top['sql'])
+        self.assertIn('2024', top['sql'])
+        self.assertNotIn('2025', top['sql'])
+        self.assertIn('LIMIT 10', top['sql'])
+        self.assertNotIn('proveedor', top['sql'])
+
+    def test_la_frase_siguiente_que_se_entiende_sola_no_hereda(self):
+        base = self._salida('ventas del ejercicio')
+        salida = self._salida(
+            'lista de todos los articulos con el codigo y la descripcion',
+            lectura=base['lectura'],
+        )
+        self.assertEqual(salida['vinculo'], 'sola')
+        self.assertEqual(salida['hereda'], [])
+        self.assertNotIn('cabecera', salida['sql'])
+        self.assertNotIn('2025', salida['sql'])
+
+    def test_sin_lectura_aceptada_la_frase_incompleta_no_inventa_datos(self):
+        salida = self._salida('y en 2024')
+        self.assertIsNone(salida)
+
+    def test_una_frase_ajena_no_devuelve_cifra(self):
+        self.assertIsNone(self._salida('que tiempo hace hoy'))
+
+    def test_la_revision_cubre_el_territorio_o_nombra_la_pieza(self):
+        from datia.services.ai.examen_preguntas import cubrir_territorio, empaquetar_revision, revision_aceptada
+        campos, relaciones, columnas = _catalogo()
+
+        def consultar_fn(frase, lectura=None):
+            return self._salida(frase, lectura, campos, relaciones, columnas)
+
+        cubierto = cubrir_territorio(campos, relaciones, columnas, 2025, consultar_fn)
+        self.assertLess(len(cubierto['preguntas']), len(campos) * max(1, len(relaciones)) * 15)
+        self.assertTrue(any(item['pieza'].startswith('forma:') for item in cubierto['preguntas']))
+        self.assertTrue(any(item['pieza'].endswith(':continuacion') for item in cubierto['preguntas']))
+        solas = [item for item in cubierto['preguntas'] if item['pieza'].endswith(':sola')]
+        self.assertTrue(solas)
+        self.assertTrue(all(item['hereda'] == [] for item in solas))
+        self.assertEqual(cubierto['probes'][1]['texto'], _MENSAJE)
+        conjunto = next(item for item in cubierto['preguntas'] if item['pieza'] == 'forma:conjunto')
+        self.assertNotIn('ejercicio', conjunto['sql'].lower())
+        numero = next(item for item in cubierto['preguntas'] if item['pieza'] == 'forma:numero')
+        self.assertIn('LIMIT 10', numero['sql'])
+        self.assertNotIn('LIMIT', conjunto['sql'])
+        vista = empaquetar_revision(1, 2025, cubierto['preguntas'], cubierto['probes'], cubierto['incompleta'], cubierto['falta'])
+        self.assertEqual(vista['estado'], 'Preparada')
+        self.assertIn('vinculo', vista['preguntas'][0])
+        self.assertTrue(vista['probes'])
+        self.assertFalse(revision_aceptada(True, 2, 2, 2, 2))
+        self.assertTrue(revision_aceptada(False, 2, 2, 2, 2))
+        if cubierto['incompleta']:
+            self.assertTrue(cubierto['falta'])
+
+
+class TestTopSinConcepto(SimpleTestCase):
+    def _analizar(self, lectura=None):
+        from datia.services.ai.ambiguity_analyzer import AmbiguityAnalyzer
+        contexto = {'empresa': 1, 'ejercicio': 2025, 'ambiguity_threshold': 0.85}
+        if lectura is not None:
+            contexto['lectura'] = lectura
+        with patch('datia.services.ai.ambiguity_analyzer.IntentDetector.detect', return_value={'temporal': None}), \
+             patch('os.path.exists', return_value=False), \
+             patch('os.makedirs'), \
+             patch('builtins.open', unittest.mock.mock_open()):
+            return AmbiguityAnalyzer().analyze('Top 20', contexto)
+
+    def test_sin_lectura_pide_el_concepto(self):
+        salida = self._analizar()
+        self.assertTrue(salida['ambiguous'])
+        self.assertEqual(salida['text'], 'Indica si buscas productos, clientes o proveedores.')
+
+    def test_con_lectura_no_pide_el_concepto(self):
+        salida = self._analizar({'conceptos': ['articulo'], 'periodo': [2024], 'corte': 10})
+        self.assertFalse(salida['ambiguous'])
+        self.assertNotEqual(salida['text'], 'Indica si buscas productos, clientes o proveedores.')
+
+    def test_el_informe_muestra_el_ano_de_la_lectura(self):
+        salida = ResponseFormatter.format_response(
+            {
+                'type': 'table',
+                'label': 'ImporteNeto por Articulo',
+                'sql': 'select 1',
+                'lectura': {'periodo': [2024], 'clase': 'agrupacion'},
+            },
+            [{'label': 'CAFE', 'val': 10}],
+            2025,
+            20,
+        )
+        texto = salida.get('answer') or salida.get('text') or ''
+        self.assertIn('2024', texto)
+        self.assertNotIn('2025', texto)
+
+
+def _clave_visible(rel):
+    texto = f'{rel.from_field.field_name} {rel.from_field.business_name}'.lower()
+    return not any(token in texto for token in ('empresa', 'ejercicio', 'serie', 'numero'))
 
 
 if __name__ == '__main__':

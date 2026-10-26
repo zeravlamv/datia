@@ -216,8 +216,13 @@ async function askAI(queryString, forceTraining = false) {
             activeEjercicio = yearMatch[1];
         }
 
+        if (window._empresaDeLaMemoria && String(window._empresaDeLaMemoria) !== String(currEmpresa)) {
+            conversacionActual = null;
+        }
+        window._empresaDeLaMemoria = currEmpresa;
         const emp = encodeURIComponent(currEmpresa);
         const eje = encodeURIComponent(activeEjercicio);
+        const conversacionId = Number(conversacionActual) || 0;
 
         const isSettingOn = localStorage.getItem('datia-training-mode') === 'true';
         const trainingMode = forceTraining === true || isSettingOn;
@@ -227,7 +232,7 @@ async function askAI(queryString, forceTraining = false) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 seconds (1.5 min)
 
-        const res = await fetch(`${API}/qa?question=${encodeURIComponent(q)}&empresa=${emp}&ejercicio=${eje}&training_enabled=${trainingMode}&model=${encodeURIComponent(aiModel)}`, {
+        const res = await fetch(`${API}/qa?question=${encodeURIComponent(q)}&empresa=${emp}&ejercicio=${eje}&training_enabled=${trainingMode}&model=${encodeURIComponent(aiModel)}&conversacion_id=${conversacionId}`, {
             method: 'POST',
             signal: controller.signal
         });
@@ -346,7 +351,8 @@ async function askAI(queryString, forceTraining = false) {
         } else {
             const copiaRespuesta = copiarRespuestaGuardable(data);
             renderAiResponse(data, body, { query: q });
-            guardarConversacionActual(q, copiaRespuesta);
+            nodoConversacionActual = null;
+            await guardarConversacionActual(q, copiaRespuesta);
             try { if (window.VOA && typeof window.VOA.notify === 'function') window.VOA.notify('AI_QA_COMPLETED', { query: q }); } catch (_) {}
         }
     } catch (e) {
@@ -603,10 +609,6 @@ function anadirTablaInforme(container, table, maxFilas) {
     wrapper.className = 'ai-report-tabla';
     const cols = Array.isArray(table.columns) ? table.columns : [];
     wrapper.innerHTML = htmlTablaAlineada(cols, table.rows, maxFilas);
-    if (maxFilas > 50) {
-        wrapper.style.maxHeight = '28rem';
-        wrapper.style.overflowY = 'auto';
-    }
     container.appendChild(wrapper);
 }
 
@@ -2449,6 +2451,23 @@ function renderAiResponse(data, container, options = {}) {
         customRendered = true;
 
         // ... existing ... 
+    } else if (data.type === 'resumen') {
+        (data.partes || []).forEach(function (parte) {
+            const bloque = document.createElement('div');
+            bloque.style.marginTop = '28px';
+            if (parte.text) {
+                const resumen = document.createElement('div');
+                resumen.innerHTML = parte.text;
+                bloque.appendChild(resumen);
+            }
+            if (Array.isArray(parte.data) && parte.data.length) {
+                const tabla = document.createElement('div');
+                bloque.appendChild(tabla);
+                renderAiTable(tabla, parte.data, parte.chart_config, false, parte.metric || 'sales');
+            }
+            contentWrapper.appendChild(bloque);
+        });
+        customRendered = true;
     } else if (data.type === 'deep_dive_v2') {
         contentWrapper.appendChild(vizContainer);
         renderDeepDiveV2(vizContainer, data);
@@ -3259,8 +3278,11 @@ function renderDeepDiveV2(container, data) {
 }
 
 let conversacionActual = null;
+let nodoConversacionActual = null;
 let recalcularConversacionId = 0;
 let recalculoEnCurso = false;
+const arbolesAbiertos = {};
+let cargaConversacionesToken = 0;
 
 function escaparTexto(valor) {
     return String(valor || '').replace(/[&<>"']/g, function (c) {
@@ -3305,28 +3327,19 @@ function mostrarChatActivo() {
     if (stream) stream.classList.add('has-sticky-prompt');
 }
 
-function pintarMensajeGuardado(mensaje, indice) {
+function pintarMensajeGuardado(mensaje, indice, abierta) {
     const stream = document.getElementById('ia-results-stream');
     if (!stream || !mensaje) return;
     const card = document.createElement('div');
-    card.className = 'ia-card' + (indice === 0 ? ' latest' : ' collapsed');
-    const header = document.createElement('div');
-    header.className = 'ia-card-header';
-    header.style.cursor = 'pointer';
-    header.onclick = function () { toggleCard(this); };
-    const hora = mensaje.ts ? new Date(mensaje.ts).toLocaleTimeString(document.documentElement.lang || 'es', { hour: '2-digit', minute: '2-digit' }) : '';
-    header.innerHTML = `
-        <div class="ia-header-title">${escaparTexto(mensaje.pregunta)}</div>
-        <div class="small text-muted">${escaparTexto(hora)}</div>
-    `;
+    card.className = 'ia-turno ia-card' + (abierta ? ' latest' : '');
+    card.dataset.indice = String(indice);
+    const burbuja = document.createElement('div');
+    burbuja.className = 'ia-burbuja-usuario';
+    burbuja.textContent = mensaje.pregunta || '';
     const body = document.createElement('div');
-    body.className = 'card-body';
+    body.className = 'ia-respuesta card-body';
     body.id = 'ai-res-saved-' + indice + '-' + (conversacionActual || 'x');
-    body.style.paddingLeft = '5%';
-    body.style.paddingRight = '5%';
-    body.style.maxWidth = '100%';
-    body.style.boxSizing = 'border-box';
-    card.appendChild(header);
+    card.appendChild(burbuja);
     card.appendChild(body);
     stream.appendChild(card);
     renderAiResponse(mensaje.respuesta || {}, body, { query: mensaje.pregunta || '' });
@@ -3340,15 +3353,102 @@ function pintarListaConversaciones(filas) {
         return;
     }
     lista.innerHTML = filas.map(function (fila) {
-        const activa = Number(fila.id) === Number(conversacionActual) ? ' activa' : '';
-        return `
-            <div class="ia-conversacion-item${activa}" data-id="${fila.id}">
-                <button type="button" class="ia-conversacion-titulo" onclick="abrirConversacion(${fila.id})">${escaparTexto(fila.titulo)}</button>
-                <button type="button" class="ia-conversacion-borrar" title="Borrar" onclick="borrarConversacion(event, ${fila.id})">×</button>
-            </div>
-        `;
+        const preguntas = Array.isArray(fila.preguntas) && fila.preguntas.length
+            ? fila.preguntas
+            : [{ indice: 0, texto: fila.titulo }];
+        const esEsta = Number(fila.id) === Number(conversacionActual);
+        const nodo = esEsta
+            ? (nodoConversacionActual === null ? preguntas[preguntas.length - 1].indice : nodoConversacionActual)
+            : null;
+        const ramas = preguntas.map(function (pregunta, orden) {
+            const esPrincipal = orden === 0;
+            const activa = esEsta && Number(nodo) >= 0 && Number(pregunta.indice) === Number(nodo) ? ' activa' : '';
+            const conHijos = esPrincipal && preguntas.length > 1;
+            const tono = conHijos ? ' con-hijos' : ' sin-niveles';
+            const nivel = esPrincipal ? 0 : 1;
+            const rama = esPrincipal ? '' : '<span class="ia-conversacion-rama" aria-hidden="true"></span>';
+            const plegar = conHijos
+                ? `<button type="button" class="ia-conversacion-plegar" title="Abrir" onclick="plegarNivel(event, ${fila.id}, ${Number(pregunta.indice) || 0})">▸</button>`
+                : '';
+            const borrar = `<button type="button" class="ia-conversacion-borrar" title="Borrar" onclick="borrarNivel(event, ${fila.id}, ${Number(pregunta.indice) || 0})">×</button>`;
+            return `
+                <div class="ia-conversacion-item${activa}${tono}" data-id="${fila.id}" data-indice="${pregunta.indice}" style="--nivel:${nivel}">
+                    ${rama}
+                    ${plegar}
+                    <button type="button" class="ia-conversacion-titulo" onclick="abrirConversacion(${fila.id}, ${Number(pregunta.indice) || 0})">
+                        ${escaparTexto(pregunta.texto)}
+                    </button>
+                    ${borrar}
+                </div>
+            `;
+        }).join('');
+        return `<div class="ia-conversacion-arbol" data-id="${fila.id}">${ramas}</div>`;
     }).join('');
     prepararVistaPregunta(lista);
+    abrirCaminoDeLaUltima(filas);
+    aplicarPliegue();
+}
+
+function abrirCaminoDeLaUltima(filas) {
+    if (nodoConversacionActual !== null || !conversacionActual) return;
+    const fila = (filas || []).find(function (item) {
+        return Number(item.id) === Number(conversacionActual);
+    });
+    if (!fila) return;
+    const preguntas = Array.isArray(fila.preguntas) && fila.preguntas.length
+        ? fila.preguntas
+        : [{ indice: 0, texto: fila.titulo }];
+    if (preguntas.length > 1) {
+        arbolesAbiertos[claveArbol(fila.id, preguntas[0].indice)] = true;
+    }
+}
+
+function claveArbol(id, indice) {
+    return String(id) + ':' + String(indice);
+}
+
+function plegarNivel(evento, id, indice) {
+    if (evento) {
+        evento.preventDefault();
+        evento.stopPropagation();
+    }
+    const clave = claveArbol(id, indice);
+    arbolesAbiertos[clave] = !arbolesAbiertos[clave];
+    aplicarPliegue();
+}
+
+function aplicarPliegue() {
+    document.querySelectorAll('.ia-conversacion-arbol').forEach(function (arbol) {
+        const id = arbol.dataset.id;
+        const items = [].slice.call(arbol.querySelectorAll('.ia-conversacion-item'));
+        items.forEach(function (item, orden) {
+            const principal = items[0];
+            const abierto = !!(principal && arbolesAbiertos[claveArbol(id, principal.dataset.indice)]);
+            item.hidden = orden > 0 && !abierto;
+            const boton = item.querySelector('.ia-conversacion-plegar');
+            if (boton) {
+                boton.textContent = abierto ? '▾' : '▸';
+                boton.title = abierto ? 'Plegar' : 'Abrir';
+            }
+        });
+    });
+}
+
+function lecturaGuardada(mensaje) {
+    const respuesta = mensaje && mensaje.respuesta;
+    if (!respuesta || typeof respuesta !== 'object') return null;
+    if (respuesta.vinculo === 'rechazo' || respuesta.vinculo === 'aviso') return null;
+    if (respuesta.lectura && typeof respuesta.lectura === 'object') return respuesta.lectura;
+    if (respuesta.lectura_aceptada && typeof respuesta.lectura_aceptada === 'object') return respuesta.lectura_aceptada;
+    return null;
+}
+
+function lecturaAnterior(mensajes, indice) {
+    for (let posicion = indice - 1; posicion >= 0; posicion -= 1) {
+        const lectura = lecturaGuardada(mensajes[posicion]);
+        if (lectura) return lectura;
+    }
+    return null;
 }
 
 function capaPreguntaCompleta() {
@@ -3420,11 +3520,14 @@ async function cargarConversaciones() {
     const lista = document.getElementById('ia-conversaciones-lista');
     const empresa = parseInt(currEmpresa, 10);
     if (!lista || !empresa) return;
+    const token = ++cargaConversacionesToken;
     try {
         const res = await fetch(`${API}/ai/conversaciones?empresa=${empresa}`, { credentials: 'same-origin' });
         const data = await res.json();
+        if (token !== cargaConversacionesToken) return;
         pintarListaConversaciones(data.conversaciones || []);
     } catch (e) {
+        if (token !== cargaConversacionesToken) return;
         lista.innerHTML = '<div class="ia-conversaciones-vacio">No se pudo cargar la lista.</div>';
     }
 }
@@ -3458,13 +3561,19 @@ async function guardarConversacionActual(pregunta, respuesta) {
                 ejercicio: currEjercicio,
                 pregunta: pregunta,
                 respuesta: respuesta,
-                conversacion_id: reemplazarId,
-                reemplazar: reemplazarId > 0
+                conversacion_id: Number(conversacionActual) || reemplazarId || 0,
+                reemplazar: reemplazarId > 0,
+                lectura_aceptada: (respuesta && respuesta.lectura_aceptada) || null
             })
         });
         const json = await res.json();
         if (json && json.id) {
             conversacionActual = json.id;
+            const stream = document.getElementById('ia-results-stream');
+            const card = stream && stream.querySelector('.ia-turno.latest');
+            if (card && json.indice !== undefined && json.indice !== null) {
+                card.dataset.indice = String(json.indice);
+            }
             cargarConversaciones();
         }
     } catch (e) {
@@ -3474,11 +3583,55 @@ async function guardarConversacionActual(pregunta, respuesta) {
 
 function nuevaConsulta() {
     conversacionActual = null;
+    nodoConversacionActual = null;
     resetPantallaChat();
     cargarConversaciones();
 }
 
-async function abrirConversacion(id) {
+function tarjetaRecalculo(pregunta, indice) {
+    const stream = document.getElementById('ia-results-stream');
+    const card = document.createElement('div');
+    card.className = 'ia-turno ia-card';
+    card.dataset.indice = String(indice);
+    const burbuja = document.createElement('div');
+    burbuja.className = 'ia-burbuja-usuario';
+    burbuja.textContent = pregunta || '';
+    const body = document.createElement('div');
+    body.className = 'ia-respuesta card-body';
+    body.id = 'ai-res-recalc-' + indice + '-' + (conversacionActual || 'x');
+    body.textContent = 'Recalculando…';
+    card.appendChild(burbuja);
+    card.appendChild(body);
+    if (stream) stream.appendChild(card);
+    return body;
+}
+
+async function recalcularPregunta(id, indice, lectura) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(function () { controller.abort(); }, 90000);
+    try {
+        const res = await fetch(`${API}/ai/conversaciones/${id}/recalcular`, {
+            method: 'POST',
+            credentials: 'same-origin',
+            signal: controller.signal,
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': (typeof CSRF_TOKEN !== 'undefined' ? CSRF_TOKEN : '')
+            },
+            body: JSON.stringify({
+                empresa: currEmpresa,
+                ejercicio: currEjercicio,
+                indice: indice,
+                lectura: lectura || null
+            })
+        });
+        return await res.json();
+    } finally {
+        clearTimeout(timeoutId);
+    }
+}
+
+async function abrirConversacion(id, indice) {
     if (recalculoEnCurso) return;
     recalculoEnCurso = true;
     try {
@@ -3486,36 +3639,70 @@ async function abrirConversacion(id) {
         const res = await fetch(`${API}/ai/conversaciones/${id}?empresa=${empresa}`, { credentials: 'same-origin' });
         const data = await res.json();
         const mensajes = data && Array.isArray(data.mensajes) ? data.mensajes : [];
-        const primero = mensajes[0] || {};
-        const pregunta = String((primero.pregunta || (data && data.titulo) || '')).trim();
-        if (!data || data.status === 'error' || !pregunta) {
+        if (!data || data.status === 'error' || !mensajes.length) {
             if (window.showToast) window.showToast('No se pudo abrir la consulta');
             return;
         }
-        recalcularConversacionId = data.id;
+        const pedido = Number(indice);
+        const elegido = Number.isInteger(pedido) && mensajes[pedido] ? pedido : 0;
+        const todoElHilo = elegido === 0;
         conversacionActual = data.id;
+        nodoConversacionActual = elegido;
         const stream = document.getElementById('ia-results-stream');
         if (stream) stream.innerHTML = '';
         mostrarChatActivo();
+        const posiciones = todoElHilo
+            ? mensajes.map(function (_mensaje, posicion) { return posicion; })
+            : [elegido];
+        let lectura = todoElHilo ? null : lecturaAnterior(mensajes, elegido);
+        for (let paso = 0; paso < posiciones.length; paso += 1) {
+            const posicion = posiciones[paso];
+            const pregunta = (mensajes[posicion] && mensajes[posicion].pregunta) || '';
+            const cuerpo = tarjetaRecalculo(pregunta, posicion);
+            if (cuerpo) cuerpo.scrollIntoView({ block: 'start' });
+            const json = await recalcularPregunta(data.id, posicion, lectura);
+            if (!json || json.status === 'error') {
+                if (cuerpo) cuerpo.textContent = (json && json.message) || 'No se pudo recalcular la consulta';
+                break;
+            }
+            lectura = json.lectura_siguiente || lectura;
+            if (mensajes[posicion]) {
+                mensajes[posicion].respuesta = json.respuesta || {};
+            }
+            if (cuerpo) {
+                cuerpo.textContent = '';
+                renderAiResponse(json.respuesta || {}, cuerpo, { query: json.pregunta || pregunta });
+            }
+        }
         cargarConversaciones();
-        await askAI(pregunta);
     } catch (e) {
         if (window.showToast) window.showToast('No se pudo abrir la consulta');
     } finally {
-        recalcularConversacionId = 0;
         recalculoEnCurso = false;
     }
 }
 
-async function borrarConversacion(evento, id) {
+function quitarTarjeta(indice) {
+    const stream = document.getElementById('ia-results-stream');
+    if (!stream) return false;
+    const tarjeta = stream.querySelector('.ia-turno[data-indice="' + indice + '"]');
+    if (tarjeta) tarjeta.remove();
+    stream.querySelectorAll('.ia-turno').forEach(function (card) {
+        const actual = Number(card.dataset.indice);
+        if (!Number.isNaN(actual) && actual > indice) card.dataset.indice = String(actual - 1);
+    });
+    return !!stream.querySelector('.ia-turno');
+}
+
+async function borrarNivel(evento, id, indice) {
     if (evento) {
         evento.preventDefault();
         evento.stopPropagation();
     }
-    if (!confirm('¿Borrar esta consulta?')) return;
+    if (!confirm('¿Borrar esta pregunta?')) return;
     try {
         const empresa = parseInt(currEmpresa, 10);
-        const res = await fetch(`${API}/ai/conversaciones/${id}?empresa=${empresa}`, {
+        const res = await fetch(`${API}/ai/conversaciones/${id}?empresa=${empresa}&indice=${indice}`, {
             method: 'DELETE',
             credentials: 'same-origin',
             headers: {
@@ -3523,16 +3710,28 @@ async function borrarConversacion(evento, id) {
             }
         });
         const json = await res.json();
-        if (json && json.status === 'deleted') {
+        if (!json || json.status === 'error') {
+            alert((json && json.message) || 'No se pudo borrar la pregunta');
+            return;
+        }
+        if (json.status === 'deleted') {
             if (Number(conversacionActual) === Number(id)) nuevaConsulta();
             else cargarConversaciones();
+            return;
         }
+        if (Number(conversacionActual) === Number(id)) {
+            const quedan = quitarTarjeta(indice);
+            if (!quedan) nodoConversacionActual = -1;
+            else if (nodoConversacionActual > indice) nodoConversacionActual -= 1;
+        }
+        cargarConversaciones();
     } catch (e) {
-        alert('No se pudo borrar la consulta');
+        alert('No se pudo borrar la pregunta');
     }
 }
 
 window.nuevaConsulta = nuevaConsulta;
 window.abrirConversacion = abrirConversacion;
-window.borrarConversacion = borrarConversacion;
+window.borrarNivel = borrarNivel;
+window.plegarNivel = plegarNivel;
 

@@ -19,9 +19,10 @@ from datia.services.ai.compilador_mapeo import (
     _plegar,
     _puntos,
     _puntuacion,
+    _trocear,
     nombre_fisico,
 )
-from datia.services.ai.compilador_mapeo import _ANIOS, _EMPRESAS
+from datia.services.ai.compilador_mapeo import _ANIOS, _EMPRESAS, _GENERICOS
 
 logger = logging.getLogger('query_builder')
 
@@ -48,6 +49,22 @@ _FILTRO = re.compile(
     r'([a-z0-9][a-z0-9._\-]{0,40})',
 )
 _MENSAJE = 'Esa pregunta no está en los datos mapeados.'
+_AVISO_DOS = 'Esa pregunta admite más de una lectura. Indica cuál quieres.'
+_CLAVES_LECTURA = ('clase', 'conceptos', 'columnas', 'filtros', 'corte', 'periodo', 'forma')
+_TECNICA = ('empresa', 'ejercicio', 'serie', 'numero')
+_PALABRAS_DE_FRASE = {
+    'listado', 'lista', 'todos', 'todas', 'todo', 'completo', 'completa',
+    'ejercicio', 'importe', 'neto', 'total', 'suma', 'ventas', 'venta',
+    'compras', 'compra', 'albaran', 'pedido', 'grafica', 'grafico',
+    'comparativa', 'primeros', 'primeras', 'clientes', 'cliente',
+    'articulos', 'articulo', 'productos', 'producto', 'proveedores',
+    'proveedor', 'cuentas', 'cuenta', 'codigo', 'descripcion', 'nombre',
+    'razon', 'social', 'comercial', 'cif', 'nif', 'dni', 'familia',
+    'precio', 'stock', 'unidad', 'poblacion', 'telefono', 'email',
+    'direccion', 'media', 'promedio', 'maximo', 'minimo', 'cuantos',
+    'cuantas', 'numero', 'cantidad', 'durante', 'entre', 'desde', 'hasta',
+    'mismo', 'mismos', 'misma', 'mismas',
+}
 
 
 def _no_esta():
@@ -91,6 +108,22 @@ def _es_compra(pregunta):
 
 def _pide_grafica(pregunta):
     return bool(re.search(r'\b(grafica|grafico|comparativa|comparar|vs)\b', _plegar(pregunta)))
+
+
+def _pide_mes(pregunta):
+    return bool(re.search(r'\b(mensual|mensuales|por mes|mes a mes)\b', _plegar(pregunta)))
+
+
+def _es_resumen_comercial(pregunta):
+    """Resumen de ventas o de compras. Un resumen financiero no es esa cifra."""
+    folded = _plegar(pregunta)
+    if not re.search(r'\bresumen\b', folded):
+        return False
+    if re.search(r'\b(financier\w*|finanzas|ingresos|gastos|resultado)\b', folded):
+        return False
+    if _es_venta(pregunta) and _es_compra(pregunta):
+        return False
+    return True
 
 
 def _periodos(pregunta):
@@ -438,17 +471,101 @@ def _forma_de(pregunta, agregado):
     periodos = _periodos(pregunta)
     if agregado == 'ninguno':
         return 'listado', periodos, 'ejercicio'
-    if _pide_grafica(pregunta) or len(periodos) >= 2:
+    if _pide_grafica(pregunta) or _pide_mes(pregunta) or len(periodos) >= 2:
         return 'grafica', periodos, 'mes'
     return 'tabla', periodos, 'ejercicio'
 
 
-def plan_determinista(pregunta, campos, limite=20):
+def _pide_cuenta_de_documento(pregunta):
+    """Número de líneas de un albarán o de un pedido."""
+    folded = _plegar(pregunta)
+    if _agregado(pregunta) != 'count':
+        return False
+    return bool(re.search(r'\blineas?\b', folded) and re.search(r'\b(albaran\w*|pedidos?)\b', folded))
+
+
+def _campo_documento(campos, lado, documento, lineas):
+    candidatos = []
+    for campo in campos or []:
+        tabla = _plegar(getattr(campo, 'source_table', ''))
+        if documento not in tabla:
+            continue
+        if lineas and 'linea' not in tabla:
+            continue
+        if not lineas and 'linea' in tabla:
+            continue
+        if lado == 'cliente' and ('proveedor' in tabla or 'cliente' not in tabla):
+            continue
+        if lado == 'proveedor' and ('cliente' in tabla or 'proveedor' not in tabla):
+            continue
+        candidatos.append(campo)
+    if not candidatos:
+        return None
+    return min(candidatos, key=lambda campo: (0 if _es_importe_neto(campo) else 1, campo.id))
+
+
+def _lados_documento(campos, pregunta):
+    if not _pide_cuenta_de_documento(pregunta):
+        return []
+    documento = _documento(pregunta)
+    return [
+        lado for lado in ('cliente', 'proveedor')
+        if _campo_documento(campos, lado, documento, True) is not None
+    ]
+
+
+def _plan_cifra_total(pregunta, campos, lado):
+    cifra = _cifra_defecto(campos, lado, '', _documento(pregunta))
+    if cifra is None:
+        return None
+    return {
+        'campos': [{'id': cifra.id, 'agregado': 'sum'}],
+        'filtros': [],
+        'agrupar': [],
+        'orden': {'id': cifra.id, 'sentido': 'desc'},
+        'limite': None,
+        'completo': True,
+        'forma': 'tabla',
+        'periodos': _periodos(pregunta),
+        'grano': 'ejercicio',
+        'resumen': True,
+        'lado_cuenta': lado,
+    }
+
+
+def _plan_lineas(pregunta, campos, lado):
+    if not lado:
+        return None
+    documento = _documento(pregunta)
+    campo = _campo_documento(campos, lado, documento, True)
+    if campo is None:
+        return None
+    return {
+        'campos': [{'id': campo.id, 'agregado': 'count', 'titulo': 'Líneas'}],
+        'filtros': [],
+        'agrupar': [],
+        'orden': {'id': campo.id, 'sentido': 'desc'},
+        'limite': None,
+        'completo': True,
+        'forma': 'tabla',
+        'periodos': _periodos(pregunta),
+        'grano': 'ejercicio',
+        'cuenta_filas': True,
+        'lado_cuenta': lado,
+        'documento': documento,
+    }
+
+
+def plan_determinista(pregunta, campos, limite=20, lado_forzado=''):
     """Plan con columnas, cifra, corte, filtros y periodos. None si no basta."""
     if not pregunta or not campos:
         return None
-    lado = _lado(pregunta)
+    lado = _lado(pregunta) or lado_forzado or ''
+    if _pide_cuenta_de_documento(pregunta):
+        return _plan_lineas(pregunta, campos, lado)
     grupo = _grupo(pregunta)
+    if not grupo and lado_forzado in _CONCEPTOS and _agregado(pregunta) == 'ninguno':
+        grupo = lado_forzado
     valores = _valores(pregunta)
     if grupo and any(clave == grupo for clave, _valor in valores):
         grupo = ''
@@ -482,9 +599,11 @@ def plan_determinista(pregunta, campos, limite=20):
     if grupo and len(_periodos(pregunta)) >= 2:
         return None
     filtro_concepto = valores[0][0] if valores else ''
-    cifra = explicitas[0] if len(explicitas) == 1 else _cifra_defecto(
-        campos, lado, filtro_concepto, _documento(pregunta),
-    )
+    concepto_cifra = 'articulo' if grupo == 'articulo' else (filtro_concepto or grupo)
+    if len(explicitas) == 1 and concepto_cifra != 'articulo':
+        cifra = explicitas[0]
+    else:
+        cifra = _cifra_defecto(campos, lado, concepto_cifra, _documento(pregunta))
     if cifra is None and agregado != 'count':
         return None
     filtros = []
@@ -917,6 +1036,29 @@ def _compilar_grafica(plan, campos, relaciones, columnas, empresa, dialecto):
     return ' '.join(sql.split())
 
 
+def _medidas_de_apoyo(alias_medida, columnas_medida, agregado, dialecto):
+    """Coste y número de albaranes cuando la tabla los tiene junto al importe."""
+    if agregado not in ('sum', 'avg'):
+        return ''
+    partes = []
+    if 'importecoste' in (columnas_medida or set()):
+        col = _ident('importecoste', dialecto)
+        if col:
+            partes.append(f'{agregado.upper()}({alias_medida}.{col}) AS coste')
+    claves = [
+        nombre for nombre in ('ejercicioalbaran', 'seriealbaran', 'numeroalbaran')
+        if nombre in (columnas_medida or set())
+    ]
+    if len(claves) == 3:
+        cols = ', '.join(f'{alias_medida}.{_ident(nombre, dialecto)}' for nombre in claves)
+        partes.append(f'COUNT(DISTINCT ({cols})) AS ops')
+    elif columnas_medida:
+        partes.append('COUNT(*) AS ops')
+    if not partes:
+        return ''
+    return ', ' + ', '.join(partes)
+
+
 def compilar_plan(plan, campos, relaciones, columnas, empresa, year, dialecto='postgres'):
     """SELECT del plan. None si falta un cruce, una columna o el valor no es seguro."""
     if not plan or not campos:
@@ -972,6 +1114,9 @@ def compilar_plan(plan, campos, relaciones, columnas, empresa, year, dialecto='p
         anio_col = _ident(_columna_de(campos, base, _ANIOS, columnas.get(base, set())), dialecto)
         if anio_col:
             where.append(f't1.{anio_col} = {int(year)}')
+    if plan.get('cuenta_filas'):
+        sql = f'SELECT COUNT(*) AS registros FROM {tabla} t1 WHERE {" AND ".join(where)}'
+        return ' '.join(sql.split())
     medida = por_id[plan['campos'][0]['id']]
     col_medida = _ident(nombre_fisico(medida, columnas.get(medida.source_id, set())), dialecto)
     if not col_medida:
@@ -985,6 +1130,7 @@ def compilar_plan(plan, campos, relaciones, columnas, empresa, year, dialecto='p
         valor = f'MAX({expr})' if plan['agrupar'] else expr
     else:
         valor = f'{agregado.upper()}({expr})'
+    extra = _medidas_de_apoyo(alias_medida, columnas.get(medida.source_id, set()), agregado, dialecto)
     group = ''
     if plan['agrupar']:
         corte = por_id[plan['agrupar'][0]]
@@ -995,24 +1141,26 @@ def compilar_plan(plan, campos, relaciones, columnas, empresa, year, dialecto='p
             return None
         alias_corte = alias[corte.source_id]
         if visible == grupo:
-            select = f'SELECT {alias_corte}.{grupo} AS label, {valor} AS val'
+            select = f'SELECT {alias_corte}.{grupo} AS label, {valor} AS val{extra}'
             group = ' GROUP BY 1'
         else:
             select = (
                 f"SELECT COALESCE(NULLIF({_expr_texto(f'MAX({alias_corte}.{visible})', dialecto)}, ''), "
-                f"{_expr_texto(f'MAX({alias_corte}.{grupo})', dialecto)}) AS label, {valor} AS val"
+                f"{_expr_texto(f'MAX({alias_corte}.{grupo})', dialecto)}) AS label, {valor} AS val{extra}"
             )
             group = f' GROUP BY {alias_corte}.{grupo}'
     else:
-        select = f"SELECT 'Total' AS label, {valor} AS val"
+        select = f"SELECT 'Total' AS label, {valor} AS val{extra}"
     sentido = 'ASC' if plan['orden']['sentido'] == 'asc' else 'DESC'
     orden = ' ORDER BY val ' + sentido
-    tope = int(plan['limite'])
-    if dialecto == 'sqlserver':
-        select = select.replace('SELECT ', f'SELECT TOP {tope} ', 1)
+    sin_corte = bool(plan.get('completo')) or plan.get('limite') in (None, '')
+    if sin_corte:
+        cola = ''
+    elif dialecto == 'sqlserver':
+        select = select.replace('SELECT ', f'SELECT TOP {int(plan["limite"])} ', 1)
         cola = ''
     else:
-        cola = f' LIMIT {tope}'
+        cola = f' LIMIT {int(plan["limite"])}'
     sql = f'{select} FROM {tabla} t1 {" ".join(joins)} WHERE {" AND ".join(where)}{group}{orden}{cola}'
     return ' '.join(sql.split())
 
@@ -1143,25 +1291,584 @@ def _completar_forma(plan, pregunta):
         return plan
     periodos = list(plan.get('periodos') or []) or _periodos(pregunta)
     plan['periodos'] = periodos
-    if _pide_grafica(pregunta) or len(periodos) >= 2:
+    if _pide_grafica(pregunta) or _pide_mes(pregunta) or len(periodos) >= 2:
         plan['forma'] = 'grafica'
         plan['grano'] = 'mes'
         plan['limite'] = max(int(plan.get('limite') or 20), 100)
     return plan
 
 
-def consultar(pregunta, empresa, ejercicio, limite=20, campos=None, relaciones=None, columnas=None, pedir=None, dialecto=None, sondear=True):
+def lectura_de_plan(plan, campos):
+    """Lectura aceptada: clase, conceptos, columnas, filtros, corte, periodo y forma."""
+    if not plan:
+        return None
+    por_id = {campo.id: campo for campo in campos}
+    ids = [item.get('id') for item in (plan.get('campos') or []) if item.get('id') is not None]
+    conceptos = []
+    for identificador in ids + list(plan.get('agrupar') or []) + [item.get('id') for item in (plan.get('filtros') or [])]:
+        campo = por_id.get(identificador)
+        if campo is None:
+            continue
+        concepto = _concepto_de_tabla(campo.source_table)
+        if concepto and concepto not in conceptos:
+            conceptos.append(concepto)
+    periodos = [int(anio) for anio in (plan.get('periodos') or [])]
+    forma_plan = plan.get('forma') or 'tabla'
+    if forma_plan == 'listado':
+        clase = 'listado'
+        forma = 'tabla'
+        periodo = []
+    elif forma_plan == 'grafica' or len(periodos) >= 2:
+        clase = 'comparacion' if len(periodos) >= 2 else 'cifra'
+        forma = 'grafica'
+        periodo = periodos
+    elif plan.get('agrupar'):
+        clase = 'agrupacion'
+        forma = 'tabla'
+        periodo = periodos
+    else:
+        clase = 'cifra'
+        forma = 'tabla'
+        periodo = periodos
+    if plan.get('completo'):
+        corte = 'completo'
+    else:
+        corte = plan.get('limite')
+    lectura = {
+        'clase': clase,
+        'conceptos': conceptos,
+        'columnas': ids,
+        'filtros': list(plan.get('filtros') or []),
+        'corte': corte,
+        'periodo': periodo,
+        'forma': forma,
+        'plan': plan,
+    }
+    return lectura
+
+
+def _completa(lectura):
+    """Sin memoria ya hay clase, concepto y forma."""
+    if not isinstance(lectura, dict):
+        return False
+    return bool(lectura.get('clase') and lectura.get('conceptos') and lectura.get('forma'))
+
+
+def _concepto_de_tabla(tabla):
+    texto = _plegar(tabla)
+    if 'proveedor' in texto:
+        return 'proveedor'
+    if 'articulo' in texto:
+        return 'articulo'
+    if 'cliente' in texto:
+        return 'cliente'
+    if 'cuenta' in texto or 'cartera' in texto:
+        return 'cuenta'
+    return ''
+
+
+def _conceptos_nombrados(pregunta):
+    folded = _plegar(pregunta)
+    nombres = []
+    for concepto in _CONCEPTOS:
+        if re.search(r'\b' + concepto + r'\w*\b', folded) or (
+            concepto == 'articulo' and re.search(r'\bproductos?\b', folded)
+        ):
+            nombres.append(concepto)
+    if _es_venta(pregunta) and 'cliente' not in nombres:
+        nombres.append('cliente')
+    if _es_compra(pregunta) and 'proveedor' not in nombres:
+        nombres.append('proveedor')
+    return nombres
+
+
+def _dato_no_mapeado(pregunta, campos):
+    """La frase nombra un dato concreto que no está en el catálogo."""
+    folded = _plegar(pregunta)
+    for palabra in re.findall(r'\b(?:el|la|los|las)\s+([a-z]{4,})\b', folded):
+        if palabra in _PALABRAS_DE_FRASE or palabra in _ATRIBUTOS or _normalizar_concepto(palabra):
+            continue
+        if any(_puntos_campo(campo, palabra) > 0 for campo in campos):
+            continue
+        return True
+    return False
+
+
+def _clave_de_negocio(campo):
+    texto = _plegar(f'{getattr(campo, "field_name", "")} {getattr(campo, "business_name", "")}')
+    return not any(token in texto for token in _TECNICA)
+
+
+_LADO_TEXTO = {
+    'cliente': ('cliente', 'clientes'),
+    'proveedor': ('proveedor', 'proveedores'),
+    'articulo': ('artículo', 'artículos'),
+    'cuenta': ('cuenta', 'cuentas'),
+}
+
+
+def _ambiguedad_conceptos(pregunta, campos):
+    nombrados = _conceptos_nombrados(pregunta)
+    if len(nombrados) == 1:
+        return None
+    if len(nombrados) >= 2 and {'cliente', 'proveedor'} <= set(nombrados):
+        claves = [concepto for concepto in ('cliente', 'proveedor') if concepto in nombrados]
+        return {'tipo': 'concepto', 'claves': claves, 'opciones': claves}
+    if nombrados:
+        return None
+    encajan = []
+    folded = _plegar(pregunta)
+    for campo in campos or []:
+        if _puntos_campo(campo, folded) <= 0:
+            continue
+        concepto = _concepto_de_tabla(campo.source_table)
+        if concepto and concepto not in encajan:
+            encajan.append(concepto)
+    if len(encajan) < 2:
+        return None
+    return {'tipo': 'concepto', 'claves': encajan, 'opciones': list(encajan)}
+
+
+def _ambiguedad_relaciones(pregunta, campos, relaciones, plan):
+    if not plan or not relaciones:
+        return None
+    por_id = {campo.id: campo for campo in campos}
+    fuentes = set()
+    identificadores = [item.get('id') for item in (plan.get('campos') or [])]
+    identificadores += [item.get('id') for item in (plan.get('filtros') or [])]
+    identificadores += list(plan.get('agrupar') or [])
+    for identificador in identificadores:
+        campo = por_id.get(identificador)
+        if campo is not None:
+            fuentes.add(campo.source_id)
+    folded = _plegar(pregunta)
+    pares = {}
+    for relacion in relaciones:
+        par = (relacion.source_id, relacion.target_id)
+        if par[0] not in fuentes or par[1] not in fuentes:
+            continue
+        if not _clave_de_negocio(relacion.from_field):
+            continue
+        pares.setdefault(par, []).append(relacion.from_field)
+    for par, campos_clave in pares.items():
+        vistos = []
+        elegidos = []
+        for campo in campos_clave:
+            if campo.id in vistos:
+                continue
+            vistos.append(campo.id)
+            elegidos.append(campo)
+        if len(elegidos) < 2:
+            continue
+        if any(_puntos_campo(campo, folded) > 0 for campo in elegidos):
+            continue
+        return {
+            'tipo': 'relacion',
+            'claves': [campo.id for campo in elegidos],
+            'opciones': [campo.business_name or campo.field_name for campo in elegidos],
+            'par': [par[0], par[1]],
+        }
+    return None
+
+
+def _ambiguedad(pregunta, campos, relaciones, plan, solo_relacion=False):
+    """Dos conceptos o dos relaciones. None si la frase ya deja una sola lectura."""
+    if not solo_relacion:
+        conceptos = _ambiguedad_conceptos(pregunta, campos)
+        if conceptos:
+            return conceptos
+    return _ambiguedad_relaciones(pregunta, campos, relaciones, plan)
+
+
+def _dos_lecturas(pregunta, campos, relaciones, plan):
+    return _ambiguedad(pregunta, campos, relaciones, plan) is not None
+
+
+def _anio_del_hilo(lectura):
+    if not isinstance(lectura, dict):
+        return None
+    origenes = [lectura.get('periodo'), (lectura.get('plan') or {}).get('periodos')]
+    for origen in origenes:
+        if not origen:
+            continue
+        try:
+            return int(origen[-1])
+        except (TypeError, ValueError, IndexError):
+            continue
+    return None
+
+
+def _lado_unico(lectura, claves):
+    if not isinstance(lectura, dict) or not claves:
+        return ''
+    conceptos = list(lectura.get('conceptos') or [])
+    plan = lectura.get('plan') or {}
+    if plan.get('lado') == 'venta':
+        conceptos.append('cliente')
+    if plan.get('lado') == 'compra':
+        conceptos.append('proveedor')
+    presentes = []
+    for clave in claves:
+        if clave in conceptos and clave not in presentes:
+            presentes.append(clave)
+    if len(presentes) == 1:
+        return presentes[0]
+    return ''
+
+
+def _texto_ambiguedad(pregunta, ambigua):
+    claves = list(ambigua.get('claves') or [])
+    opciones = list(ambigua.get('opciones') or [])
+    if ambigua.get('tipo') == 'relacion' and len(opciones) >= 2:
+        return f'¿Quieres el cruce por {opciones[0]} o por {opciones[1]}?'
+    if len(claves) >= 2 and all(clave in _LADO_TEXTO for clave in claves[:2]):
+        uno, otro = _LADO_TEXTO[claves[0]], _LADO_TEXTO[claves[1]]
+        if _pide_cuenta_de_documento(pregunta):
+            documento = 'pedido' if _documento(pregunta) == 'pedido' else 'albarán'
+            return (
+                f'¿Quieres el número de líneas del {documento} de {uno[0]} '
+                f'o del {documento} de {otro[0]}?'
+            )
+        if 'razon' in _plegar(pregunta):
+            return f'¿Quieres la razón social de {uno[1]} o de {otro[1]}?'
+        return f'¿Quieres {uno[1]} o {otro[1]}?'
+    if len(opciones) >= 2:
+        return f'¿Quieres {opciones[0]} o {opciones[1]}?'
+    return _AVISO_DOS
+
+
+def _quedarse_con_la_clave(relaciones, campo_id, par):
+    try:
+        campo_id = int(campo_id)
+    except (TypeError, ValueError):
+        return relaciones
+    if not par or len(par) != 2:
+        return relaciones
+    try:
+        par = (int(par[0]), int(par[1]))
+    except (TypeError, ValueError):
+        return relaciones
+    salida = []
+    for relacion in relaciones or []:
+        extremos = (relacion.source_id, relacion.target_id)
+        if extremos != par and extremos != (par[1], par[0]):
+            salida.append(relacion)
+            continue
+        ids = {
+            getattr(getattr(relacion, 'from_field', None), 'id', None),
+            getattr(getattr(relacion, 'to_field', None), 'id', None),
+        }
+        if campo_id in ids:
+            salida.append(relacion)
+    return salida
+
+
+def _menciona_opcion(pregunta, clave, texto):
+    folded = _plegar(pregunta)
+    if isinstance(clave, str) and clave in _CONCEPTOS:
+        return bool(re.search(r'\b' + re.escape(clave) + r'\w*\b', folded))
+    piezas = [token for token in _trocear(str(texto)) if token not in _GENERICOS and len(token) >= 4]
+    return bool(piezas) and all(
+        re.search(r'\b' + re.escape(token) + r'\w*\b', folded) for token in piezas
+    )
+
+
+def _solo_es_eleccion(pregunta, clave, texto):
+    resto = _plegar(pregunta)
+    for ruido in (
+        'de', 'del', 'el', 'la', 'los', 'las', 'albaran', 'pedido', 'linea', 'numero',
+        'quiero', 'opcion', 'esa', 'eso', 'por', 'cruce', 'un', 'una',
+    ):
+        resto = re.sub(r'\b' + ruido + r'\w*\b', ' ', resto)
+    if isinstance(clave, str) and clave in _CONCEPTOS:
+        resto = re.sub(r'\b' + re.escape(clave) + r'\w*\b', ' ', resto)
+    else:
+        for token in _trocear(str(texto)):
+            resto = re.sub(r'\b' + re.escape(token) + r'\w*\b', ' ', resto)
+    return ' '.join(resto.split()) == ''
+
+
+def _elige_pendiente(pregunta, pendiente):
+    if not isinstance(pendiente, dict):
+        return None
+    claves = pendiente.get('claves') or []
+    opciones = pendiente.get('opciones') or []
+    aciertos = []
+    for indice, clave in enumerate(claves):
+        texto = opciones[indice] if indice < len(opciones) else clave
+        if _menciona_opcion(pregunta, clave, texto) and _solo_es_eleccion(pregunta, clave, texto):
+            aciertos.append(clave)
+    if len(aciertos) == 1:
+        return aciertos[0]
+    return None
+
+
+def _aplicar_anio(plan, pregunta, lectura, heredar):
+    if not plan or plan.get('periodos') or _periodos(pregunta) or not heredar:
+        return False
+    if plan.get('forma') == 'listado':
+        return False
+    anio = _anio_del_hilo(lectura)
+    if not anio:
+        return False
+    plan['periodos'] = [anio]
+    return True
+
+
+def _completar(pregunta, lectura, campos, limite):
+    """Rellena solo los huecos. Lo que la frase dice sustituye a esa parte."""
+    import copy
+    plan = copy.deepcopy((lectura or {}).get('plan') or {})
+    if not plan.get('campos'):
+        return None
+    hereda = ['filtros', 'columnas', 'concepto', 'corte', 'periodo', 'forma']
+    sustituye = []
+    folded = _plegar(pregunta)
+    periodos = _periodos(pregunta)
+    if periodos:
+        plan['periodos'] = periodos
+        if _pide_grafica(pregunta) or _pide_mes(pregunta) or len(periodos) >= 2:
+            plan['forma'] = 'grafica'
+            plan['grano'] = 'mes'
+        sustituye.append('periodo')
+        hereda.remove('periodo')
+    if _pide_conjunto(pregunta):
+        plan['completo'] = True
+        plan['limite'] = None
+        agregado = any(
+            item.get('agregado') not in (None, '', 'ninguno')
+            for item in (plan.get('campos') or [])
+        ) or bool(plan.get('agrupar'))
+        if not agregado and plan.get('forma') != 'grafica':
+            plan['forma'] = 'listado'
+        sustituye.append('corte')
+        hereda.remove('corte')
+    elif _corte(pregunta):
+        plan['completo'] = False
+        plan['limite'] = _corte(pregunta)
+        sustituye.append('corte')
+        hereda.remove('corte')
+    hallado = re.search(r'\bpor\s+(cliente|articulo|producto|proveedor|cuenta)s?\b', folded)
+    if hallado:
+        grupo = _normalizar_concepto(hallado.group(1))
+        lado = _lado(pregunta) or ((lectura.get('conceptos') or [''])[0])
+        campo = _campo_de(campos, _CONCEPTOS[grupo], lado, maestro=True)
+        if campo is None:
+            return None
+        plan['agrupar'] = [campo.id]
+        sustituye.append('agrupacion')
+    atributos = [
+        raiz for raiz in _ATRIBUTOS
+        if re.search(r'\b' + raiz + r'\w*\b', folded)
+        and not re.search(r'\b(importe|total|suma|ventas|compras)\b', folded)
+    ]
+    if atributos:
+        concepto = _grupo(pregunta) or ((lectura.get('conceptos') or [None])[0])
+        columnas = _columnas_lista(pregunta, campos, concepto, _lado(pregunta))
+        if not columnas:
+            return None
+        plan['campos'] = [
+            {'id': campo.id, 'agregado': 'ninguno', 'titulo': titulo}
+            for campo, titulo in columnas
+        ]
+        plan['forma'] = 'listado'
+        plan['agrupar'] = []
+        plan['filtros'] = []
+        sustituye.append('columna')
+        if 'columnas' in hereda:
+            hereda.remove('columnas')
+    if _pide_grafica(pregunta) and 'forma' not in sustituye and plan.get('forma') != 'grafica':
+        plan['forma'] = 'grafica'
+        plan['grano'] = 'mes'
+        sustituye.append('forma')
+        if 'forma' in hereda:
+            hereda.remove('forma')
+    if not sustituye:
+        return None
+    return plan, hereda, sustituye
+
+
+def _recorrido(vinculo, lectura, sustituye):
+    if vinculo == 'rechazo':
+        return 'La frase se ha rechazado. No queda una cifra ni un listado de la empresa.'
+    if vinculo == 'aviso':
+        return 'La frase admite dos lecturas. No se ha mezclado ninguna cifra.'
+    clase = (lectura or {}).get('clase') or 'lectura'
+    partes = [f'La frase es una {clase}.']
+    if vinculo == 'sola':
+        partes.append('No hereda filtros, columnas, concepto, corte ni periodo.')
+    elif sustituye:
+        partes.append('Sustituye ' + ', '.join(sustituye) + '.')
+    corte = (lectura or {}).get('corte')
+    if corte == 'completo':
+        partes.append('El corte es el conjunto entero.')
+    elif isinstance(corte, int):
+        partes.append(f'El corte es de {corte} filas.')
+    return ' '.join(partes)
+
+
+def _marcar(salida, vinculo, lectura, hereda, sustituye):
+    publica = {clave: lectura.get(clave) for clave in _CLAVES_LECTURA}
+    publica['plan'] = lectura.get('plan')
+    salida['vinculo'] = vinculo
+    salida['lectura'] = publica
+    salida['hereda'] = list(hereda or [])
+    salida['sustituye'] = list(sustituye or [])
+    salida['recorrido'] = _recorrido(vinculo, publica, sustituye)
+    return salida
+
+
+def _rechazo():
+    salida = _no_esta()
+    salida['reply']['vinculo'] = 'rechazo'
+    salida['reply']['lectura'] = None
+    salida['reply']['recorrido'] = _recorrido('rechazo', None, [])
+    salida['vinculo'] = 'rechazo'
+    salida['lectura'] = None
+    return salida
+
+
+def _aviso_dos(texto=None, pendiente=None):
+    mensaje = texto or _AVISO_DOS
+    reply = {
+        'type': 'text',
+        'text': mensaje,
+        'answer': mensaje,
+        'source': 'mapeo',
+        'vinculo': 'aviso',
+        'lectura': None,
+        'recorrido': _recorrido('aviso', None, []),
+        'pendiente': pendiente,
+    }
+    return {
+        'vinculo': 'aviso',
+        'lectura': None,
+        'pendiente': pendiente,
+        'reply': reply,
+    }
+
+
+def _aviso_de(ambigua, pregunta):
+    pendiente = {
+        'pregunta': pregunta,
+        'tipo': ambigua.get('tipo'),
+        'claves': list(ambigua.get('claves') or []),
+        'opciones': list(ambigua.get('opciones') or []),
+        'par': ambigua.get('par'),
+    }
+    return _aviso_dos(_texto_ambiguedad(pregunta, ambigua), pendiente)
+
+
+def _es_frase_kilos(pregunta):
+    return bool(re.search(r'\b(kilos?|kg|kilogramos?)\b', _plegar(pregunta)))
+
+
+def _lado_kilos(pregunta, lado_forzado, lectura):
+    if lado_forzado in ('cliente', 'proveedor'):
+        return lado_forzado
+    folded = _plegar(pregunta)
+    venta = bool(re.search(r'\bvendid\w*\b', folded)) or _es_venta(pregunta)
+    compra = bool(re.search(r'\bcomprad\w*\b', folded)) or _es_compra(pregunta)
+    if venta and not compra:
+        return 'cliente'
+    if compra and not venta:
+        return 'proveedor'
+    return _lado_unico(lectura, ['cliente', 'proveedor']) or 'cliente'
+
+
+def _sql_kilos_mes(lado, empresa, anio, dialecto):
+    tabla = 'datiadb_lineasalbaranproveedor' if lado == 'proveedor' else 'datiadb_lineasalbarancliente'
+    if dialecto == 'sqlserver':
+        mes = 'MONTH(t1.fechaalbaran)'
+        precio, importe, empresa_col, ejercicio_col = 't1.precio', 't1.importeneto', 't1.codigoempresa', 't1.ejercicioalbaran'
+        origen = tabla
+    else:
+        mes = 'EXTRACT(MONTH FROM t1."fechaalbaran")::int'
+        precio, importe = 't1."precio"', 't1."importeneto"'
+        empresa_col, ejercicio_col = 't1."codigoempresa"', 't1."ejercicioalbaran"'
+        origen = f'"{tabla}"'
+    cantidad = f'COALESCE(SUM(CASE WHEN {precio} <> 0 THEN {importe} / {precio} END), 0)'
+    return (
+        f'SELECT {mes} AS mes, {cantidad} AS cantidad FROM {origen} t1 '
+        f'WHERE {empresa_col} = {int(empresa)} AND {ejercicio_col} = {int(anio)} '
+        f'GROUP BY {mes} ORDER BY {mes}'
+    )
+
+
+def _texto_kilos_mes(lado, anio, filas):
+    verbo = 'comprados' if lado == 'proveedor' else 'vendidos'
+    lineas = [f'Kilos {verbo} por mes en {anio}.']
+    total = 0.0
+    for fila in filas or []:
+        try:
+            mes = int(fila.get('mes'))
+            cantidad = float(fila.get('cantidad') or 0)
+        except (TypeError, ValueError):
+            continue
+        total += cantidad
+        nombre = _NOMBRE_MES_MEDIO.get(mes, str(mes)).capitalize()
+        lineas.append(f'<tr><td>{nombre}</td><td style="text-align:right">{_euros_es(cantidad).replace(" €", "")}</td></tr>')
+    if len(lineas) == 1:
+        return lineas[0]
+    cuerpo = ''.join(lineas[1:])
+    total_txt = _euros_es(total).replace(' €', '')
+    return (
+        f'<div>{lineas[0]}</div>'
+        '<table style="width:100%; border-collapse:collapse; margin-top:12px;">'
+        '<thead><tr><th style="text-align:left">Mes</th><th style="text-align:right">Kilos</th></tr></thead>'
+        f'<tbody>{cuerpo}'
+        f'<tr><td>Total</td><td style="text-align:right">{total_txt}</td></tr>'
+        '</tbody></table>'
+    )
+
+
+def _responder_kilos_mes(pregunta, empresa, ejercicio, lectura, lado_forzado, dialecto, sondear):
+    anios = _periodos(pregunta)
+    anio = anios[-1] if anios else (_anio_del_hilo(lectura) or ejercicio)
+    try:
+        anio = int(anio)
+    except (TypeError, ValueError):
+        return None
+    lado = _lado_kilos(pregunta, lado_forzado, lectura)
+    if dialecto is None:
+        from datia.services.ai.semantic_plan import SemanticPlan
+        dialecto = SemanticPlan.dialecto_actual()
+    sql = _sql_kilos_mes(lado, empresa, anio, dialecto)
+    filas = None
+    if sondear:
+        from datia.services.ai.open_question import OpenQuestion
+        filas = OpenQuestion._ejecutar(sql)
+        if filas is None:
+            return None
+    texto = _texto_kilos_mes(lado, anio, filas)
+    reply = {
+        'type': 'text',
+        'text': texto,
+        'answer': texto,
+        'sql': sql,
+        'source': 'mapeo',
+        'vinculo': 'cantidad',
+        'lectura': None,
+    }
+    return {'reply': reply, 'sql': sql, 'vinculo': 'cantidad', 'lectura': None}
+
+
+def consultar(pregunta, empresa, ejercicio, limite=20, campos=None, relaciones=None, columnas=None, pedir=None, dialecto=None, sondear=True, lectura=None, pendiente=None):
     """Respuesta del mapeo, un aviso si el dato no está, o None si la frase no habla de datos mapeados."""
     try:
         empresa_id = int(empresa)
     except (TypeError, ValueError):
         return None
     try:
-        return _consultar(pregunta, empresa_id, ejercicio, limite, campos, relaciones, columnas, pedir, dialecto, sondear)
+        return _consultar(
+            pregunta, empresa_id, ejercicio, limite, campos, relaciones, columnas, pedir, dialecto, sondear, lectura, pendiente,
+        )
     except Exception:
         logger.exception('Interprete: no se pudo leer la pregunta en el mapeo')
+        if _dato_no_mapeado(pregunta, campos or []):
+            return _rechazo()
         if _grupo(pregunta) or _es_venta(pregunta) or _es_compra(pregunta) or _tiene_valor(pregunta) or _pide_modelo(pregunta):
-            return _no_esta()
+            return _rechazo()
         return None
 
 
@@ -1176,6 +1883,7 @@ def _salida(plan, campos, sql, year):
         source='mapeo',
         formula='Lectura de los campos mapeados, con los filtros de la pregunta y el cruce de las relaciones.',
     )
+    salida['completo'] = bool(plan.get('completo'))
     if plan.get('forma') == 'listado':
         pares = _alias_columnas(plan, campos)
         salida['type'] = 'listado'
@@ -1196,16 +1904,387 @@ def _salida(plan, campos, sql, year):
     return salida
 
 
-def _consultar(pregunta, empresa, ejercicio, limite, campos, relaciones, columnas, pedir, dialecto, sondear=True):
+def _cortes_del_resumen(lado):
+    if lado == 'proveedor':
+        return (
+            ('top 10 articulos de compra', 'Artículos', 'purchase'),
+            ('top 10 proveedores', 'Proveedores', 'purchase'),
+        )
+    return (
+        ('top 10 articulos', 'Artículos', 'sales'),
+        ('top 10 clientes', 'Clientes', 'sales'),
+    )
+
+
+def _secciones_resumen(lado, year, campos, relaciones, columnas, empresa, dialecto, sondear):
+    from datia.services.security.sql_guard import SQLGuard
+
+    secciones = []
+    for frase, etiqueta, metrica in _cortes_del_resumen(lado):
+        plan = plan_determinista(frase, campos, 10)
+        if not plan:
+            continue
+        if year:
+            plan['periodos'] = [int(year)]
+        plan['limite'] = 10
+        plan['forma'] = 'tabla'
+        plan['completo'] = False
+        sql = compilar_plan(plan, campos, relaciones, columnas, empresa, year, dialecto)
+        if not sql or not SQLGuard.check_sql(sql).get('allowed'):
+            continue
+        if sondear and not _probar(sql, dialecto):
+            continue
+        secciones.append({'label': etiqueta, 'sql': sql, 'limit': 10, 'metric': metrica})
+    return secciones
+
+
+def _compilar_salida(plan, pregunta, campos, relaciones, columnas, empresa, ejercicio, dialecto, sondear):
+    plan = _completar_forma(plan, pregunta)
+    plan['_pregunta'] = pregunta
+    if dialecto is None:
+        from datia.services.ai.semantic_plan import SemanticPlan
+        dialecto = SemanticPlan.dialecto_actual()
+    year = _anio(pregunta, ejercicio)
+    if plan.get('periodos'):
+        year = int(plan['periodos'][-1])
+    if columnas is None:
+        from datia.services.ai.compilador_mapeo import _mapa
+        columnas = _mapa(campos, [])
+    sql = compilar_plan(plan, campos, relaciones, columnas, empresa, year, dialecto)
+    if not sql:
+        return None
+    from datia.services.security.sql_guard import SQLGuard
+    if not SQLGuard.check_sql(sql).get('allowed'):
+        logger.info('Interprete: la consulta sale de las tablas permitidas')
+        return None
+    if sondear and not _probar(sql, dialecto):
+        return None
+    salida = _salida(plan, campos, sql, year)
+    if plan.get('cuenta_filas') and salida:
+        salida['key'] = 'conteo'
+        salida['keep_label'] = True
+        lado = 'proveedor' if plan.get('lado_cuenta') == 'proveedor' else 'cliente'
+        documento = 'pedido' if plan.get('documento') == 'pedido' else 'albarán'
+        cuando = f' en {year}' if year else ''
+        salida['label'] = f'Líneas de {documento} de {lado}{cuando}'
+    if plan.get('resumen') and salida:
+        salida['keep_label'] = True
+        lado = 'proveedor' if plan.get('lado_cuenta') == 'proveedor' else 'cliente'
+        nombre = 'compras' if lado == 'proveedor' else 'ventas'
+        salida['label'] = f'Resumen de {nombre}'
+        salida['anio'] = year
+        salida['secciones'] = _secciones_resumen(
+            lado, year, campos, relaciones, columnas, empresa, dialecto, sondear,
+        )
+    return salida
+
+
+_MESES_MEDIO = {
+    'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4, 'mayo': 5, 'junio': 6,
+    'julio': 7, 'agosto': 8, 'septiembre': 9, 'setiembre': 9, 'octubre': 10,
+    'noviembre': 11, 'diciembre': 12,
+}
+_NOMBRE_MES_MEDIO = {
+    1: 'enero', 2: 'febrero', 3: 'marzo', 4: 'abril', 5: 'mayo', 6: 'junio',
+    7: 'julio', 8: 'agosto', 9: 'septiembre', 10: 'octubre', 11: 'noviembre', 12: 'diciembre',
+}
+
+
+def _mes_nombrado(pregunta):
+    hallados = re.findall(
+        r'\b(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|'
+        r'octubre|noviembre|diciembre)\b',
+        _plegar(pregunta),
+    )
+    if len(set(hallados)) != 1:
+        return None
+    return _MESES_MEDIO[hallados[0]]
+
+
+def _es_precio_medio(pregunta):
+    """Precio, ticket o importe medio del ejercicio, sin un cliente o un artículo concreto."""
+    folded = _plegar(pregunta)
+    if not folded or _grupo(pregunta) or _valores(pregunta):
+        return False
+    if re.search(r'\b(clientes|articulos|productos|proveedores)\b', folded):
+        return False
+    if _es_venta(pregunta) and _es_compra(pregunta):
+        return False
+    return bool(re.search(r'\b(precio|ticket|importe)\s+medios?\b', folded))
+
+
+def _titulo_medio(pregunta, compra, previo=''):
+    folded = _plegar(pregunta)
+    if re.search(r'\bprecio\b', folded):
+        return 'Precio medio de compra' if compra else 'Precio medio de venta'
+    if re.search(r'\bticket\b', folded):
+        return 'Ticket medio de compra' if compra else 'Ticket medio'
+    if re.search(r'\b(importe|medio|media|promedio)\b', folded):
+        return 'Importe medio de compra' if compra else 'Importe medio de albarán'
+    return previo or ('Importe medio de compra' if compra else 'Importe medio de albarán')
+
+
+def _euros_es(valor):
+    try:
+        amount = f'{float(valor):,.2f}'
+    except (TypeError, ValueError):
+        amount = '0.00'
+    return amount.replace(',', 'X').replace('.', ',').replace('X', '.') + ' €'
+
+
+def _enteros_es(valor):
+    try:
+        return f'{int(valor):,}'.replace(',', '.')
+    except (TypeError, ValueError):
+        return '0'
+
+
+def _anio_medio(pregunta, ejercicio, plan=None):
+    if plan and plan.get('periodos'):
+        try:
+            return int(plan['periodos'][-1])
+        except (TypeError, ValueError):
+            return None
+    periodos = _periodos(pregunta)
+    try:
+        return int(periodos[-1] if periodos else ejercicio)
+    except (TypeError, ValueError):
+        return None
+
+
+def _plan_de_medio(campos, compra, year, mes, titulo):
+    lado = 'proveedor' if compra else 'cliente'
+    cifra = _cifra_defecto(campos or [], lado, '', 'albaran')
+    return {
+        'campos': [{'id': cifra.id, 'agregado': 'avg'}] if cifra is not None else [],
+        'filtros': [],
+        'agrupar': [],
+        'orden': {'id': cifra.id, 'sentido': 'desc'} if cifra is not None else {},
+        'limite': None,
+        'forma': 'tabla',
+        'periodos': [year] if year else [],
+        'grano': 'mes' if mes else 'ejercicio',
+        'medida': 'precio_medio',
+        'lado': 'compra' if compra else 'venta',
+        'mes': mes,
+        'titulo_medio': titulo,
+    }
+
+
+def _leer_totales(compra, empresa, year, mes):
+    from django.db import connections
+    alias = 'analytics' if 'analytics' in connections.databases else 'default'
+    tabla = 'metrics_totales_empresa_ejercicio'
+    if compra:
+        tabla += '_compra'
+    if mes:
+        tabla += '_mes'
+    sql = f'SELECT importe_neto_total, albaranes_count FROM {tabla} WHERE empresa = %s AND ejercicio = %s'
+    params = [int(empresa), int(year)]
+    if mes:
+        sql += ' AND mes = %s'
+        params.append(int(mes))
+    with connections[alias].cursor() as cursor:
+        cursor.execute(sql, params)
+        return cursor.fetchone()
+
+
+def _texto_medio(titulo, compra, year, mes, fila):
+    lado = 'compras' if compra else 'ventas'
+    cuando = f'{_NOMBRE_MES_MEDIO.get(mes, mes)} de {year}' if mes else str(year)
+    if not fila:
+        return f'No hay totales de {lado} cargados para {cuando}.'
+    neto = fila[0] or 0
+    ops = int(fila[1] or 0)
+    medio = (float(neto) / ops) if ops else 0
+    return (
+        f'{titulo} en {cuando}: {_euros_es(medio)} por albarán. '
+        f'El total de {lado} es {_euros_es(neto)} netos en {_enteros_es(ops)} albaranes.'
+    )
+
+
+def _responder_precio_medio(pregunta, empresa, ejercicio, campos, plan=None, hereda=None, sustituye=None, lectura=None):
+    import copy
+    if plan is None:
+        compra = _es_compra(pregunta) and not _es_venta(pregunta)
+        year = _anio_medio(pregunta, ejercicio)
+        mes = _mes_nombrado(pregunta)
+        titulo = _titulo_medio(pregunta, compra)
+        hereda, sustituye = [], []
+        vinculo = 'sola'
+        if not _periodos(pregunta):
+            anio_hilo = _anio_del_hilo(lectura)
+            if anio_hilo:
+                year = anio_hilo
+                hereda = ['periodo']
+                vinculo = 'continuacion'
+        plan = _plan_de_medio(campos, compra, year, mes, titulo)
+    else:
+        plan = copy.deepcopy(plan)
+        compra = plan.get('lado') == 'compra'
+        year = _anio_medio(pregunta, ejercicio, plan)
+        mes = _mes_nombrado(pregunta) or plan.get('mes')
+        titulo = _titulo_medio(pregunta, compra, plan.get('titulo_medio') or '')
+        plan['periodos'] = [year] if year else []
+        plan['mes'] = mes
+        plan['titulo_medio'] = titulo
+        plan['lado'] = 'compra' if compra else 'venta'
+        vinculo = 'continuacion'
+    fila = None
+    if year:
+        try:
+            fila = _leer_totales(compra, empresa, year, mes)
+        except Exception:
+            logger.exception('Interprete: no se pudo leer el precio medio')
+            fila = None
+    texto = _texto_medio(titulo, compra, year, mes, fila)
+    propuesta = lectura_de_plan(plan, campos or [])
+    if not propuesta or not propuesta.get('conceptos'):
+        propuesta = {
+            'clase': 'cifra',
+            'conceptos': ['proveedor' if compra else 'cliente'],
+            'columnas': [],
+            'filtros': [],
+            'corte': None,
+            'periodo': [year] if year else [],
+            'forma': 'tabla',
+            'plan': plan,
+        }
+    salida = {
+        'reply': {
+            'type': 'text',
+            'text': texto,
+            'answer': texto,
+            'source': 'mapeo',
+        }
+    }
+    _marcar(salida, vinculo, propuesta, hereda, sustituye)
+    salida['reply']['vinculo'] = salida['vinculo']
+    salida['reply']['lectura'] = salida['lectura']
+    salida['reply']['recorrido'] = salida['recorrido']
+    return salida
+
+
+def _cerrar_plan(plan, pregunta, campos, relaciones, columnas, empresa, ejercicio, dialecto, sondear, vino_del_hilo, hereda_periodo):
+    propuesta = lectura_de_plan(plan, campos)
+    if not _completa(propuesta):
+        return None
+    salida = _compilar_salida(plan, pregunta, campos, relaciones, columnas, empresa, ejercicio, dialecto, sondear)
+    if not salida:
+        return None
+    if vino_del_hilo or hereda_periodo:
+        hereda = []
+        sustituye = []
+        if vino_del_hilo:
+            hereda.append('concepto')
+            sustituye.append('columnas')
+        if hereda_periodo:
+            hereda.append('periodo')
+        return _marcar(salida, 'continuacion', propuesta, hereda, sustituye)
+    return _marcar(salida, 'sola', propuesta, [], [])
+
+
+def _consultar(pregunta, empresa, ejercicio, limite, campos, relaciones, columnas, pedir, dialecto, sondear=True, lectura=None, pendiente=None, lado_forzado='', heredar_anio=False):
     if campos is None or relaciones is None:
         campos, relaciones = _cargar()
-    if not senala_mapeo(pregunta, campos):
-        return None
-    if _pide_modelo(pregunta):
+    if pendiente and not lado_forzado:
+        elegida = _elige_pendiente(pregunta, pendiente)
+        if elegida is not None:
+            relaciones_eleccion = relaciones
+            lado_eleccion = ''
+            if pendiente.get('tipo') == 'relacion':
+                relaciones_eleccion = _quedarse_con_la_clave(relaciones, elegida, pendiente.get('par'))
+            else:
+                lado_eleccion = str(elegida)
+            return _consultar(
+                pendiente.get('pregunta') or pregunta,
+                empresa, ejercicio, limite, campos, relaciones_eleccion, columnas, pedir, dialecto, sondear,
+                lectura, None, lado_eleccion, True,
+            )
+    from datia.services.ai.reglas_negocio import decidir
+    decision = decidir(pregunta, lectura, ejercicio, lado_forzado)
+    if decision and decision.get('motor') == 'kilos':
+        salida = _responder_kilos_mes(
+            pregunta, empresa, decision.get('anio') or ejercicio, lectura,
+            decision.get('lado') or lado_forzado, dialecto, sondear,
+        )
+        if salida:
+            return salida
+        return {
+            'reply': {
+                'type': 'text',
+                'text': 'No he podido calcular los kilos por mes.',
+                'answer': 'No he podido calcular los kilos por mes.',
+                'source': 'reglas',
+                'vinculo': 'cantidad',
+                'lectura': None,
+            }
+        }
+    if _es_precio_medio(pregunta):
+        return _responder_precio_medio(pregunta, empresa, ejercicio, campos, lectura=lectura)
+    if _dato_no_mapeado(pregunta, campos):
+        return _rechazo()
+    señala = senala_mapeo(pregunta, campos)
+    vino = False
+    if _es_resumen_comercial(pregunta):
+        lado_resumen = 'proveedor' if _es_compra(pregunta) and not _es_venta(pregunta) else (lado_forzado or 'cliente')
+        plan = _plan_cifra_total(pregunta, campos, lado_resumen)
+        señala = bool(plan)
+    elif not señala or _pide_modelo(pregunta):
         plan = None
     else:
-        plan = plan_determinista(pregunta, campos, limite)
-    if plan is None:
+        plan = plan_determinista(pregunta, campos, limite, lado_forzado)
+    if _pide_cuenta_de_documento(pregunta) and not plan and not _lado(pregunta) and not lado_forzado:
+        lados = _lados_documento(campos, pregunta)
+        elegido = _lado_unico(lectura, lados)
+        if elegido:
+            vino = True
+            plan = plan_determinista(pregunta, campos, limite, elegido)
+        elif len(lados) == 1:
+            plan = plan_determinista(pregunta, campos, limite, lados[0])
+        elif len(lados) > 1:
+            return _aviso_de({'tipo': 'concepto', 'claves': lados, 'opciones': lados}, pregunta)
+    frase_parte_los_lados = {'cliente', 'proveedor'} <= set(_conceptos_nombrados(pregunta))
+    if not (plan and plan.get('cuenta_filas')):
+        ambigua = _ambiguedad(pregunta, campos, relaciones, plan)
+        if ambigua and ambigua.get('tipo') == 'concepto' and not _lado(pregunta) and not frase_parte_los_lados:
+            elegido = lado_forzado or _lado_unico(lectura, ambigua.get('claves') or [])
+            if elegido and elegido in (ambigua.get('claves') or []):
+                nuevo = plan_determinista(pregunta, campos, limite, elegido)
+                if nuevo:
+                    if not lado_forzado:
+                        vino = True
+                    plan = nuevo
+                    ambigua = _ambiguedad(pregunta, campos, relaciones, plan, solo_relacion=True)
+        if ambigua:
+            return _aviso_de(ambigua, pregunta)
+    hereda_periodo = _aplicar_anio(plan, pregunta, lectura, True if (vino or heredar_anio or lectura) else False)
+    if plan:
+        cerrada = _cerrar_plan(
+            plan, pregunta, campos, relaciones, columnas, empresa, ejercicio, dialecto, sondear, vino, hereda_periodo,
+        )
+        if cerrada:
+            return cerrada
+        if _pide_cuenta_de_documento(pregunta) and señala:
+            return _rechazo()
+        if señala and not lectura:
+            return _rechazo()
+    if _pide_cuenta_de_documento(pregunta):
+        return _rechazo() if señala else None
+    if lectura:
+        completado = _completar(pregunta, lectura, campos, limite)
+        if completado:
+            plan_cont, hereda, sustituye = completado
+            if plan_cont.get('medida') == 'precio_medio':
+                return _responder_precio_medio(
+                    pregunta, empresa, ejercicio, campos, plan_cont, hereda, sustituye,
+                )
+            salida = _compilar_salida(
+                plan_cont, pregunta, campos, relaciones, columnas, empresa, ejercicio, dialecto, sondear,
+            )
+            if salida:
+                return _marcar(salida, 'continuacion', lectura_de_plan(plan_cont, campos), hereda, sustituye)
+    if plan is None and señala:
         try:
             bruto = _pedir_plan(pregunta, campos, relaciones, limite) if pedir is None else pedir(pregunta, campos, limite)
         except Exception:
@@ -1214,25 +2293,15 @@ def _consultar(pregunta, empresa, ejercicio, limite, campos, relaciones, columna
         if bruto:
             plan = validar_plan(bruto, campos, limite)
             if not plan:
-                return _no_esta()
-    if not plan:
-        return _no_esta()
-    plan = _completar_forma(plan, pregunta)
-    plan['_pregunta'] = pregunta
-    if dialecto is None:
-        from datia.services.ai.semantic_plan import SemanticPlan
-        dialecto = SemanticPlan.dialecto_actual()
-    year = _anio(pregunta, ejercicio)
-    if columnas is None:
-        from datia.services.ai.compilador_mapeo import _mapa
-        columnas = _mapa(campos, [])
-    sql = compilar_plan(plan, campos, relaciones, columnas, empresa, year, dialecto)
-    if not sql:
-        return _no_esta()
-    from datia.services.security.sql_guard import SQLGuard
-    if not SQLGuard.check_sql(sql).get('allowed'):
-        logger.info('Interprete: la consulta sale de las tablas permitidas')
-        return _no_esta()
-    if sondear and not _probar(sql, dialecto):
-        return _no_esta()
-    return _salida(plan, campos, sql, year)
+                return _rechazo()
+            ambigua = _ambiguedad(pregunta, campos, relaciones, plan)
+            if ambigua:
+                return _aviso_de(ambigua, pregunta)
+            propuesta = lectura_de_plan(plan, campos)
+            if _completa(propuesta):
+                salida = _compilar_salida(plan, pregunta, campos, relaciones, columnas, empresa, ejercicio, dialecto, sondear)
+                if salida:
+                    return _marcar(salida, 'sola', propuesta, [], [])
+    if señala:
+        return _rechazo()
+    return None
