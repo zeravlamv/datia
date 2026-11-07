@@ -68,6 +68,36 @@ class GlobalConfigAdminForm(forms.ModelForm):
             current = self.instance.implanter_settings or {}
         self.fields['ai_provider'].widget = forms.Select(choices=[('ollama', 'Ollama'), ('gemini', 'Gemini')])
         self.fields['perf_preset'].widget = forms.Select(choices=[('eco', 'Eco'), ('auto', 'Auto'), ('turbo', 'Turbo')])
+        etiquetas = {
+            'mssql_driver': 'Driver ODBC',
+            'mssql_host': 'Servidor',
+            'mssql_port': 'Puerto',
+            'mssql_name': 'Base de datos',
+            'mssql_user': 'Usuario',
+            'mssql_sync_enabled': 'Sincronización activa',
+        }
+        for nombre, etiqueta in etiquetas.items():
+            if nombre in self.fields:
+                self.fields[nombre].label = etiqueta
+        if 'mssql_name' in self.fields:
+            self.fields['mssql_name'].help_text = (
+                "Única base de datos del ERP. Si un campo queda vacío, se completa con el .env."
+            )
+        if 'mssql_password_new' in self.fields and getattr(self.instance, 'mssql_password', ''):
+            self.fields['mssql_password_new'].widget.attrs['placeholder'] = 'Contraseña ya guardada'
+        from datia.services.suite_conexion import leer
+        suite = leer()
+        if suite is not None:
+            aviso = suite.get('message') or 'El servidor, el usuario, el secreto y la base los marca Devia.'
+            for nombre in (
+                'mssql_driver', 'mssql_host', 'mssql_port', 'mssql_name',
+                'mssql_user', 'mssql_password_new',
+            ):
+                if nombre in self.fields:
+                    self.fields[nombre].disabled = True
+                    self.fields[nombre].required = False
+            if 'mssql_host' in self.fields:
+                self.fields['mssql_host'].help_text = aviso
         for key, _label in VISIBILITY_TABS:
             visible = current.get(key, True) is not False
             self.fields[f'vis_{key}'].initial = visible
@@ -97,12 +127,17 @@ class EmpresaAdmin(admin.ModelAdmin):
 @admin.register(GlobalConfig)
 class GlobalConfigAdmin(admin.ModelAdmin):
     form = GlobalConfigAdminForm
-    readonly_fields = ('carga_inicial_link', 'updated_at')
+    list_display = ('__str__', 'base_en_uso', 'servidor_en_uso', 'updated_at')
+    readonly_fields = ('conexion_en_uso', 'carga_inicial_link', 'updated_at')
 
     fieldsets = (
         ('Acceso SQL Server', {
-            'description': 'Origen de lectura del ERP. Postgres sigue siendo la base de la aplicación. Si el servidor está vacío, se usan las variables de entorno.',
+            'description': (
+                'Aquí se indica la base de datos del ERP. Cada campo vacío se completa con el .env. '
+                'Postgres sigue siendo la base de esta aplicación.'
+            ),
             'fields': (
+                'conexion_en_uso',
                 'mssql_driver', 'mssql_host', 'mssql_port', 'mssql_name',
                 'mssql_user', 'mssql_password_new', 'mssql_sync_enabled',
             ),
@@ -131,6 +166,25 @@ class GlobalConfigAdmin(admin.ModelAdmin):
         }),
     )
 
+    def get_fieldsets(self, request, obj=None):
+        fieldsets = list(super().get_fieldsets(request, obj))
+        from datia.services.suite_conexion import leer
+        suite = leer()
+        if suite is None:
+            return fieldsets
+        aviso = suite.get('message') or (
+            "La base activa de la suite es " + str(suite.get('active_database') or "—") + "."
+        )
+        titulo, opciones = fieldsets[0]
+        if titulo == 'Acceso SQL Server':
+            opciones = dict(opciones)
+            opciones['description'] = (
+                "Este acceso lo marca Devia. Aquí no se escribe otro servidor ni otro secreto. "
+                + aviso
+            )
+            fieldsets[0] = (titulo, opciones)
+        return fieldsets
+
     def has_add_permission(self, request):
         return not GlobalConfig.objects.exists()
 
@@ -140,6 +194,68 @@ class GlobalConfigAdmin(admin.ModelAdmin):
     def carga_inicial_link(self, obj):
         return format_html('<a class="button" href="/#carga-inicial">Abrir carga inicial en la aplicación</a>')
     carga_inicial_link.short_description = "Carga inicial"
+
+    def _params(self, obj):
+        from datia.services.runtime_config import mssql_params
+        if obj is None or not getattr(obj, 'pk', None):
+            obj = GlobalConfig.load()
+        return obj, mssql_params()
+
+    @admin.display(description="Base de datos en uso")
+    def base_en_uso(self, obj):
+        _obj, params = self._params(obj)
+        return params.get('name') or '—'
+
+    @admin.display(description="Servidor en uso")
+    def servidor_en_uso(self, obj):
+        _obj, params = self._params(obj)
+        return params.get('host') or '—'
+
+    @admin.display(description="Conexión en uso")
+    def conexion_en_uso(self, obj):
+        obj, params = self._params(obj)
+        if params.get('suite') or params.get('suite_blocked'):
+            return format_html(
+                "<p style='line-height:1.6'>"
+                "<strong>Origen:</strong> Devia<br>"
+                "<strong>Servidor:</strong> {}<br>"
+                "<strong>Puerto:</strong> {}<br>"
+                "<strong>Base de datos:</strong> {}<br>"
+                "<strong>Usuario:</strong> {}<br>"
+                "<strong>Aviso:</strong> {}"
+                "</p>",
+                params.get('host') or '—',
+                params.get('port') or '—',
+                params.get('name') or '—',
+                params.get('user') or '—',
+                params.get('suite_message') or '—',
+            )
+        guardados = [
+            (getattr(obj, campo, "") or "").strip()
+            for campo in ("mssql_host", "mssql_name", "mssql_user")
+        ]
+        if all(guardados):
+            origen = "esta ficha"
+        elif any(guardados):
+            origen = "esta ficha, completada con el .env"
+        else:
+            origen = "archivo .env"
+        return format_html(
+            "<p style='line-height:1.6'>"
+            "<strong>Origen:</strong> {}<br>"
+            "<strong>Servidor:</strong> {}<br>"
+            "<strong>Puerto:</strong> {}<br>"
+            "<strong>Base de datos:</strong> {}<br>"
+            "<strong>Usuario:</strong> {}<br>"
+            "<strong>Contraseña definida:</strong> {}"
+            "</p>",
+            origen,
+            params.get('host') or '—',
+            params.get('port') or '—',
+            params.get('name') or '—',
+            params.get('user') or '—',
+            "sí" if params.get('password') else "no",
+        )
 
 
 @admin.register(UserPreference)

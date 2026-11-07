@@ -1,7 +1,45 @@
 """Lectura de la configuración de plataforma guardada en el admin."""
 
+def _sync_enabled(fallback=True):
+    try:
+        from datia.models.master import GlobalConfig
+        return bool(GlobalConfig.load().mssql_sync_enabled)
+    except Exception:
+        return fallback
+
+
 def mssql_params():
     from django.conf import settings
+    from datia.services.suite_conexion import leer
+
+    suite = leer()
+    if suite is not None:
+        sync = _sync_enabled(True)
+        if not suite["usable"]:
+            return {
+                'driver': suite.get('driver') or '',
+                'host': '',
+                'port': '',
+                'name': '',
+                'user': '',
+                'password': '',
+                'sync_enabled': sync,
+                'suite': True,
+                'suite_blocked': True,
+                'suite_message': suite.get('message') or 'El acceso de la suite no está disponible.',
+            }
+        return {
+            'driver': suite['driver'],
+            'host': suite['host'],
+            'port': suite['port'],
+            'name': suite['active_database'],
+            'user': suite['user'],
+            'password': suite['password'],
+            'sync_enabled': sync,
+            'suite': True,
+            'suite_blocked': False,
+            'suite_message': suite.get('message') or '',
+        }
     fallback = {
         'driver': settings.MSSQL_DRIVER,
         'host': settings.MSSQL_HOST,
@@ -10,12 +48,18 @@ def mssql_params():
         'user': settings.MSSQL_USER,
         'password': settings.MSSQL_PASSWORD,
         'sync_enabled': True,
+        'suite': False,
+        'suite_blocked': False,
+        'suite_message': '',
     }
     try:
         from datia.models.master import GlobalConfig
         cfg = GlobalConfig.load()
         params = cfg.mssql_params()
         params['sync_enabled'] = bool(cfg.mssql_sync_enabled)
+        params['suite'] = False
+        params['suite_blocked'] = False
+        params['suite_message'] = ''
         return params
     except Exception:
         return fallback
@@ -33,7 +77,12 @@ def mssql_sync_disabled():
 
 def mssql_connection_string(database=None):
     params = mssql_params()
-    db_name = database or params['name']
+    if params.get('suite_blocked'):
+        raise RuntimeError(params.get('suite_message') or 'El acceso de la suite no está disponible.')
+    if params.get('suite'):
+        db_name = params['name']
+    else:
+        db_name = database or params['name']
     return (
         f"DRIVER={params['driver']};"
         f"SERVER={params['host']},{params['port']};"

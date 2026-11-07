@@ -1373,6 +1373,23 @@ async function detectMSSQLDatabases() {
         const dl = document.getElementById('mssql-db-list');
         const sel = document.getElementById('reset-mssql-db-select');
         const inp = document.getElementById('reset-mssql-db');
+        if (data && data.suite) {
+            if (inp) {
+                inp.readOnly = true;
+                if (list[0]) inp.value = list[0];
+            }
+            if (dl) dl.innerHTML = list.map(n => `<option value="${n}">`).join('');
+            if (sel) {
+                sel.style.display = 'block';
+                sel.disabled = true;
+                sel.innerHTML = list.length
+                    ? list.map(n => `<option value="${n}">${n}</option>`).join('')
+                    : `<option value="">${data.message || 'Sin base activa'}</option>`;
+            }
+            if (data.message && window.showToast) window.showToast(data.message, data.status === 'error');
+            if (list[0]) detectMSSQLEmpresas(list[0]);
+            return;
+        }
         if (dl) {
             dl.innerHTML = list.map(n => `<option value="${n}">`).join('');
         }

@@ -191,7 +191,12 @@ class ETLService:
     def get_connection(self):
         from datia.services.runtime_config import mssql_connection_string, mssql_params
         params = mssql_params()
-        db_name = self.mssql_db_override or params['name']
+        if params.get('suite_blocked'):
+            raise RuntimeError(params.get('suite_message') or 'El acceso de la suite no está disponible.')
+        if params.get('suite'):
+            db_name = params['name']
+        else:
+            db_name = self.mssql_db_override or params['name']
         conn_str = mssql_connection_string(db_name)
         try:
             pyodbc.pooling = False
@@ -200,6 +205,10 @@ class ETLService:
         try:
             conn = pyodbc.connect(conn_str, timeout=60)
         except Exception as e:
+            if params.get('suite'):
+                raise RuntimeError(
+                    f"No se puede leer la base activa de la suite ({db_name})."
+                ) from e
             accessible = []
             try:
                 master_str = mssql_connection_string('master')

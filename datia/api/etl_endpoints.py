@@ -2042,6 +2042,33 @@ def check_raw_sales_presence(request, empresa: int, ejercicio: int):
 
 @router.get("/mssql/databases")
 def list_mssql_databases(request):
+    from datia.services.runtime_config import mssql_connection_string, mssql_params
+    params = mssql_params()
+    if params.get('suite') or params.get('suite_blocked'):
+        if params.get('suite_blocked') or not params.get('name'):
+            return {
+                "status": "error",
+                "databases": [],
+                "suite": True,
+                "message": params.get('suite_message') or "El acceso de la suite no está disponible.",
+            }
+        try:
+            import pyodbc
+            conn = pyodbc.connect(mssql_connection_string(), timeout=5)
+            conn.close()
+        except Exception:
+            return {
+                "status": "error",
+                "databases": [],
+                "suite": True,
+                "message": f"No se puede leer la base activa de la suite ({params['name']}).",
+            }
+        return {
+            "status": "ok",
+            "databases": [params['name']],
+            "suite": True,
+            "message": f"Base activa de la suite: {params['name']}.",
+        }
     try:
         import pyodbc
         from datia.services.runtime_config import mssql_connection_string
@@ -2102,6 +2129,20 @@ def list_mssql_databases(request):
 
 @router.get("/mssql/empresas")
 def list_mssql_empresas(request, db: str = Query(...)):
+    from datia.services.runtime_config import mssql_params
+    params = mssql_params()
+    if params.get('suite_blocked'):
+        return {
+            "status": "error",
+            "items": [],
+            "message": params.get('suite_message') or "El acceso de la suite no está disponible.",
+        }
+    if params.get('suite') and db and db != params.get('name'):
+        return {
+            "status": "error",
+            "items": [],
+            "message": f"La base activa de la suite es {params.get('name')}.",
+        }
     try:
         svc = ETLService(mssql_db=db)
         conn = svc.get_connection()

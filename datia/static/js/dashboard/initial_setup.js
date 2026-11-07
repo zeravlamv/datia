@@ -36,15 +36,31 @@ async function loadMssqlDatabases() {
             ? data
             : (Array.isArray(data.databases) ? data.databases : []);
         select.innerHTML = '';
+        if (data && data.message && hint) {
+            hint.style.display = 'block';
+            hint.textContent = data.message;
+        }
         if (!names.length) {
             const opt = document.createElement('option');
             opt.value = '';
-            opt.textContent = 'No se han detectado bases de datos MSSQL accesibles';
+            opt.textContent = (data && data.message) ? data.message : 'No se han detectado bases de datos MSSQL accesibles';
             select.appendChild(opt);
-            if (hint) {
+            if (hint && !(data && data.message)) {
                 hint.style.display = 'block';
                 hint.textContent = 'Revisa la configuración MSSQL en el fichero .env o el acceso de red.';
             }
+            return;
+        }
+        if (data && data.suite) {
+            names.forEach(function (name) {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                select.appendChild(opt);
+            });
+            select.value = names[0];
+            select.disabled = true;
+            loadMssqlEmpresasForDb(names[0]);
             return;
         }
         const placeholder = document.createElement('option');
@@ -105,6 +121,10 @@ async function loadMssqlEmpresasForDb(dbName) {
         const data = await res.json();
         const items = Array.isArray(data) ? data : (Array.isArray(data.items) ? data.items : []);
         initialSetupEmpresas = items;
+        if (data && data.message && !items.length) {
+            list.innerHTML = '<div style="color:#fca5a5;">' + data.message + '</div>';
+            return;
+        }
         if (!items.length) {
             list.innerHTML = '<div style="color:#a1a1aa;">No se han encontrado empresas en la base seleccionada.</div>';
             return;
